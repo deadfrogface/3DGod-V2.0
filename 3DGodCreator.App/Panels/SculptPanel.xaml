@@ -1,0 +1,10 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.SculptPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Sculpting-Modus" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <CheckBox x:Name="ChkSymmetry" Content="X-Achsensymmetrie aktivieren" Foreground="White" Margin="0,0,0,8" IsChecked="True"/>
+        <Button x:Name="BtnStart" Content="Starte Sculpting" Padding="12,6" Margin="0,0,0,8" Click="BtnStart_Click"/>
+        <TextBlock x:Name="StatusLabel" Text="Nicht aktiv" Foreground="Gray"/>
+    </StackPanel>
+</UserControl>

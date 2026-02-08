@@ -1,0 +1,14 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.FormPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Körperform-Editor" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="BtnMale" Content="Männlich" Margin="0,0,8,0" Padding="12,4" Click="BtnMale_Click"/>
+            <Button x:Name="BtnFemale" Content="Weiblich" Padding="12,4" Click="BtnFemale_Click"/>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
+            <StackPanel x:Name="SlidersPanel"/>
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>

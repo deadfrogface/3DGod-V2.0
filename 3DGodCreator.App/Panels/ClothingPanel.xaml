@@ -1,0 +1,8 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.ClothingPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Kleidung &amp; Assets" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <Button Content="Kleidung hinzufügen" Padding="12,6" Margin="0,0,0,4" Click="BtnAddClothes_Click"/>
+    </StackPanel>
+</UserControl>

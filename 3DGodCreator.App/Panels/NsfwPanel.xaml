@@ -1,0 +1,10 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.NsfwPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="NSFW-Einstellungen" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <TextBlock Text="Anatomie-Layer ein/aus" Foreground="Gray" Margin="0,0,0,4"/>
+        <CheckBox x:Name="ChkBreasts" Content="Brusten" Foreground="White" Margin="0,2" Checked="OnLayerChanged" Unchecked="OnLayerChanged"/>
+        <CheckBox x:Name="ChkGenitals" Content="Genitalien" Foreground="White" Margin="0,2" Checked="OnLayerChanged" Unchecked="OnLayerChanged"/>
+    </StackPanel>
+</UserControl>

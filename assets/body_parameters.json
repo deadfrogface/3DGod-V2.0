@@ -1,0 +1,164 @@
+{
+    "toe_size": {
+        "label": "Zehengröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "toe_angle": {
+        "label": "Zehwinkel",
+        "min": -50,
+        "max": 50,
+        "default": 0
+    },
+    "foot_length": {
+        "label": "Fußlänge",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "heel_height": {
+        "label": "Fersenhöhe",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "calf_size": {
+        "label": "Wade",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "thigh_size": {
+        "label": "Oberschenkel",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "hip_width": {
+        "label": "Hüftbreite",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "waist_width": {
+        "label": "Taillenbreite",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "belly_size": {
+        "label": "Bauchumfang",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "chest_width": {
+        "label": "Brustweite",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "breast_size": {
+        "label": "Brustgröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "shoulder_width": {
+        "label": "Schulterbreite",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "arm_length": {
+        "label": "Armlänge",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "forearm_size": {
+        "label": "Unterarmgröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "hand_size": {
+        "label": "Handgröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "finger_length": {
+        "label": "Fingerlänge",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "neck_thickness": {
+        "label": "Halsdicke",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "head_size": {
+        "label": "Kopfgröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "eye_size": {
+        "label": "Augengröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "eye_distance": {
+        "label": "Augenabstand",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "eyelash_length": {
+        "label": "Wimpernlänge",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "nose_length": {
+        "label": "Nasengröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "ear_size": {
+        "label": "Ohrgröße",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "jaw_width": {
+        "label": "Kieferbreite",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "chin_length": {
+        "label": "Kinnlänge",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "hair_volume": {
+        "label": "Haarvolumen",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    },
+    "height": {
+        "label": "Größe",
+        "min": 0,
+        "max": 100,
+        "default": 50
+    }
+}

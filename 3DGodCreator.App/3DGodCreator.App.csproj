@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon />
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HelixToolkit.Wpf" Version="2.25.0" />
+    <ProjectReference Include="..\3DGodCreator.Core\3DGodCreator.Core.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyAssets" AfterTargets="Build">
+    <ItemGroup>
+      <_Assets Include="..\assets\**\*" />
+      <_Blender Include="..\blender_embed\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_Assets)" DestinationFolder="$(OutputPath)assets\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\assets')" />
+    <Copy SourceFiles="@(_Blender)" DestinationFolder="$(OutputPath)blender_embed\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\blender_embed')" />
+  </Target>
+
+</Project>

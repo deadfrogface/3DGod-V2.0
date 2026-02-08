@@ -1,0 +1,9 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.ExportPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Export" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <TextBox x:Name="TxtFilename" Text="exported_character" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+        <Button Content="FBX exportieren" Padding="12,6" Click="BtnExport_Click"/>
+    </StackPanel>
+</UserControl>
