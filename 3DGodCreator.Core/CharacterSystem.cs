@@ -10,6 +10,8 @@ public class CharacterSystem
     private readonly BlenderService _blenderService;
     private readonly PresetService _presetService;
     private readonly string _basePath;
+    private System.Threading.Timer? _sculptDebounceTimer;
+    private readonly object _sculptDebounceLock = new();
 
     public Dictionary<string, int> SculptData { get; } = new();
     public Dictionary<string, bool> AnatomyState { get; } = new();
@@ -97,14 +99,34 @@ public class CharacterSystem
         _configService.Save(cfg);
     }
 
+    /// <summary>
+    /// Update slider value. Viewport updates immediately (smooth). Blender JSON write is debounced.
+    /// </summary>
     public void UpdateSculptValue(string key, int value)
     {
         SculptData[key] = value;
-        var dict = new Dictionary<string, object>();
-        foreach (var kv in SculptData)
-            dict[kv.Key] = kv.Value;
-        _blenderService.SendSculptData(dict);
         RefreshLayers();
+        DebouncedSendSculptData();
+    }
+
+    private void DebouncedSendSculptData()
+    {
+        lock (_sculptDebounceLock)
+        {
+            _sculptDebounceTimer?.Dispose();
+            _sculptDebounceTimer = new System.Threading.Timer(_ =>
+            {
+                lock (_sculptDebounceLock)
+                {
+                    _sculptDebounceTimer?.Dispose();
+                    _sculptDebounceTimer = null;
+                }
+                var dict = new Dictionary<string, object>();
+                foreach (var kv in SculptData)
+                    dict[kv.Key] = kv.Value;
+                _blenderService.SendSculptData(dict);
+            }, null, 150, System.Threading.Timeout.Infinite);
+        }
     }
 
     public void Sculpt()
@@ -138,6 +160,7 @@ public class CharacterSystem
     public void RefreshLayers()
     {
         Viewport?.UpdatePreview(AnatomyState, AssetState);
+        Viewport?.ApplySculptTransform(SculptData);
     }
 
     public void SavePreset(string name = "default")
@@ -210,4 +233,5 @@ public interface IViewport
     void LoadPreview(string path);
     void UpdateView();
     void UpdatePreview(Dictionary<string, bool> anatomy, Dictionary<string, List<string>> assets);
+    void ApplySculptTransform(Dictionary<string, int> sculptData);
 }

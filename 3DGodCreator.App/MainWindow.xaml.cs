@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly string _basePath;
     private string _currentPreviewPath = "";
     private DebugConsole _debugConsole = null!;
+    private TranslateTransform3D? _sculptTranslateTransform;
 
     public MainWindow()
     {
@@ -54,6 +55,15 @@ public partial class MainWindow : Window
                 "Blender fehlt",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
+        });
+        _blenderService.OnBlenderFailed += (info) => Dispatcher.Invoke(() =>
+        {
+            Tabs.SelectedIndex = 9;
+            var msg = $"{info.Message}\n\n";
+            if (!string.IsNullOrEmpty(info.Detail)) msg += $"Details: {info.Detail}\n\n";
+            if (!string.IsNullOrEmpty(info.SuggestedFix)) msg += $"-> {info.SuggestedFix}\n\n";
+            msg += $"Log: {AppLogger.GetLogFilePath()}";
+            MessageBox.Show(msg, "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         });
 
         ApplyTheme(_configService.Load().Theme);
@@ -141,8 +151,19 @@ public partial class MainWindow : Window
                 var content = GlbLoader.Load(path);
                 if (content != null)
                 {
+                    var validation = ModelValidator.Validate(path);
+                    if (!validation.IsValid)
+                    {
+                        DebugLog.Write($"[Viewport] Model validation: {validation.Message}");
+                        AppLogger.Write($"[Viewport] Model validation failed: {validation.Message}", isError: true);
+                    }
+                    else if (!string.IsNullOrEmpty(validation.Message))
+                    {
+                        DebugLog.Write($"[Viewport] {validation.Message}");
+                    }
                     var vp = CreateViewport3D(content);
                     ViewportHost.Child = vp;
+                    ApplySculptTransform(_characterSystem.SculptData);
                     DebugLog.Write($"[Viewport] GLB-Modell geladen: {path}");
                 }
                 else
@@ -209,11 +230,38 @@ public partial class MainWindow : Window
 
     private HelixViewport3D CreateViewport3D(Model3D content)
     {
+        _sculptTranslateTransform = new TranslateTransform3D(0, 0, 0);
+        var transformGroup = new Transform3DGroup();
+        transformGroup.Children.Add(_sculptTranslateTransform);
+        var wrapper = new Model3DGroup { Transform = transformGroup };
+        wrapper.Children.Add(content);
+
         var vp = new HelixViewport3D { Background = Brushes.Black };
         vp.Children.Add(new DefaultLights());
-        vp.Children.Add(new ModelVisual3D { Content = content });
+        vp.Children.Add(new ModelVisual3D { Content = wrapper });
         vp.ZoomExtents();
         return vp;
+    }
+
+    /// <summary>
+    /// Apply slider values as translation (move) in 3D space. Values 0-100 map to offsets.
+    /// </summary>
+    public void ApplySculptTransform(Dictionary<string, int> sculptData)
+    {
+        if (_sculptTranslateTransform == null) return;
+
+        var height = sculptData.GetValueOrDefault("height", 50);
+        var hipWidth = sculptData.GetValueOrDefault("hip_width", 50);
+        var breastSize = sculptData.GetValueOrDefault("breast_size", 50);
+
+        var scale = 0.02;
+        var y = (height - 50) * scale;
+        var x = (hipWidth - 50) * scale * 0.5;
+        var z = (breastSize - 50) * scale * 0.3;
+
+        _sculptTranslateTransform.OffsetX = x;
+        _sculptTranslateTransform.OffsetY = y;
+        _sculptTranslateTransform.OffsetZ = z;
     }
 
     private string GetAnatomyPreviewPath(Dictionary<string, bool> anatomy)
@@ -280,5 +328,7 @@ public partial class MainWindow : Window
         public void UpdateView() => _win.Dispatcher.Invoke(_win.UpdateView);
         public void UpdatePreview(Dictionary<string, bool> anatomy, Dictionary<string, List<string>> _) =>
             _win.Dispatcher.Invoke(() => _win.UpdatePreviewFromAnatomy(anatomy));
+        public void ApplySculptTransform(Dictionary<string, int> sculptData) =>
+            _win.Dispatcher.Invoke(() => _win.ApplySculptTransform(sculptData));
     }
 }

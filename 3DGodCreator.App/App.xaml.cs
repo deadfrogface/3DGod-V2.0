@@ -9,6 +9,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        AppLogger.Initialize();
 
         // Prevent silent crashes - log all unhandled exceptions
         DispatcherUnhandledException += OnDispatcherUnhandledException;
@@ -17,16 +18,14 @@ public partial class App : Application
 
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        StartupLogger.Initialize();
-        StartupLogger.LogException(e.Exception, "DispatcherUnhandledException");
+        AppLogger.LogException(e.Exception, "DispatcherUnhandledException");
         DebugLog.Write($"[FATAL] Unbehandelte Exception: {e.Exception.Message}");
         e.Handled = true;
     }
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        StartupLogger.Initialize();
         if (e.ExceptionObject is Exception ex)
-            StartupLogger.LogException(ex, "UnhandledException");
+            AppLogger.LogException(ex, "UnhandledException");
     }
 }

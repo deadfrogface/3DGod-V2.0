@@ -8,6 +8,7 @@ public class BlenderService
 {
     private readonly ConfigService _configService;
     private readonly string _basePath;
+    private Process? _lastBlenderProcess;
 
     public BlenderService(ConfigService configService)
     {
@@ -16,22 +17,16 @@ public class BlenderService
     }
 
     /// <summary>
-    /// Gets Blender executable path: config first, then auto-detect (common paths + PATH).
-    /// Returns "blender" if not found (fallback for PATH - may fail on Windows).
+    /// Gets Blender executable path: config first, then auto-detect.
     /// </summary>
     public string GetBlenderPath()
     {
         var config = _configService.Load();
         if (!string.IsNullOrEmpty(config.BlenderPath) && File.Exists(config.BlenderPath))
             return config.BlenderPath;
-
-        var found = DetectBlenderPath();
-        return found ?? "blender";
+        return DetectBlenderPath() ?? "blender";
     }
 
-    /// <summary>
-    /// Tries to detect Blender in common install locations and PATH.
-    /// </summary>
     public string? DetectBlenderPath()
     {
         var searchBases = new[]
@@ -60,100 +55,174 @@ public class BlenderService
         return null;
     }
 
+    public bool VerifyCanLaunch(out string? errorMessage) =>
+        ProjectReadinessService.VerifyBlenderCanLaunch(GetBlenderPath(), out errorMessage);
+
+    public void SendSculptData(Dictionary<string, object> sculptData)
+    {
+        try
+        {
+            var inputPath = Path.Combine(_basePath, "blender_embed", "sculpt_input.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(inputPath)!);
+            var json = JsonSerializer.Serialize(sculptData, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(inputPath, json);
+            AppLogger.Write($"[Blender] Sculpt data written to {inputPath}");
+        }
+        catch (Exception ex)
+        {
+            var err = new BlenderErrorInfo(BlenderErrorCode.Unknown, "Failed to write sculpt data", ex.Message,
+                "Check write permissions for blender_embed folder.");
+            ReportBlenderError(err);
+            AppLogger.LogException(ex, "SendSculptData");
+        }
+    }
+
     /// <summary>
-    /// Verifies that Blender can be launched. Returns true if successful.
+    /// Launch Blender with sculpt script. Captures stdout/stderr, tracks process.
     /// </summary>
-    public bool VerifyCanLaunch(out string? errorMessage)
+    public void LaunchSculpt()
     {
         var path = GetBlenderPath();
         if (string.IsNullOrEmpty(path) || path == "blender" || !File.Exists(path))
         {
-            errorMessage = "Blender executable not found. Set path in Settings.";
-            return false;
+            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "Blender executable not found",
+                $"Path: {path}", "Install Blender or set path in Settings (Einstellungen).");
+            ReportBlenderError(err);
+            OnBlenderNotFound?.Invoke();
+            return;
         }
-        return ProjectReadinessService.VerifyBlenderCanLaunch(path, out errorMessage);
-    }
-
-    public void SendSculptData(Dictionary<string, object> sculptData)
-    {
-        var inputPath = Path.Combine(_basePath, "blender_embed", "sculpt_input.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(inputPath)!);
-        var json = JsonSerializer.Serialize(sculptData, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(inputPath, json);
-    }
-
-    public void LaunchSculpt()
-    {
-        if (!EnsureBlender()) { Log("Blender nicht konfiguriert."); return; }
-        var blenderPath = GetBlenderPath();
 
         var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "apply_sculpt_standalone.py"));
         if (!File.Exists(scriptPath))
-        {
             scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "sculpt_apply.py"));
-        }
 
         if (!File.Exists(scriptPath))
         {
+            var err = new BlenderErrorInfo(BlenderErrorCode.ScriptNotFound, "Sculpt script not found",
+                $"Expected: {scriptPath}", "Run 'dotnet build' to copy blender_embed to output.");
+            ReportBlenderError(err);
             Log("Sculpt-Skript nicht gefunden");
             return;
         }
 
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = blenderPath,
-                Arguments = $"--background --python \"{scriptPath}\"",
-                WorkingDirectory = _basePath,
-                UseShellExecute = false
-            };
-            Process.Start(psi);
-            Log("Blender Sculpting gestartet");
-        }
-        catch (Exception ex)
-        {
-            Log("Fehler beim Starten von Blender: " + ex.Message);
-        }
+        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\"", "Sculpt");
     }
 
-    public void LaunchAutoRig()
-    {
-        LaunchSculpt();
-    }
+    public void LaunchAutoRig() => LaunchSculpt();
 
     public void ExportFbx(string filename = "exported_character")
     {
-        if (!EnsureBlender()) { Log("Blender nicht konfiguriert."); return; }
-        var blenderPath = GetBlenderPath();
-        var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "export_fbx.py"));
+        var path = GetBlenderPath();
+        if (string.IsNullOrEmpty(path) || path == "blender" || !File.Exists(path))
+        {
+            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "Blender executable not found", null,
+                "Set Blender path in Settings.");
+            ReportBlenderError(err);
+            OnBlenderNotFound?.Invoke();
+            return;
+        }
 
+        var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "export_fbx.py"));
         if (!File.Exists(scriptPath))
         {
+            var err = new BlenderErrorInfo(BlenderErrorCode.ScriptNotFound, "export_fbx.py not found", scriptPath,
+                "Run 'dotnet build'.");
+            ReportBlenderError(err);
             Log("export_fbx.py nicht gefunden");
             return;
         }
 
+        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export");
+    }
+
+    /// <summary>
+    /// Launch Blender process with stdout/stderr capture and process tracking.
+    /// </summary>
+    private void LaunchBlenderProcess(string blenderPath, string arguments, string operation)
+    {
+        AppLogger.Write($"[Blender] Launching: {blenderPath} {arguments}");
+
         try
         {
             var psi = new ProcessStartInfo
             {
                 FileName = blenderPath,
-                Arguments = $"--background --python \"{scriptPath}\" -- {filename}",
+                Arguments = arguments,
                 WorkingDirectory = _basePath,
-                UseShellExecute = false
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
-            Process.Start(psi);
-            Log("FBX Export gestartet");
+
+            var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+
+            proc.OutputDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    AppLogger.Write($"[Blender stdout] {e.Data}");
+                    Log(e.Data);
+                }
+            };
+            proc.ErrorDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    AppLogger.Write($"[Blender stderr] {e.Data}", isError: true);
+                    Log($"[stderr] {e.Data}");
+                }
+            };
+
+            proc.Exited += (_, _) =>
+            {
+                _lastBlenderProcess = null;
+                if (proc.ExitCode != 0 && proc.ExitCode != -1)
+                {
+                    var err = new BlenderErrorInfo(BlenderErrorCode.ProcessExitedUnexpectedly,
+                        $"{operation} process exited with code {proc.ExitCode}",
+                        $"Check error_log.txt for stdout/stderr.", "Review Blender script and log.");
+                    ReportBlenderError(err);
+                }
+            };
+
+            proc.Start();
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+            _lastBlenderProcess = proc;
+
+            Log($"{operation} gestartet (PID {proc.Id})");
+            AppLogger.Write($"[Blender] {operation} started PID={proc.Id}");
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            var err = new BlenderErrorInfo(BlenderErrorCode.PermissionDenied,
+                "Could not start Blender process", ex.Message,
+                "Check path and permissions. Try running as administrator.");
+            ReportBlenderError(err);
         }
         catch (Exception ex)
         {
-            Log("Fehler beim FBX Export: " + ex.Message);
+            var err = new BlenderErrorInfo(BlenderErrorCode.ProcessStartFailed, ex.Message, ex.StackTrace,
+                "Verify Blender path in Settings.");
+            ReportBlenderError(err);
+            AppLogger.LogException(ex, "LaunchBlenderProcess");
         }
+    }
+
+    private void ReportBlenderError(BlenderErrorInfo info)
+    {
+        var msg = $"{info.Code}: {info.Message}";
+        if (!string.IsNullOrEmpty(info.Detail)) msg += $" | {info.Detail}";
+        if (!string.IsNullOrEmpty(info.SuggestedFix)) msg += $" -> {info.SuggestedFix}";
+        AppLogger.Write($"[Blender] {msg}", isError: true);
+        Log(msg);
+        OnBlenderFailed?.Invoke(info);
     }
 
     public event Action<string>? OnLog;
     public event Action? OnBlenderNotFound;
+    public event Action<BlenderErrorInfo>? OnBlenderFailed;
 
     public bool IsBlenderConfigured()
     {
@@ -161,7 +230,12 @@ public class BlenderService
         return !string.IsNullOrEmpty(p) && p != "blender" && File.Exists(p);
     }
 
-    private void Log(string msg) => OnLog?.Invoke(msg);
+    public bool IsBlenderProcessRunning => _lastBlenderProcess != null && !_lastBlenderProcess.HasExited;
+
+    private void Log(string msg)
+    {
+        OnLog?.Invoke(msg);
+    }
 
     private bool EnsureBlender()
     {

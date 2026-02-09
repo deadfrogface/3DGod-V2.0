@@ -3,11 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Margin="8">
         <TextBlock Text="Körperform-Editor" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <Button x:Name="BtnMale" Content="Männlich" Margin="0,0,8,0" Padding="12,4" Click="BtnMale_Click"/>
-            <Button x:Name="BtnFemale" Content="Weiblich" Padding="12,4" Click="BtnFemale_Click"/>
-        </StackPanel>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
+        <Border Background="#333" Padding="8" CornerRadius="4" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Geschlecht" Foreground="#aaa" FontSize="11" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="BtnMale" Content="Männlich" Margin="0,0,8,0" Padding="16,8" Click="BtnMale_Click" MinWidth="90"/>
+                    <Button x:Name="BtnFemale" Content="Weiblich" Padding="16,8" Click="BtnFemale_Click" MinWidth="90"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <TextBlock Text="Slider: Verschieben des Modells in 3D (Echtzeit-Vorschau)" Foreground="#888" FontSize="11" Margin="0,0,0,6"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="450">
             <StackPanel x:Name="SlidersPanel"/>
         </ScrollViewer>
     </StackPanel>

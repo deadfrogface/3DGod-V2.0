@@ -19,11 +19,7 @@ public static class StartupLogger
     {
         _logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error_log.txt");
         _sessionLog.Clear();
-        lock (_lock)
-        {
-            var header = $"\n========== Session: {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==========\n";
-            File.AppendAllText(_logPath, header);
-        }
+        AppLogger.Initialize();
     }
 
     /// <summary>
@@ -66,14 +62,7 @@ public static class StartupLogger
         lock (_lock)
         {
             _sessionLog.Add(line);
-            try
-            {
-                File.AppendAllText(_logPath, line + Environment.NewLine);
-            }
-            catch
-            {
-                // Cannot log to file; at least keep in memory
-            }
+            AppLogger.WriteLine(line);
         }
     }
 

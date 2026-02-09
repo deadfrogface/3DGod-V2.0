@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using SharpGLTF.Schema2;
+using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.App;
 
@@ -33,6 +34,8 @@ public static class GlbLoader
         }
         catch (Exception ex)
         {
+            AppLogger.Write($"[GlbLoader] Load failed: {path} - {ex.Message}", isError: true);
+            AppLogger.LogException(ex, "GlbLoader.Load");
             DebugLog.Write($"[GlbLoader] Fehler: {ex.Message}");
             return null;
         }
