@@ -20,6 +20,9 @@
         </ComboBox>
         <CheckBox x:Name="ChkNsfw" Content="NSFW-Modus aktivieren" Foreground="White" Margin="0,0,0,4" Checked="ChkNsfw_Changed" Unchecked="ChkNsfw_Changed"/>
         <CheckBox x:Name="ChkController" Content="Controller-Unterstützung" Foreground="White" Margin="0,0,0,8" Checked="ChkController_Changed" Unchecked="ChkController_Changed"/>
-        <Button x:Name="BtnDiagnostics" Content="System-Check" Padding="12,6" Margin="0,0,0,4" Click="BtnDiagnostics_Click"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <Button x:Name="BtnTestBlender" Content="Blender testen" Padding="12,6" Margin="0,0,8,0" Click="BtnTestBlender_Click" ToolTip="Prüft ob Blender gestartet werden kann"/>
+            <Button x:Name="BtnDiagnostics" Content="System-Check" Padding="12,6" Click="BtnDiagnostics_Click" ToolTip="Vollständige Projekt-Prüfung"/>
+        </StackPanel>
     </StackPanel>
 </UserControl>

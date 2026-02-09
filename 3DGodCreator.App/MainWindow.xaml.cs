@@ -38,6 +38,13 @@ public partial class MainWindow : Window
         _debugConsole = (DebugConsole)DebugConsoleHost.Content;
         _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedIndex = 9;
         DebugLog.OnMessage += msg => Dispatcher.Invoke(() => _debugConsole?.Log(msg));
+
+        // Run project readiness check - logs to error_log.txt and Debug console
+        var readiness = ProjectReadinessService.RunFullCheck();
+        foreach (var line in readiness.SummaryLines)
+            DebugLog.Write($"[Startup] {line}");
+        if (!readiness.AllCriticalPassed)
+            DebugLog.Write($"[Startup] Einige Prüfungen fehlgeschlagen. Details: {StartupLogger.GetLogFilePath()}");
         _blenderService.OnLog += msg => DebugLog.Write($"[Blender] {msg}");
         _blenderService.OnBlenderNotFound += () => Dispatcher.Invoke(() =>
         {
@@ -71,7 +78,7 @@ public partial class MainWindow : Window
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem);
         ExportPanel.Content = new ExportPanel(_characterSystem);
-        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, this);
+        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this);
         AiPanel.Content = new AiPanel(_characterSystem);
     }
 

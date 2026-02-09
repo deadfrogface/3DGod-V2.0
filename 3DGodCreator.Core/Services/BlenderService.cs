@@ -15,24 +15,63 @@ public class BlenderService
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
     }
 
+    /// <summary>
+    /// Gets Blender executable path: config first, then auto-detect (common paths + PATH).
+    /// Returns "blender" if not found (fallback for PATH - may fail on Windows).
+    /// </summary>
     public string GetBlenderPath()
     {
         var config = _configService.Load();
         if (!string.IsNullOrEmpty(config.BlenderPath) && File.Exists(config.BlenderPath))
             return config.BlenderPath;
 
-        var localApp = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Programs\Blender Foundation");
-        var progFiles = Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\Blender Foundation");
-        foreach (var baseDir in new[] { localApp, progFiles })
+        var found = DetectBlenderPath();
+        return found ?? "blender";
+    }
+
+    /// <summary>
+    /// Tries to detect Blender in common install locations and PATH.
+    /// </summary>
+    public string? DetectBlenderPath()
+    {
+        var searchBases = new[]
+        {
+            Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Programs\Blender Foundation"),
+            Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\Blender Foundation"),
+            Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Blender Foundation")
+        };
+        foreach (var baseDir in searchBases)
         {
             if (!Directory.Exists(baseDir)) continue;
             var dirs = Directory.GetDirectories(baseDir, "Blender *");
             if (dirs.Length == 0) continue;
-            var exe = Path.Combine(dirs[^1], "blender.exe");
+            var sorted = dirs.OrderByDescending(d => d).ToArray();
+            var exe = Path.Combine(sorted[0], "blender.exe");
             if (File.Exists(exe))
                 return exe;
         }
-        return "blender";
+        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var exe = Path.Combine(dir.Trim(), "blender.exe");
+            if (File.Exists(exe))
+                return exe;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Verifies that Blender can be launched. Returns true if successful.
+    /// </summary>
+    public bool VerifyCanLaunch(out string? errorMessage)
+    {
+        var path = GetBlenderPath();
+        if (string.IsNullOrEmpty(path) || path == "blender" || !File.Exists(path))
+        {
+            errorMessage = "Blender executable not found. Set path in Settings.";
+            return false;
+        }
+        return ProjectReadinessService.VerifyBlenderCanLaunch(path, out errorMessage);
     }
 
     public void SendSculptData(Dictionary<string, object> sculptData)

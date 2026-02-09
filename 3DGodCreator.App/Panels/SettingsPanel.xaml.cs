@@ -11,13 +11,15 @@ public partial class SettingsPanel : UserControl
 {
     private readonly CharacterSystem _characterSystem;
     private readonly ConfigService _configService;
+    private readonly BlenderService _blenderService;
     private readonly Window _mainWindow;
 
-    public SettingsPanel(CharacterSystem cs, ConfigService configService, Window mainWindow)
+    public SettingsPanel(CharacterSystem cs, ConfigService configService, BlenderService blenderService, Window mainWindow)
     {
         InitializeComponent();
         _characterSystem = cs;
         _configService = configService;
+        _blenderService = blenderService;
         _mainWindow = mainWindow;
 
         var cfg = _configService.Load();
@@ -55,6 +57,20 @@ public partial class SettingsPanel : UserControl
         {
             TxtBlenderPath.Text = dlg.FileName;
             SaveConfig();
+        }
+    }
+
+    private void BtnTestBlender_Click(object sender, RoutedEventArgs e)
+    {
+        SaveConfig();
+        if (_blenderService.VerifyCanLaunch(out var error))
+        {
+            var path = _blenderService.GetBlenderPath();
+            MessageBox.Show($"Blender wurde erfolgreich gestartet.\n\nPfad: {path}", "Blender OK", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else
+        {
+            MessageBox.Show($"Blender konnte nicht gestartet werden.\n\n{error}\n\nBitte prüfe den Pfad in den Einstellungen.", "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
