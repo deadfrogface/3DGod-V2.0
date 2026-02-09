@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace ThreeDGodCreator.Core.Services;
@@ -58,13 +59,22 @@ public static class ProjectReadinessService
         summary.Add(FormatSummary(step, "NuGet packages", nuget.Success));
         step++;
 
-        // --- Step 3: Blender ---
+        // --- Step 3: Blender (installed) ---
         var blender = CheckBlender();
         if (blender.Success)
-            StartupLogger.StepOk(step, "Blender", blender.Message);
+            StartupLogger.StepOk(step, "Blender installed", blender.Message);
         else
-            StartupLogger.StepFail(step, "Blender", blender.Message, blender.SuggestedFix);
-        summary.Add(FormatSummary(step, "Blender", blender.Success));
+            StartupLogger.StepFail(step, "Blender installed", blender.Message, blender.SuggestedFix);
+        summary.Add(FormatSummary(step, "Blender installed", blender.Success));
+        step++;
+
+        // --- Step 3b: Blender runtime (script runs) ---
+        var blenderRuntime = blender.Success ? CheckBlenderRuntime() : new CheckResult(false, "Skipped (Blender not installed)", null);
+        if (blenderRuntime.Success)
+            StartupLogger.StepOk(step, "Blender runtime", blenderRuntime.Message);
+        else
+            StartupLogger.StepFail(step, "Blender runtime", blenderRuntime.Message ?? "Validation failed", blenderRuntime.SuggestedFix);
+        summary.Add(FormatSummary(step, "Blender runtime", blenderRuntime.Success));
         step++;
 
         // --- Step 4: Assets ---
@@ -95,7 +105,8 @@ public static class ProjectReadinessService
 
         StartupLogger.Write($"Log file: {StartupLogger.GetLogFilePath()}");
 
-        var allCritical = dotNet.Success && nuget.Success && assets.Success && scripts.Success;
+        var allCritical = dotNet.Success && nuget.Success && assets.Success && scripts.Success
+            && (!blender.Success || blenderRuntime.Success);
         return new ReadinessResult(
             AllCriticalPassed: allCritical,
             Blender: blender,
@@ -156,24 +167,22 @@ public static class ProjectReadinessService
     }
 
     /// <summary>
-    /// Check that required NuGet packages are present (via assembly load).
+    /// Check that required NuGet packages are present. Force-loads assemblies.
     /// </summary>
     public static CheckResult CheckNuGetPackages()
     {
-        var required = new[] { "HelixToolkit.Wpf", "SharpGLTF" };
+        var required = new[] { ("HelixToolkit.Wpf", "HelixToolkit.Wpf"), ("SharpGLTF.Core", "SharpGLTF.Toolkit") };
         var missing = new List<string>();
-        foreach (var name in required)
+        foreach (var (asmName, displayName) in required)
         {
             try
             {
-                var asm = AppDomain.CurrentDomain.GetAssemblies()
-                    .FirstOrDefault(a => a.GetName().Name?.Contains(name, StringComparison.OrdinalIgnoreCase) == true);
-                if (asm == null)
-                    missing.Add(name);
+                _ = Assembly.Load(asmName);
             }
-            catch
+            catch (Exception ex)
             {
-                missing.Add(name);
+                AppLogger.Write($"[NuGet] Failed to load {displayName}: {ex.Message}");
+                missing.Add(displayName);
             }
         }
         if (missing.Count == 0)
@@ -291,6 +300,79 @@ public static class ProjectReadinessService
             StartupLogger.LogException(ex, "VerifyBlenderCanLaunch");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Run Blender with test script. Verify it runs and returns OK.
+    /// </summary>
+    private static CheckResult CheckBlenderRuntime()
+    {
+        var config = ConfigService.Load();
+        var path = !string.IsNullOrEmpty(config.BlenderPath) && File.Exists(config.BlenderPath)
+            ? config.BlenderPath
+            : DetectBlenderPath();
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            return new CheckResult(false, "Blender path not set", "Set in Settings.");
+
+        var testScript = Path.Combine(BasePath, "blender_embed", "blender_runtime_test.py");
+        if (!File.Exists(testScript))
+            return new CheckResult(false, "blender_runtime_test.py not found", "Run dotnet build.");
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = path,
+                Arguments = $"--background --python \"{testScript}\"",
+                WorkingDirectory = BasePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null)
+                return new CheckResult(false, "Process.Start returned null", "Check permissions.");
+            var stdout = proc.StandardOutput.ReadToEnd();
+            var stderr = proc.StandardError.ReadToEnd();
+            proc.WaitForExit(15000);
+
+            if (proc.ExitCode != 0 && proc.ExitCode != -1)
+                return new CheckResult(false, $"Exit code {proc.ExitCode}. stderr: {stderr.Trim()}", "Check Blender installation.");
+            if (!stdout.Contains("BLENDER_RUNTIME_OK"))
+                return new CheckResult(false, $"Test script did not produce BLENDER_RUNTIME_OK. stdout: {stdout}", "Verify blender_embed copied to output.");
+            return new CheckResult(true, "Script runs OK");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogException(ex, "CheckBlenderRuntime");
+            return new CheckResult(false, ex.Message, "See error_log.txt");
+        }
+    }
+
+    private static string? DetectBlenderPath()
+    {
+        var searchBases = new[]
+        {
+            Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Programs\Blender Foundation"),
+            Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\Blender Foundation"),
+            Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Blender Foundation")
+        };
+        foreach (var baseDir in searchBases)
+        {
+            if (!Directory.Exists(baseDir)) continue;
+            var dirs = Directory.GetDirectories(baseDir, "Blender *").OrderByDescending(d => d).ToArray();
+            if (dirs.Length == 0) continue;
+            var exe = Path.Combine(dirs[0], "blender.exe");
+            if (File.Exists(exe)) return exe;
+        }
+        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var exe = Path.Combine(dir.Trim(), "blender.exe");
+            if (File.Exists(exe)) return exe;
+        }
+        return null;
     }
 
     private static string? TryGetBlenderVersion(string blenderPath)

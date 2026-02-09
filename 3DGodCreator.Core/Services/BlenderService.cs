@@ -78,7 +78,7 @@ public class BlenderService
     }
 
     /// <summary>
-    /// Launch Blender with sculpt script. Captures stdout/stderr, tracks process.
+    /// Launch Blender with sculpt script. GUI mode so Blender STAYS OPEN.
     /// </summary>
     public void LaunchSculpt()
     {
@@ -105,7 +105,8 @@ public class BlenderService
             return;
         }
 
-        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\"", "Sculpt");
+        AppLogger.Write($"[Blender] Script path: {scriptPath}");
+        LaunchBlenderProcess(path, $"--python \"{scriptPath}\"", "Sculpt", keepAlive: true);
     }
 
     public void LaunchAutoRig() => LaunchSculpt();
@@ -132,15 +133,15 @@ public class BlenderService
             return;
         }
 
-        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export");
+        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export", keepAlive: false);
     }
 
     /// <summary>
-    /// Launch Blender process with stdout/stderr capture and process tracking.
+    /// Launch Blender process. keepAlive=true = GUI mode (no --background).
     /// </summary>
-    private void LaunchBlenderProcess(string blenderPath, string arguments, string operation)
+    private void LaunchBlenderProcess(string blenderPath, string arguments, string operation, bool keepAlive = false)
     {
-        AppLogger.Write($"[Blender] Launching: {blenderPath} {arguments}");
+        AppLogger.Write($"[Blender] Launching: {blenderPath} {arguments} (keepAlive={keepAlive})");
 
         try
         {
@@ -152,10 +153,11 @@ public class BlenderService
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = false
             };
 
             var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            var startTime = DateTime.UtcNow;
 
             proc.OutputDataReceived += (_, e) =>
             {
@@ -177,11 +179,21 @@ public class BlenderService
             proc.Exited += (_, _) =>
             {
                 _lastBlenderProcess = null;
-                if (proc.ExitCode != 0 && proc.ExitCode != -1)
+                var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
+
+                AppLogger.Write($"[Blender] Process exited. Code={proc.ExitCode}, Elapsed={elapsed:F1}s");
+
+                var isSuspicious = keepAlive && elapsed < 5;
+                var isError = proc.ExitCode != 0 && proc.ExitCode != -1;
+
+                if (isSuspicious || isError)
                 {
+                    var reason = isSuspicious
+                        ? $"Blender quit after {elapsed:F1}s. Sculpt mode should keep Blender OPEN."
+                        : $"Process exited with code {proc.ExitCode}";
                     var err = new BlenderErrorInfo(BlenderErrorCode.ProcessExitedUnexpectedly,
-                        $"{operation} process exited with code {proc.ExitCode}",
-                        $"Check error_log.txt for stdout/stderr.", "Review Blender script and log.");
+                        reason, "Check error_log.txt for stdout/stderr and Python traceback.",
+                        "Verify sculpt_input.json exists. Script path logged at launch.");
                     ReportBlenderError(err);
                 }
             };
@@ -191,7 +203,7 @@ public class BlenderService
             proc.BeginErrorReadLine();
             _lastBlenderProcess = proc;
 
-            Log($"{operation} gestartet (PID {proc.Id})");
+            Log($"{operation} gestartet (PID {proc.Id})" + (keepAlive ? " - Blender bleibt offen" : ""));
             AppLogger.Write($"[Blender] {operation} started PID={proc.Id}");
         }
         catch (System.ComponentModel.Win32Exception ex)

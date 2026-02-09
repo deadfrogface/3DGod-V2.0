@@ -87,6 +87,14 @@ public partial class FormPanel : UserControl
         }
     }
 
+    public void RefreshModelState()
+    {
+        var enabled = _cs.IsCurrentModelRigged;
+        SlidersPanel.IsEnabled = enabled;
+        foreach (var kv in _sliders)
+            kv.Value.IsEnabled = enabled;
+    }
+
     private void BtnMale_Click(object sender, RoutedEventArgs e)
     {
         DebugLog.Write("[Form] Männlich gewählt");

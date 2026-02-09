@@ -152,18 +152,36 @@ public partial class MainWindow : Window
                 if (content != null)
                 {
                     var validation = ModelValidator.Validate(path);
+                    _characterSystem.IsCurrentModelRigged = validation.HasRig && validation.HasSkin;
+
                     if (!validation.IsValid)
                     {
+                        AppLogger.Write($"[Viewport] Model validation FAILED: {validation.Message}", isError: true);
                         DebugLog.Write($"[Viewport] Model validation: {validation.Message}");
-                        AppLogger.Write($"[Viewport] Model validation failed: {validation.Message}", isError: true);
+                        MessageBox.Show($"Modell ungültig: {validation.Message}\n\nPfad: {path}",
+                            "Modellfehler", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                    else if (!string.IsNullOrEmpty(validation.Message))
+                    else if (!_characterSystem.IsCurrentModelRigged)
                     {
-                        DebugLog.Write($"[Viewport] {validation.Message}");
+                        AppLogger.Write($"[Viewport] Model has no armature/skin. Deformation sliders cannot work.", isError: true);
+                        DebugLog.Write("[Viewport] Model has no armature/skin. Slider-Deformationen funktionieren nicht.");
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            var r = MessageBox.Show(
+                                "Das geladene Modell hat KEIN Skelett/Armature.\n\n" +
+                                "Slider-Deformationen funktionieren nur mit rigged Modellen.\n\n" +
+                                "Bitte verwende ein rigged Base-Modell oder deaktiviere die Deformations-Slider.",
+                                "Modell nicht rigged",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                        });
                     }
+
                     var vp = CreateViewport3D(content);
                     ViewportHost.Child = vp;
                     ApplySculptTransform(_characterSystem.SculptData);
+                    if (FormPanel.Content is FormPanel fp)
+                        fp.RefreshModelState();
                     DebugLog.Write($"[Viewport] GLB-Modell geladen: {path}");
                 }
                 else
@@ -244,7 +262,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Apply slider values as translation (move) in 3D space. Values 0-100 map to offsets.
+    /// Apply slider values as POSITION/translation only (no scale).
+    /// WPF 3D: Y = up (vertical). World space.
     /// </summary>
     public void ApplySculptTransform(Dictionary<string, int> sculptData)
     {
@@ -254,14 +273,18 @@ public partial class MainWindow : Window
         var hipWidth = sculptData.GetValueOrDefault("hip_width", 50);
         var breastSize = sculptData.GetValueOrDefault("breast_size", 50);
 
-        var scale = 0.02;
-        var y = (height - 50) * scale;
-        var x = (hipWidth - 50) * scale * 0.5;
-        var z = (breastSize - 50) * scale * 0.3;
+        var offsetFactor = 0.02;
+        var prevY = _sculptTranslateTransform.OffsetY;
+        var y = (height - 50) * offsetFactor;
+        var x = (hipWidth - 50) * offsetFactor * 0.5;
+        var z = (breastSize - 50) * offsetFactor * 0.3;
 
         _sculptTranslateTransform.OffsetX = x;
         _sculptTranslateTransform.OffsetY = y;
         _sculptTranslateTransform.OffsetZ = z;
+
+        if (Math.Abs(y - prevY) > 0.0001)
+            AppLogger.Write($"[Slider] Position Y changed from {prevY:F3} to {y:F3} (height={height})");
     }
 
     private string GetAnatomyPreviewPath(Dictionary<string, bool> anatomy)

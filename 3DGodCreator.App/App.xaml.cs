@@ -19,6 +19,7 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppLogger.LogException(e.Exception, "DispatcherUnhandledException");
+        AppLogger.SetShutdownReason($"CRASH: {e.Exception.GetType().Name}: {e.Exception.Message}");
         DebugLog.Write($"[FATAL] Unbehandelte Exception: {e.Exception.Message}");
         e.Handled = true;
     }
@@ -26,6 +27,9 @@ public partial class App : Application
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (e.ExceptionObject is Exception ex)
+        {
             AppLogger.LogException(ex, "UnhandledException");
+            AppLogger.SetShutdownReason($"CRASH: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }

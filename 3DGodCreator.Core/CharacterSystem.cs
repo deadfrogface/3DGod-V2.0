@@ -25,6 +25,7 @@ public class CharacterSystem
     public IViewport? Viewport { get; set; }
     public Action? SliderSyncCallback { get; set; }
     public Action? AnatomySyncCallback { get; set; }
+    public bool IsCurrentModelRigged { get; set; }
 
     public CharacterSystem(ConfigService configService, BlenderService blenderService, PresetService presetService)
     {
@@ -124,6 +125,9 @@ public class CharacterSystem
                 var dict = new Dictionary<string, object>();
                 foreach (var kv in SculptData)
                     dict[kv.Key] = kv.Value;
+                var charPath = Path.GetFullPath(Path.Combine(_basePath, GetCurrentModelPath()));
+                if (File.Exists(charPath))
+                    dict["_character_path"] = charPath;
                 _blenderService.SendSculptData(dict);
             }, null, 150, System.Threading.Timeout.Infinite);
         }
@@ -134,6 +138,9 @@ public class CharacterSystem
         var dict = new Dictionary<string, object>();
         foreach (var kv in SculptData)
             dict[kv.Key] = kv.Value;
+        var charPath = Path.GetFullPath(Path.Combine(_basePath, GetCurrentModelPath()));
+        if (File.Exists(charPath))
+            dict["_character_path"] = charPath;
         _blenderService.SendSculptData(dict);
         _blenderService.LaunchSculpt();
     }

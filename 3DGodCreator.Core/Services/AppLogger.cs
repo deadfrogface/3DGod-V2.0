@@ -25,10 +25,14 @@ public static class AppLogger
             _logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error_log.txt");
             try
             {
+                var lastShutdown = ReadLastShutdownReason();
                 _writer = new StreamWriter(_logPath, append: true, Encoding.UTF8) { AutoFlush = true };
                 AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
                 _writer.WriteLine();
                 _writer.WriteLine($"========== Session: {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==========");
+                if (!string.IsNullOrEmpty(lastShutdown))
+                    _writer.WriteLine($"[Startup] Last shutdown: {lastShutdown}");
+                _writer.WriteLine($"[Log] Log file write verified at {_logPath}");
                 _writer.Flush();
                 _initialized = true;
             }
@@ -39,15 +43,36 @@ public static class AppLogger
         }
     }
 
+    private static string? ReadLastShutdownReason()
+    {
+        try
+        {
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".last_shutdown.txt");
+            if (File.Exists(path))
+            {
+                var s = File.ReadAllText(path).Trim();
+                File.Delete(path);
+                return s;
+            }
+        }
+        catch { }
+        return null;
+    }
+
     private static void OnProcessExit(object? sender, EventArgs e)
     {
         lock (_lock)
         {
             try
             {
-                _writer?.WriteLine($"[{DateTime.Now:HH:mm:ss}] Process exiting.");
+                var shutdownPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".last_shutdown.txt");
+                var reason = File.Exists(shutdownPath) ? File.ReadAllText(shutdownPath).Trim() : "Normal exit";
+                _writer?.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Process exiting. Reason: {reason}");
                 _writer?.Flush();
                 _writer?.Dispose();
+                _writer = null;
+                if (!File.Exists(shutdownPath))
+                    File.WriteAllText(shutdownPath, "Normal exit");
             }
             catch { }
         }
@@ -113,4 +138,13 @@ public static class AppLogger
     }
 
     public static string GetLogFilePath() => _logPath;
+
+    public static void SetShutdownReason(string reason)
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".last_shutdown.txt"), reason);
+        }
+        catch { }
+    }
 }
