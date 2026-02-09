@@ -1,6 +1,6 @@
-# 3D God Creator – C#/.NET
+# 3D God Creator V2.0 – C#/.NET
 
-Native C#-Version des 3D God Creator. Kein Python, kein PyTorch, kein pip.
+Native C#-Migration des 3D God Creator (Python V1.2). Kein Python-Runtime, kein PyTorch.
 
 ## Anforderungen
 
@@ -11,31 +11,36 @@ Native C#-Version des 3D God Creator. Kein Python, kein PyTorch, kein pip.
 ## Build & Start
 
 ```powershell
-cd 3DGodCreator
+cd 3DGod-V2.0
 dotnet build
 dotnet run --project 3DGodCreator.App
 ```
 
 Beim ersten Build werden `assets/` und `blender_embed/` ins Ausgabeverzeichnis kopiert.
 
-## Projektstruktur
+## Funktionen (vollständige Migration)
 
-- **3DGodCreator.Core** – Domain, Services, Models
-- **3DGodCreator.App** – WPF-UI
-- **blender_embed/** – Python-Skripte für Blender (werden von Blender ausgeführt)
+| Tab | Funktionen |
+|-----|------------|
+| **Form** | Körperform-Slider (body_parameters.json), männlich/weiblich |
+| **Sculpt** | Symmetrie, Blender-Sculpting starten |
+| **NSFW** | Anatomie-Layer (Haut, Fett, Muskeln, Knochen, Organe), NSFW-Layer |
+| **Kleidung** | Kleidung, Piercings, Tattoos laden |
+| **Physik** | Brustphysik, Stoffsimulation, Piercing-Schwingung |
+| **Material** | Material-Farben (skin, clothes, piercings, tattoos) |
+| **Presets** | Preset-Liste, laden, Screenshot speichern |
+| **Rigging** | Auto-Rig, Metahuman-Export |
+| **Export** | Preset speichern, FBX exportieren, Unreal-Export |
+| **Einstellungen** | Blender-Pfad, Theme (Dark/Light/Cyberpunk), NSFW, Controller |
+| **KI** | Text-/Bildbasierte Erzeugung (Phase 2: Stub) |
 
-## Funktionen (Phase 1–3)
-
-- **Phase 1:** UI, CharacterSystem, Blender-Anbindung, 3D-Viewport (HelixToolkit)
-- **Phase 2:** AI-Service-Layer (ONNX/HTTP-Stubs)
-- **Phase 3:** System-Check, Debug-Konsole
+**F12** – Debug-Konsole ein-/ausblenden
 
 ## Blender-Pfad
 
-Blender-Pfad in den **Einstellungen** setzen, z.B.:
-
-`C:\Program Files\Blender Foundation\Blender 4.0\blender.exe`
+In **Einstellungen** setzen: `C:\Program Files\Blender Foundation\Blender 4.0\blender.exe`
 
 ## Assets
 
-`assets/characters/male_base.glb` und `female_base.glb` liegen im Projekt und werden beim Build kopiert.
+- `assets/characters/male_base.glb`, `female_base.glb` – Basis-Modelle
+- `assets/view_preview/` – Anatomie-Vorschau (HelixToolkit unterstützt kein GLB)

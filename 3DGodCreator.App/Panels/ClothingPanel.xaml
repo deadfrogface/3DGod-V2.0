@@ -3,6 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Margin="8">
         <TextBlock Text="Kleidung &amp; Assets" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-        <Button Content="Kleidung hinzufügen" Padding="12,6" Margin="0,0,0,4" Click="BtnAddClothes_Click"/>
+        <TextBlock Text="Kleidung:" Foreground="Gray" Margin="0,0,0,2"/>
+        <Button Content="Lade Kleidung" Padding="12,6" Margin="0,0,0,8" Click="BtnClothes_Click"/>
+        <TextBlock Text="Piercings:" Foreground="Gray" Margin="0,0,0,2"/>
+        <Button Content="Lade Piercings" Padding="12,6" Margin="0,0,0,8" Click="BtnPiercings_Click"/>
+        <TextBlock Text="Tattoos:" Foreground="Gray" Margin="0,0,0,2"/>
+        <Button Content="Lade Tattoos" Padding="12,6" Margin="0,0,0,4" Click="BtnTattoos_Click"/>
     </StackPanel>
 </UserControl>

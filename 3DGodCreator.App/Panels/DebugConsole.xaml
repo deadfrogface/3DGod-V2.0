@@ -1,0 +1,40 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.DebugConsole"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8" Background="#1e1e1e">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="🛠 Debug-Konsole (F12)" FontSize="14" Foreground="White" Margin="0,0,0,6"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
+            <CheckBox x:Name="ChkSculpt" Content="Sculpt" Foreground="Gray" Margin="0,0,12,0" Checked="FilterChanged" Unchecked="FilterChanged"/>
+            <CheckBox x:Name="ChkExport" Content="Export" Foreground="Gray" Margin="0,0,12,0" Checked="FilterChanged" Unchecked="FilterChanged"/>
+            <CheckBox x:Name="ChkRig" Content="Rig" Foreground="Gray" Margin="0,0,12,0" Checked="FilterChanged" Unchecked="FilterChanged"/>
+            <CheckBox x:Name="ChkAi" Content="AI" Foreground="Gray" Margin="0,0,12,0" Checked="FilterChanged" Unchecked="FilterChanged"/>
+            <CheckBox x:Name="ChkAll" Content="Alle" Foreground="Gray" Checked="FilterChanged" Unchecked="FilterChanged"/>
+        </StackPanel>
+        <TextBox x:Name="SearchBox" Grid.Row="2" Padding="8,4" Margin="0,0,0,4" Foreground="White" Background="#333"
+                 TextChanged="SearchBox_TextChanged" Tag="🔍 Suche..."/>
+        <TextBox x:Name="OutputBox" Grid.Row="3" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                 Foreground="#cccccc" Background="#252526" Padding="8" FontFamily="Consolas" FontSize="11"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 BorderThickness="0" MinHeight="120"/>
+        <Border Grid.Row="4" Margin="0,8,0,4" Padding="0" Background="#333" CornerRadius="2">
+            <Grid>
+                <TextBlock x:Name="ChatPlaceholder" Text="💬 Frag Froggy (z.B. Warum funktioniert Blender nicht?)" Foreground="#888" Margin="12,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+                <TextBox x:Name="ChatInput" Padding="8,6" Foreground="White" Background="Transparent" BorderThickness="0"
+                         KeyDown="ChatInput_KeyDown" GotFocus="ChatInput_GotFocus" LostFocus="ChatInput_LostFocus" TextChanged="ChatInput_TextChanged"/>
+            </Grid>
+        </Border>
+        <StackPanel Grid.Row="5" Orientation="Horizontal">
+            <Button x:Name="BtnFroggy" Content="🐸 Froggy fragen" Padding="12,6" Margin="0,0,8,0" Click="BtnFroggy_Click" ToolTip="Analysiert die Logs und schlägt Lösungen vor"/>
+            <Button x:Name="BtnClear" Content="🧹 Leeren" Padding="12,6" Margin="0,0,8,0" Click="BtnClear_Click"/>
+            <Button x:Name="BtnSystemCheck" Content="System-Check" Padding="12,6" Click="BtnSystemCheck_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

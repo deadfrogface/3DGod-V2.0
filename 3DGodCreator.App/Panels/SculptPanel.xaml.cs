@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using ThreeDGodCreator.App;
 using ThreeDGodCreator.Core;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -20,6 +21,7 @@ public partial class SculptPanel : UserControl
     private void BtnStart_Click(object sender, RoutedEventArgs e)
     {
         StatusLabel.Text = "Sculpting wird geladen...";
+        DebugLog.Write("[Sculpt] Starte Blender Sculpting...");
         _cs.Sculpt();
         StatusLabel.Text = "Sculpting-Modus aktiv (in Blender)";
     }

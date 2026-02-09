@@ -189,6 +189,20 @@ public class CharacterSystem
     {
         return Path.Combine("assets", "characters", $"{Config.Gender}_base.glb");
     }
+
+    public void SetMaterialColor(string matKey, string hexColor)
+    {
+        if (Materials.TryGetValue(matKey, out var mat))
+        {
+            mat.Color = hexColor;
+            RefreshLayers();
+        }
+    }
+
+    public void CreateAutoRig()
+    {
+        _blenderService.LaunchAutoRig();
+    }
 }
 
 public interface IViewport

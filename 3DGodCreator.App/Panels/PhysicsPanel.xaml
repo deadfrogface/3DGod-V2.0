@@ -1,0 +1,10 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.PhysicsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Physikoptionen" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <CheckBox x:Name="ChkBreasts" Content="Brustphysik (Softbody)" Foreground="White" Margin="0,2" Checked="OnChanged" Unchecked="OnChanged"/>
+        <CheckBox x:Name="ChkCloth" Content="Stoffsimulation (Kleidung)" Foreground="White" Margin="0,2" Checked="OnChanged" Unchecked="OnChanged"/>
+        <CheckBox x:Name="ChkPiercing" Content="Piercing-Schwingung" Foreground="White" Margin="0,2" Checked="OnChanged" Unchecked="OnChanged"/>
+    </StackPanel>
+</UserControl>

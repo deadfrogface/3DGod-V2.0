@@ -1,0 +1,11 @@
+# Build
+bin/
+obj/
+*.user
+*.suo
+
+# Visual Studio
+.vs/
+
+# User config (local paths, etc.)
+config.json

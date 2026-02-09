@@ -1,0 +1,11 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.PresetBrowserPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Presets durchsuchen" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <ListBox x:Name="PresetList" MinHeight="150" Margin="0,0,0,8" Foreground="White" Background="#333"
+                 SelectionChanged="PresetList_SelectionChanged"/>
+        <Button Content="Liste aktualisieren" Padding="12,6" Margin="0,0,0,4" Click="BtnRefresh_Click"/>
+        <Button Content="Screenshot für ausgewähltes Preset speichern" Padding="12,6" Click="BtnScreenshot_Click"/>
+    </StackPanel>
+</UserControl>

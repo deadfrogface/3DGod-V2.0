@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <RootNamespace>ThreeDGodCreator.App</RootNamespace>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
@@ -12,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="HelixToolkit.Wpf" Version="2.25.0" />
+    <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
     <ProjectReference Include="..\3DGodCreator.Core\3DGodCreator.Core.csproj" />
   </ItemGroup>
 

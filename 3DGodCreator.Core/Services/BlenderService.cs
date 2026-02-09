@@ -45,12 +45,8 @@ public class BlenderService
 
     public void LaunchSculpt()
     {
+        if (!EnsureBlender()) { Log("Blender nicht konfiguriert."); return; }
         var blenderPath = GetBlenderPath();
-        if (!File.Exists(blenderPath) && blenderPath != "blender")
-        {
-            Log("Blender nicht gefunden: " + blenderPath);
-            return;
-        }
 
         var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "apply_sculpt_standalone.py"));
         if (!File.Exists(scriptPath))
@@ -82,8 +78,14 @@ public class BlenderService
         }
     }
 
+    public void LaunchAutoRig()
+    {
+        LaunchSculpt();
+    }
+
     public void ExportFbx(string filename = "exported_character")
     {
+        if (!EnsureBlender()) { Log("Blender nicht konfiguriert."); return; }
         var blenderPath = GetBlenderPath();
         var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "export_fbx.py"));
 
@@ -112,6 +114,24 @@ public class BlenderService
     }
 
     public event Action<string>? OnLog;
+    public event Action? OnBlenderNotFound;
+
+    public bool IsBlenderConfigured()
+    {
+        var p = GetBlenderPath();
+        return !string.IsNullOrEmpty(p) && p != "blender" && File.Exists(p);
+    }
 
     private void Log(string msg) => OnLog?.Invoke(msg);
+
+    private bool EnsureBlender()
+    {
+        var p = GetBlenderPath();
+        if (string.IsNullOrEmpty(p) || p == "blender" || !File.Exists(p))
+        {
+            OnBlenderNotFound?.Invoke();
+            return false;
+        }
+        return true;
+    }
 }

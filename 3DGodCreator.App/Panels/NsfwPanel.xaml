@@ -3,8 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Margin="8">
         <TextBlock Text="NSFW-Einstellungen" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-        <TextBlock Text="Anatomie-Layer ein/aus" Foreground="Gray" Margin="0,0,0,4"/>
+        <TextBlock Text="Anatomie-Layer" Foreground="Gray" Margin="0,0,0,4"/>
+        <CheckBox x:Name="ChkSkin" Content="Haut" Foreground="White" Margin="0,2" Checked="OnAnatomyChanged" Unchecked="OnAnatomyChanged"/>
+        <CheckBox x:Name="ChkFat" Content="Fett" Foreground="White" Margin="0,2" Checked="OnAnatomyChanged" Unchecked="OnAnatomyChanged"/>
+        <CheckBox x:Name="ChkMuscle" Content="Muskeln" Foreground="White" Margin="0,2" Checked="OnAnatomyChanged" Unchecked="OnAnatomyChanged"/>
+        <CheckBox x:Name="ChkBone" Content="Knochen" Foreground="White" Margin="0,2" Checked="OnAnatomyChanged" Unchecked="OnAnatomyChanged"/>
+        <CheckBox x:Name="ChkOrgans" Content="Organe" Foreground="White" Margin="0,2" Checked="OnAnatomyChanged" Unchecked="OnAnatomyChanged"/>
+        <TextBlock Text="NSFW-Layer" Foreground="Gray" Margin="0,8,0,4"/>
         <CheckBox x:Name="ChkBreasts" Content="Brusten" Foreground="White" Margin="0,2" Checked="OnLayerChanged" Unchecked="OnLayerChanged"/>
         <CheckBox x:Name="ChkGenitals" Content="Genitalien" Foreground="White" Margin="0,2" Checked="OnLayerChanged" Unchecked="OnLayerChanged"/>
+        <CheckBox x:Name="ChkBodyhair" Content="Körperbehaarung" Foreground="White" Margin="0,2" Checked="OnLayerChanged" Unchecked="OnLayerChanged"/>
     </StackPanel>
 </UserControl>

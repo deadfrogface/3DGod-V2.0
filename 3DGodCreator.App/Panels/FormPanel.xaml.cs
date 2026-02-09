@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using ThreeDGodCreator.App;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -88,6 +89,7 @@ public partial class FormPanel : UserControl
 
     private void BtnMale_Click(object sender, RoutedEventArgs e)
     {
+        DebugLog.Write("[Form] Männlich gewählt");
         _cs.SetGender("male");
         _cs.LoadBaseModel("male");
         RefreshSliders();
@@ -95,6 +97,7 @@ public partial class FormPanel : UserControl
 
     private void BtnFemale_Click(object sender, RoutedEventArgs e)
     {
+        DebugLog.Write("[Form] Weiblich gewählt");
         _cs.SetGender("female");
         _cs.LoadBaseModel("female");
         RefreshSliders();

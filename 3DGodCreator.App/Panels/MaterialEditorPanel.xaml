@@ -1,0 +1,16 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.MaterialEditorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="8">
+        <TextBlock Text="Materialeditor" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <TextBlock Text="Material:" Foreground="Gray" Margin="0,0,0,2"/>
+        <ComboBox x:Name="CmbMaterial" Margin="0,0,0,8" SelectionChanged="CmbMaterial_SelectionChanged">
+            <ComboBoxItem Content="skin"/>
+            <ComboBoxItem Content="clothes"/>
+            <ComboBoxItem Content="piercings"/>
+            <ComboBoxItem Content="tattoos"/>
+        </ComboBox>
+        <Button Content="Farbe wählen" Padding="12,6" Margin="0,0,0,4" Click="BtnColor_Click"/>
+        <Button Content="Auf Preview anwenden" Padding="12,6" Click="BtnApply_Click"/>
+    </StackPanel>
+</UserControl>

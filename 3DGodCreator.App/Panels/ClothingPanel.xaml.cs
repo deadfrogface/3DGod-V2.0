@@ -14,9 +14,21 @@ public partial class ClothingPanel : UserControl
         _cs = cs;
     }
 
-    private void BtnAddClothes_Click(object sender, RoutedEventArgs e)
+    private void BtnClothes_Click(object sender, RoutedEventArgs e)
     {
         _cs.AddAsset("clothes");
+        _cs.RefreshLayers();
+    }
+
+    private void BtnPiercings_Click(object sender, RoutedEventArgs e)
+    {
+        _cs.AddAsset("piercings");
+        _cs.RefreshLayers();
+    }
+
+    private void BtnTattoos_Click(object sender, RoutedEventArgs e)
+    {
+        _cs.AddAsset("tattoos");
         _cs.RefreshLayers();
     }
 }

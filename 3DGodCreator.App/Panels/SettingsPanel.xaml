@@ -13,10 +13,13 @@
             <Button Grid.Column="1" Content="..." Padding="8,4" Click="BtnBrowseBlender_Click"/>
         </Grid>
         <TextBlock Text="Theme" Foreground="Gray" Margin="0,0,0,2"/>
-        <ComboBox x:Name="CmbTheme" Margin="0,0,0,8" SelectedIndex="0">
+        <ComboBox x:Name="CmbTheme" Margin="0,0,0,8" SelectionChanged="CmbTheme_SelectionChanged">
             <ComboBoxItem Content="Dark"/>
             <ComboBoxItem Content="Light"/>
+            <ComboBoxItem Content="Cyberpunk"/>
         </ComboBox>
+        <CheckBox x:Name="ChkNsfw" Content="NSFW-Modus aktivieren" Foreground="White" Margin="0,0,0,4" Checked="ChkNsfw_Changed" Unchecked="ChkNsfw_Changed"/>
+        <CheckBox x:Name="ChkController" Content="Controller-Unterstützung" Foreground="White" Margin="0,0,0,8" Checked="ChkController_Changed" Unchecked="ChkController_Changed"/>
         <Button x:Name="BtnDiagnostics" Content="System-Check" Padding="12,6" Margin="0,0,0,4" Click="BtnDiagnostics_Click"/>
     </StackPanel>
 </UserControl>
