@@ -20,7 +20,11 @@ public partial class MainWindow : Window
     private readonly string _basePath;
     private string _currentPreviewPath = "";
     private DebugConsole _debugConsole = null!;
-    private TranslateTransform3D? _sculptTranslateTransform;
+
+    /// <summary>
+    /// Scale for height slider (Größe). Model size, not position.
+    /// </summary>
+    private ScaleTransform3D? _sculptScaleTransform;
 
     public MainWindow()
     {
@@ -246,15 +250,26 @@ public partial class MainWindow : Window
         return group;
     }
 
+    /// <summary>
+    /// Creates viewport. Model centered at origin. Height slider controls scale (size).
+    /// Viewport: Rechtsklick = Drehen, Shift+Rechtsklick = Verschieben, Mausrad = Zoom.
+    /// </summary>
     private HelixViewport3D CreateViewport3D(Model3D content)
     {
-        _sculptTranslateTransform = new TranslateTransform3D(0, 0, 0);
+        var centerOffset = GetModelCenterOffset(content);
+        var centerTransform = new TranslateTransform3D(-centerOffset.X, -centerOffset.Y, -centerOffset.Z);
+        _sculptScaleTransform = new ScaleTransform3D(1, 1, 1);
+
         var transformGroup = new Transform3DGroup();
-        transformGroup.Children.Add(_sculptTranslateTransform);
+        transformGroup.Children.Add(_sculptScaleTransform);
+        transformGroup.Children.Add(centerTransform);
         var wrapper = new Model3DGroup { Transform = transformGroup };
         wrapper.Children.Add(content);
 
         var vp = new HelixViewport3D { Background = Brushes.Black };
+        vp.RotateGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick);
+        vp.PanGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick, System.Windows.Input.ModifierKeys.Shift);
+        vp.PanGesture2 = null; // Mausrad = Zoom, nicht Pan
         vp.Children.Add(new DefaultLights());
         vp.Children.Add(new ModelVisual3D { Content = wrapper });
         vp.ZoomExtents();
@@ -262,29 +277,54 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Apply slider values as POSITION/translation only (no scale).
-    /// WPF 3D: Y = up (vertical). World space.
+    /// Get model bounding box center so we can center at origin (decouple from feet/ground).
+    /// </summary>
+    private static Point3D GetModelCenterOffset(Model3D model)
+    {
+        var bounds = GetBounds(model, Matrix3D.Identity);
+        return new Point3D(
+            (bounds.X + bounds.SizeX) / 2,
+            (bounds.Y + bounds.SizeY) / 2,
+            (bounds.Z + bounds.SizeZ) / 2);
+    }
+
+    private static Rect3D GetBounds(Model3D model, Matrix3D parentMatrix)
+    {
+        var localMatrix = model.Transform?.Value ?? Matrix3D.Identity;
+        var worldMatrix = Matrix3D.Multiply(parentMatrix, localMatrix);
+
+        if (model is GeometryModel3D gm && gm.Geometry is MeshGeometry3D mesh)
+            return new MatrixTransform3D(worldMatrix).TransformBounds(mesh.Bounds);
+
+        if (model is Model3DGroup grp)
+        {
+            var union = Rect3D.Empty;
+            foreach (Model3D child in grp.Children)
+                union.Union(GetBounds(child, worldMatrix));
+            return union;
+        }
+        return Rect3D.Empty;
+    }
+
+    /// <summary>
+    /// Slider "Größe" (height) = Model scale (size). Slider "breast_size", "hip_width" = Blender only.
     /// </summary>
     public void ApplySculptTransform(Dictionary<string, int> sculptData)
     {
-        if (_sculptTranslateTransform == null) return;
+        if (_sculptScaleTransform == null) return;
 
         var height = sculptData.GetValueOrDefault("height", 50);
-        var hipWidth = sculptData.GetValueOrDefault("hip_width", 50);
-        var breastSize = sculptData.GetValueOrDefault("breast_size", 50);
 
-        var offsetFactor = 0.02;
-        var prevY = _sculptTranslateTransform.OffsetY;
-        var y = (height - 50) * offsetFactor;
-        var x = (hipWidth - 50) * offsetFactor * 0.5;
-        var z = (breastSize - 50) * offsetFactor * 0.3;
+        // Scale: 50 = 1.0, 0 = 0.6, 100 = 1.4 (uniform)
+        var s = 0.6 + (height / 100.0) * 0.8;
+        var prevS = _sculptScaleTransform.ScaleX;
 
-        _sculptTranslateTransform.OffsetX = x;
-        _sculptTranslateTransform.OffsetY = y;
-        _sculptTranslateTransform.OffsetZ = z;
+        _sculptScaleTransform.ScaleX = s;
+        _sculptScaleTransform.ScaleY = s;
+        _sculptScaleTransform.ScaleZ = s;
 
-        if (Math.Abs(y - prevY) > 0.0001)
-            AppLogger.Write($"[Slider] Position Y changed from {prevY:F3} to {y:F3} (height={height})");
+        if (Math.Abs(s - prevS) > 1e-6)
+            AppLogger.Write($"[Transform] Scale changed from {prevS:F3} to {s:F3} (height={height})");
     }
 
     private string GetAnatomyPreviewPath(Dictionary<string, bool> anatomy)
