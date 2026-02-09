@@ -42,5 +42,7 @@ In **Einstellungen** setzen: `C:\Program Files\Blender Foundation\Blender 4.0\bl
 
 ## Assets
 
-- `assets/characters/male_base.glb`, `female_base.glb` – Basis-Modelle
+- `assets/characters/male_base.glb`, `female_base.glb` – Basis-Modelle (rigged GLB für Slider/Blender)
 - `assets/view_preview/` – Anatomie-Vorschau (HelixToolkit unterstützt kein GLB)
+
+Rigged Ersatzmodelle (für Slider-/Blender-Tests): siehe **docs/BASE_MODELS.md**
