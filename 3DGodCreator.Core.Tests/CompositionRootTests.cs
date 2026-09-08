@@ -34,7 +34,7 @@ public class CompositionRootTests
             .BuildServiceProvider();
 
         Assert.NotNull(provider.GetService<IProjectService>());
-        Assert.Null(provider.GetService<IWorkerHost>());
+        Assert.NotNull(provider.GetService<IWorkerHost>());
         Assert.Null(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());

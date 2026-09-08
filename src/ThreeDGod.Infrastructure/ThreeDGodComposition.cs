@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Editing;
+using ThreeDGod.Workers;
 using ThreeDGod.Persistence;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
@@ -29,6 +30,7 @@ public static class ThreeDGodComposition
                 "Recovery");
             return new AutosaveService(root);
         });
+        services.AddSingleton<IWorkerHost, WorkerProcessHost>();
         services.AddSingleton<IDiagnosticService, DiagnosticService>();
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();

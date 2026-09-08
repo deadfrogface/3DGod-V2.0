@@ -11,7 +11,22 @@ public interface IProjectService
     Task<ProjectBundle> LoadAsync(string sourcePath, CancellationToken cancellationToken = default);
 }
 
-public interface IWorkerHost;
+public sealed record WorkerRequest(string Method, string JsonParams, string? JobId = null, string? BackendId = null);
+
+public sealed record WorkerRunResult(
+    bool Ok,
+    string? JsonPayload,
+    string? ErrorCode,
+    string? ErrorMessage,
+    int? ExitCode,
+    bool Crashed,
+    bool TimedOut,
+    bool Cancelled);
+
+public interface IWorkerHost
+{
+    Task<WorkerRunResult> RunAsync(string executable, IReadOnlyList<string> arguments, WorkerRequest request, TimeSpan timeout, CancellationToken cancellationToken = default);
+}
 
 public interface IBackendRegistry;
 
