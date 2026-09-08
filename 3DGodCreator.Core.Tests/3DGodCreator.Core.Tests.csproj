@@ -30,6 +30,10 @@
     <ProjectReference Include="..\src\ThreeDGod.Core\ThreeDGod.Core.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Persistence\ThreeDGod.Persistence.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Workers\ThreeDGod.Workers.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Mesh\ThreeDGod.Mesh.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Rendering\ThreeDGod.Rendering.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Export\ThreeDGod.Export.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.AI\ThreeDGod.AI.csproj" />
   </ItemGroup>
 
 </Project>

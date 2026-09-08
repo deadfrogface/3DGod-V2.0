@@ -23,6 +23,8 @@ public static class FeatureIds
     public const string ExportUnreal = "export.unreal";
     public const string PresetSave = "preset.save";
     public const string ViewportGlb = "viewport.glb";
+    public const string HeightMorph = "character.height.morph";
+    public const string ConfigSave = "config.save";
 }
 
 public interface IFeatureAvailabilityService

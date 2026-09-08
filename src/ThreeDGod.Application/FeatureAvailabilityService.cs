@@ -19,6 +19,8 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
         FeatureIds.AiGenerateAsset => FeatureAvailability.NotImplemented,
         FeatureIds.ControllerInput => FeatureAvailability.NotImplemented,
         FeatureIds.ExportUnreal => FeatureAvailability.NotImplemented,
+        FeatureIds.HeightMorph => FeatureAvailability.NotImplemented,
+        FeatureIds.ConfigSave => FeatureAvailability.Available,
         _ => FeatureAvailability.NotImplemented
     };
 
@@ -52,6 +54,9 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
                 "NotImplemented – keine Asset-Generierung.",
             FeatureIds.ControllerInput =>
                 "NotImplemented – Checkbox steuert kein Gamepad.",
+            FeatureIds.HeightMorph =>
+                "NotImplemented – Height is uniform scale, not anatomical morphing.",
+            FeatureIds.ConfigSave => "Available – Config-JSON wird gespeichert.",
             _ => GetStatus(featureId) switch
             {
                 FeatureAvailability.Available => "Available.",
