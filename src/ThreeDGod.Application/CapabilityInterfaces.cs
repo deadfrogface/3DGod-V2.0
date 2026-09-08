@@ -34,7 +34,12 @@ public interface IExportService;
 
 public interface IRiggingService;
 
-public interface IImageTo3DService;
+public interface IImageTo3DService
+{
+    FeatureAvailability Probe(string backendId = "triposr");
+    string ProbeMessage(string backendId = "triposr");
+    Task<string> GenerateGlbAsync(string imagePath, string destinationGlb, string backendId = "triposr", CancellationToken cancellationToken = default);
+}
 
 public interface IReferenceImageGenerationService
 {

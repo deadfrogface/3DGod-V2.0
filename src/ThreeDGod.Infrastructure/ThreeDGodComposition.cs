@@ -25,6 +25,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IProjectService, GodProjectArchive>();
         services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton<IReferenceImageGenerationService, ReferenceImageService>();
+        services.AddSingleton<IImageTo3DService, ImageTo3DService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

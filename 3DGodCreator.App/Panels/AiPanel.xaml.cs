@@ -34,7 +34,7 @@ public partial class AiPanel : UserControl
         TxtPrompt.IsEnabled = personOk || assetOk;
         StatusLabel.Text = annyOk
             ? _features.GetStatusMessage(FeatureIds.AnnyHuman)
-            : "Anny NotInstalled/NotImplemented – Prompt-Person und Asset erzeugen kein Mesh.";
+            : _features.GetStatusMessage(FeatureIds.ImageTo3D);
     }
 
     private void BtnLoadImage_Click(object sender, RoutedEventArgs e)

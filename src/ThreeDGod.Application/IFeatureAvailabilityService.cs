@@ -29,6 +29,7 @@ public static class FeatureIds
     public const string ExportGlb = "export.glb";
     public const string ProjectSave = "project.save";
     public const string ReferenceImageGenerate = "image.reference.generate";
+    public const string ImageTo3D = "image.to3d";
 }
 
 public interface IFeatureAvailabilityService

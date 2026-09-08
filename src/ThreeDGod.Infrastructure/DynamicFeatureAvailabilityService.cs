@@ -15,6 +15,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.ReferenceImageGenerate)
             return ReferenceImageRuntime.Probe().Availability;
+        if (featureId == FeatureIds.ImageTo3D)
+            return ImageTo3DRuntime.Probe("triposr").Availability;
         return _inner.GetStatus(featureId);
     }
 
@@ -34,6 +36,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – .3dgod ZIP save/load.";
         if (featureId == FeatureIds.ReferenceImageGenerate)
             return ReferenceImageRuntime.Probe().Message;
+        if (featureId == FeatureIds.ImageTo3D)
+            return ImageTo3DRuntime.Probe("triposr").Message;
         return _inner.GetStatusMessage(featureId);
     }
 }
