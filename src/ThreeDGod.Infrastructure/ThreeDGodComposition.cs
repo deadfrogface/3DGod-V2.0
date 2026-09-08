@@ -23,6 +23,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IFeatureAvailabilityService, DynamicFeatureAvailabilityService>();
         services.AddSingleton<AnnyHumanService>();
         services.AddSingleton<IProjectService, GodProjectArchive>();
+        services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

@@ -6,6 +6,13 @@
             <TextBlock Text="Anny Inspector" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
             <TextBlock x:Name="StatusLabel" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,0,0,8"/>
             <TextBlock Text="Körper / Local Shape / Gesicht. Debounced Preview. Kein Uniform-Scale." Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+            <TextBlock Text="Presets" Foreground="White" FontWeight="Bold" Margin="0,0,0,4"/>
+            <ComboBox x:Name="PresetCombo" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Button Content="Preset anwenden" Padding="10,4" Margin="0,0,8,0" Click="BtnApplyPreset_Click"/>
+                <Button Content="User-Preset speichern" Padding="10,4" Click="BtnSavePreset_Click"/>
+            </StackPanel>
+            <TextBox x:Name="TxtPresetName" Margin="0,0,0,8" Padding="6,2" Text="my-human"/>
             <StackPanel x:Name="SlidersHost"/>
         </StackPanel>
     </ScrollViewer>

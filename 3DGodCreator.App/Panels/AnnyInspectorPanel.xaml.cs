@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using ThreeDGod.Application;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
+using ThreeDGod.Persistence;
 using ThreeDGod.Workers;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -12,6 +13,7 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class AnnyInspectorPanel : UserControl
 {
     private readonly AnnyHumanService _anny;
+    private readonly AnnyPresetStore _presets = new();
     private readonly CommandStack _commands;
     private readonly Action<string> _loadPreview;
     private readonly DispatcherTimer _debounce;
@@ -48,7 +50,57 @@ public partial class AnnyInspectorPanel : UserControl
         }
 
         StatusLabel.Text = features.GetStatusMessage(FeatureIds.AnnyHuman);
+        RefreshPresetList();
         Loaded += async (_, _) => await LoadCatalogAsync();
+    }
+
+    private void RefreshPresetList()
+    {
+        PresetCombo.Items.Clear();
+        foreach (var preset in _presets.List())
+            PresetCombo.Items.Add((preset.BuiltIn ? "[built-in] " : "[user] ") + preset.Name);
+        if (PresetCombo.Items.Count > 0)
+            PresetCombo.SelectedIndex = 0;
+    }
+
+    private async void BtnApplyPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (PresetCombo.SelectedItem is not string item)
+            return;
+        var name = item.Replace("[built-in] ", "").Replace("[user] ", "").Trim();
+        try
+        {
+            var preset = _presets.Load(name);
+            var old = Clone(State);
+            var next = AnnyPresetMapper.ToState(preset);
+            await _commands.ExecuteAsync(new PropertyChangeCommand(
+                _targetId,
+                "anny.preset",
+                old,
+                next,
+                value => { _ = ApplyStateAsync((ParametricHumanState)value!, generate: true); },
+                "anny.preset"));
+            await ApplyStateAsync(next, generate: true);
+        }
+        catch (Exception ex)
+        {
+            StatusLabel.Text = ex.Message;
+        }
+    }
+
+    private void BtnSavePreset_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(TxtPresetName.Text) ? "my-human" : TxtPresetName.Text.Trim();
+            var path = _presets.SaveUser(AnnyPresetMapper.FromState(name, State, ["user"]));
+            RefreshPresetList();
+            StatusLabel.Text = $"User-Preset gespeichert: {path}";
+        }
+        catch (Exception ex)
+        {
+            StatusLabel.Text = ex.Message;
+        }
     }
 
     public async Task ApplyStateAsync(ParametricHumanState state, bool generate)

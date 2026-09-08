@@ -30,6 +30,7 @@ public class CompositionTests
         Assert.NotNull(provider.GetRequiredService<IWorkerHost>());
         Assert.IsType<ThreeDGod.Workers.WorkerProcessHost>(provider.GetRequiredService<IWorkerHost>());
         Assert.NotNull(provider.GetRequiredService<ThreeDGod.Workers.AnnyHumanService>());
+        Assert.NotNull(provider.GetRequiredService<AnnyPresetStore>());
         Assert.NotNull(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());

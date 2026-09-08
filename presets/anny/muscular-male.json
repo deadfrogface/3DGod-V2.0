@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "muscular-male",
+  "backend": "anny",
+  "phenotypes": {
+    "gender": 1.0,
+    "age": 0.4,
+    "muscle": 0.9,
+    "weight": 0.5,
+    "height": 0.55,
+    "proportions": 0.55
+  },
+  "localChanges": {},
+  "facialActions": {},
+  "tags": ["builtin", "body", "male"]
+}
