@@ -58,6 +58,7 @@ public sealed class WorkerProcessHost : IWorkerHost
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8
         };
+        psi.Environment["PYTHONUNBUFFERED"] = "1";
         foreach (var arg in arguments)
             psi.ArgumentList.Add(arg);
 
@@ -197,11 +198,14 @@ public sealed class WorkerProcessHost : IWorkerHost
             var line = await reader.ReadLineAsync(ct);
             if (line is null)
                 return null;
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed[0] != '{')
+                continue;
             if (Encoding.UTF8.GetByteCount(line) > MaxLineBytes)
                 throw new WorkerProtocolException("OversizedLine", $"Worker line exceeded {MaxLineBytes} bytes.");
             try
             {
-                return JsonSerializer.Deserialize<JsonElement>(line);
+                return JsonSerializer.Deserialize<JsonElement>(trimmed);
             }
             catch (JsonException)
             {

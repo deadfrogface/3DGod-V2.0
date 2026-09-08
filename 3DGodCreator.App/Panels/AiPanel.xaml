@@ -8,6 +8,7 @@
                  Text="z.B. 'muscular elf warrior'" IsEnabled="False"/>
         <Button x:Name="BtnLoadImage" Content="Bild laden" Padding="12,6" Margin="0,0,0,4" Click="BtnLoadImage_Click"/>
         <TextBlock x:Name="LblImage" Text="Kein Bild ausgewählt" Foreground="Gray" Margin="0,0,0,8"/>
+        <Button x:Name="BtnAnnyHuman" Content="Anny-Human erzeugen" Padding="12,6" Margin="0,0,0,4" Click="BtnAnnyHuman_Click"/>
         <Button x:Name="BtnGeneratePerson" Content="Erzeuge vollständige Person" Padding="12,6" Margin="0,0,0,4" Click="BtnGeneratePerson_Click"/>
         <Button x:Name="BtnGenerateAsset" Content="Erzeuge Asset (Kleidung)" Padding="12,6" Margin="0,0,0,4" Click="BtnGenerateAsset_Click"/>
         <TextBlock x:Name="StatusLabel" Foreground="Gray" Margin="0,8,0,0" TextWrapping="Wrap"/>

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using ThreeDGod.Application;
+using ThreeDGod.Export;
 using ThreeDGodCreator.App;
 using ThreeDGodCreator.Core;
 
@@ -12,20 +13,24 @@ public partial class ExportPanel : UserControl
 {
     private readonly CharacterSystem _cs;
     private readonly string _basePath;
+    private readonly Func<string> _currentPreview;
 
     private readonly IFeatureAvailabilityService _features;
 
-    public ExportPanel(CharacterSystem cs, IFeatureAvailabilityService features)
+    public ExportPanel(CharacterSystem cs, IFeatureAvailabilityService features, Func<string> currentPreview)
     {
         InitializeComponent();
         _cs = cs;
         _features = features;
+        _currentPreview = currentPreview;
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
         BtnSavePreset.IsEnabled = _features.IsInvocable(FeatureIds.PresetSave);
         BtnExportFbx.IsEnabled = _features.IsInvocable(FeatureIds.ExportFbx);
         BtnExportUnreal.IsEnabled = _features.IsInvocable(FeatureIds.ExportUnreal);
+        BtnExportGlb.IsEnabled = _features.IsInvocable(FeatureIds.ExportGlb);
         WriteLog(_features.GetStatusMessage(FeatureIds.PresetSave), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
+        WriteLog(_features.GetStatusMessage(FeatureIds.ExportGlb), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "INFO");
     }
 
@@ -65,6 +70,31 @@ public partial class ExportPanel : UserControl
         catch (Exception ex)
         {
             WriteLog($"Fehler beim Export: {ex.Message}", "ERROR");
+        }
+    }
+
+    private void BtnExportGlb_Click(object sender, RoutedEventArgs e)
+    {
+        var src = _currentPreview();
+        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
+        {
+            WriteLog("Kein verifiziertes Viewport-GLB zum Export.", "WARN");
+            return;
+        }
+        var dlg = new SaveFileDialog
+        {
+            Filter = "GLB|*.glb",
+            FileName = (TxtFilename.Text.Trim().Length == 0 ? "character" : TxtFilename.Text.Trim()) + ".glb"
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            GlbExportService.Export(src, dlg.FileName);
+            WriteLog($"GLB geschrieben: {dlg.FileName}", "INFO");
+        }
+        catch (Exception ex)
+        {
+            WriteLog($"GLB-Export fehlgeschlagen: {ex.Message}", "ERROR");
         }
     }
 

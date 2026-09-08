@@ -1,0 +1,11 @@
+[project]
+name = "3dgod-anny"
+version = "0.1.0"
+description = "Isolated 3D God Anny worker. Script only. Apache-2.0 / CC0. No SMPL-X."
+requires-python = ">=3.12"
+dependencies = [
+    "anny>=0.6.0",
+]
+
+[tool.uv]
+package = false

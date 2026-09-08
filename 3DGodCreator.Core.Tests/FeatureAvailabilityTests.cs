@@ -36,12 +36,23 @@ public class FeatureAvailabilityTests
     }
 
     [Fact]
+    public void DynamicService_ReportsAnnyFromRuntimeProbe()
+    {
+        var svc = new DynamicFeatureAvailabilityService();
+        var status = svc.GetStatus(FeatureIds.AnnyHuman);
+        Assert.DoesNotContain("success", svc.GetStatusMessage(FeatureIds.AnnyHuman), StringComparison.OrdinalIgnoreCase);
+        Assert.True(status is FeatureAvailability.Experimental or FeatureAvailability.NotInstalled);
+        Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.ExportGlb));
+        Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.ProjectSave));
+    }
+
+    [Fact]
     public void Di_RegistersFeatureAvailabilityService()
     {
         using var provider = new ServiceCollection()
             .AddThreeDGodCoreServices()
             .BuildServiceProvider();
         var svc = provider.GetRequiredService<IFeatureAvailabilityService>();
-        Assert.IsType<FeatureAvailabilityService>(svc);
+        Assert.IsType<DynamicFeatureAvailabilityService>(svc);
     }
 }

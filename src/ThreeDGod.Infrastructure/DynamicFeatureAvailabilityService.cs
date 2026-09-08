@@ -1,0 +1,35 @@
+using ThreeDGod.Application;
+using ThreeDGod.Workers;
+
+namespace ThreeDGod.Infrastructure;
+
+public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityService
+{
+    private readonly FeatureAvailabilityService _inner = new();
+
+    public FeatureAvailability GetStatus(string featureId)
+    {
+        if (featureId == FeatureIds.AnnyHuman)
+            return AnnyRuntime.Probe().Availability;
+        if (featureId == FeatureIds.ExportGlb || featureId == FeatureIds.ProjectSave)
+            return FeatureAvailability.Available;
+        return _inner.GetStatus(featureId);
+    }
+
+    public bool IsInvocable(string featureId)
+    {
+        var status = GetStatus(featureId);
+        return status is FeatureAvailability.Available or FeatureAvailability.Experimental;
+    }
+
+    public string GetStatusMessage(string featureId)
+    {
+        if (featureId == FeatureIds.AnnyHuman)
+            return AnnyRuntime.Probe().Message;
+        if (featureId == FeatureIds.ExportGlb)
+            return "Available – GLB export copies a verified source mesh.";
+        if (featureId == FeatureIds.ProjectSave)
+            return "Available – .3dgod ZIP save/load.";
+        return _inner.GetStatusMessage(featureId);
+    }
+}

@@ -23,12 +23,13 @@ public class CompositionTests
         Assert.NotNull(provider.GetRequiredService<CharacterSystem>());
         Assert.NotNull(provider.GetRequiredService<ICharacterModelService>());
         Assert.NotNull(provider.GetRequiredService<IFeatureAvailabilityService>());
-        Assert.IsType<FeatureAvailabilityService>(provider.GetRequiredService<IFeatureAvailabilityService>());
+        Assert.IsType<DynamicFeatureAvailabilityService>(provider.GetRequiredService<IFeatureAvailabilityService>());
 
         Assert.NotNull(provider.GetRequiredService<IProjectService>());
         Assert.IsType<GodProjectArchive>(provider.GetRequiredService<IProjectService>());
         Assert.NotNull(provider.GetRequiredService<IWorkerHost>());
         Assert.IsType<ThreeDGod.Workers.WorkerProcessHost>(provider.GetRequiredService<IWorkerHost>());
+        Assert.NotNull(provider.GetRequiredService<ThreeDGod.Workers.AnnyHumanService>());
         Assert.NotNull(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());

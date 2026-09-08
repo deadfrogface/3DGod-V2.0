@@ -71,7 +71,7 @@ public class WorkerProcessHostTests
 import sys
 sys.stdout.write('{"v":"3dgod-worker/1","type":"hello","worker":"echo"}\n')
 sys.stdout.flush()
-sys.stdout.write('not-json\n')
+sys.stdout.write('{not-json\n')
 sys.stdout.flush()
 sys.stdin.readline()
 """;

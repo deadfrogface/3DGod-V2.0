@@ -25,6 +25,9 @@ public static class FeatureIds
     public const string ViewportGlb = "viewport.glb";
     public const string HeightMorph = "character.height.morph";
     public const string ConfigSave = "config.save";
+    public const string AnnyHuman = "human.anny";
+    public const string ExportGlb = "export.glb";
+    public const string ProjectSave = "project.save";
 }
 
 public interface IFeatureAvailabilityService

@@ -20,7 +20,8 @@ public static class ThreeDGodComposition
         services.AddSingleton<ConfigService>();
         services.AddSingleton<PresetService>();
         services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
-        services.AddSingleton<IFeatureAvailabilityService, FeatureAvailabilityService>();
+        services.AddSingleton<IFeatureAvailabilityService, DynamicFeatureAvailabilityService>();
+        services.AddSingleton<AnnyHumanService>();
         services.AddSingleton<IProjectService, GodProjectArchive>();
         services.AddSingleton(sp =>
         {
@@ -39,6 +40,17 @@ public static class ThreeDGodComposition
                 Priority = 1,
                 State = BackendRuntimeState.Available,
                 License = new LicenseProfile { Id = "mit", Accepted = true },
+                Capabilities = new BackendCapabilities { HumanGenerate = true }
+            },
+            new BackendManifest
+            {
+                Id = "anny",
+                Priority = 100,
+                State = AnnyRuntime.Probe().Availability == FeatureAvailability.NotInstalled
+                    ? BackendRuntimeState.NotInstalled
+                    : BackendRuntimeState.Available,
+                License = new LicenseProfile { Id = "apache-2.0", Accepted = true },
+                Hardware = new HardwareRequirement { MinVramMb = 0, RequiresCuda = false },
                 Capabilities = new BackendCapabilities { HumanGenerate = true }
             }
         ]));

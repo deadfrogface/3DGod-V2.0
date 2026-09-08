@@ -7,10 +7,12 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top" Background="#2d2d2d" Foreground="White">
             <MenuItem Header="Datei">
-                <MenuItem Header="Neu / Create" IsEnabled="False" ToolTip="Project create uses .3dgod save/load APIs; UI wizard comes with library flow."/>
-                <MenuItem Header="Bibliothek" IsEnabled="False"/>
+                <MenuItem Header="Neu" Click="MenuNewProject_Click"/>
+                <MenuItem Header="Öffnen…" Click="MenuOpenProject_Click"/>
+                <MenuItem Header="Speichern unter…" Click="MenuSaveProject_Click"/>
                 <Separator/>
-                <MenuItem Header="Export GLB" IsEnabled="False" ToolTip="Use Export tab. GLB export service exists for verified files."/>
+                <MenuItem Header="Anny-Human erzeugen" Click="MenuAnnyGenerate_Click"/>
+                <MenuItem Header="Export GLB…" Click="MenuExportGlb_Click"/>
             </MenuItem>
             <MenuItem Header="Bearbeiten">
                 <MenuItem Header="Undo" Command="Undo"/>

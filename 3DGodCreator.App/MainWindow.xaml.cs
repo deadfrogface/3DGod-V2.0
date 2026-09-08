@@ -3,10 +3,14 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using Microsoft.Win32;
 using HelixToolkit.Wpf;
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
+using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
+using ThreeDGod.Export;
+using ThreeDGod.Workers;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
@@ -32,6 +36,8 @@ public partial class MainWindow : Window
     private readonly IFeatureAvailabilityService _features;
     private readonly CommandStack _commandStack;
     private readonly IDiagnosticService _diagnostics;
+    private readonly IProjectService _projects;
+    private readonly AnnyHumanService _anny;
 
     public MainWindow(
         ConfigService configService,
@@ -40,7 +46,9 @@ public partial class MainWindow : Window
         CharacterSystem characterSystem,
         IFeatureAvailabilityService features,
         CommandStack commandStack,
-        IDiagnosticService diagnostics)
+        IDiagnosticService diagnostics,
+        IProjectService projects,
+        AnnyHumanService anny)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -52,6 +60,8 @@ public partial class MainWindow : Window
         _features = features;
         _commandStack = commandStack;
         _diagnostics = diagnostics;
+        _projects = projects;
+        _anny = anny;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -98,9 +108,9 @@ public partial class MainWindow : Window
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
-        ExportPanel.Content = new ExportPanel(_characterSystem, _features);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features, () => _currentPreviewPath);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
-        AiPanel.Content = new AiPanel(_characterSystem, _features);
+        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview);
         ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
     }
 
@@ -399,6 +409,93 @@ public partial class MainWindow : Window
             System.Windows.Input.ApplicationCommands.Undo, System.Windows.Input.Key.Z, System.Windows.Input.ModifierKeys.Control));
         InputBindings.Add(new System.Windows.Input.KeyBinding(
             System.Windows.Input.ApplicationCommands.Redo, System.Windows.Input.Key.Y, System.Windows.Input.ModifierKeys.Control));
+    }
+
+    private async void MenuNewProject_Click(object sender, RoutedEventArgs e)
+    {
+        var bundle = new ProjectBundle { Project = new ProjectDocument { Name = "Untitled" } };
+        DebugLog.Write("[Project] Neues leeres Domain-Projekt im Speicher.");
+        await Task.CompletedTask;
+        _ = bundle;
+    }
+
+    private async void MenuOpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog { Filter = "3D God Projekt|*.3dgod", Title = "Projekt öffnen" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var bundle = await _projects.LoadAsync(dlg.FileName);
+            DebugLog.Write($"[Project] Geladen: {bundle.Project.Name} ({bundle.Project.ProjectId})");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Projekt öffnen", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void MenuSaveProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SaveFileDialog { Filter = "3D God Projekt|*.3dgod", Title = "Projekt speichern", FileName = "project.3dgod" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var bundle = new ProjectBundle
+            {
+                Project = new ProjectDocument { Name = Path.GetFileNameWithoutExtension(dlg.FileName) }
+            };
+            await _projects.SaveAsync(bundle, dlg.FileName);
+            DebugLog.Write($"[Project] Gespeichert: {dlg.FileName}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Projekt speichern", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void MenuAnnyGenerate_Click(object sender, RoutedEventArgs e)
+    {
+        var probe = _anny.Probe();
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            MessageBox.Show(probe.Message, "Anny", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        try
+        {
+            var dest = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", $"anny-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+            DebugLog.Write("[Anny] Erzeuge Human…");
+            var glb = await _anny.GenerateGlbAsync(dest);
+            LoadPreview(glb);
+            DebugLog.Write($"[Anny] GLB geladen: {glb}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Anny] {ex.Message}");
+            MessageBox.Show(ex.Message, "Anny", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void MenuExportGlb_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_currentPreviewPath) || !File.Exists(_currentPreviewPath))
+        {
+            MessageBox.Show("Kein verifiziertes Viewport-GLB zum Export.", "Export GLB", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dlg = new SaveFileDialog { Filter = "GLB|*.glb", FileName = "character.glb" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            GlbExportService.Export(_currentPreviewPath, dlg.FileName);
+            DebugLog.Write($"[Export] GLB geschrieben: {dlg.FileName}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Export GLB", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private class ViewportAdapter : IViewport

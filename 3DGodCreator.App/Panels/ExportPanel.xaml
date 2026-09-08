@@ -7,7 +7,8 @@
             <TextBlock Text="Dateiname:" Foreground="Gray" Margin="0,0,0,2"/>
             <TextBox x:Name="TxtFilename" Text="my_character" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
             <Button x:Name="BtnSavePreset" Content="Preset speichern" Padding="12,6" Margin="0,0,0,4" Click="BtnSavePreset_Click"/>
-            <Button x:Name="BtnExportFbx" Content="FBX exportieren" Padding="12,6" Margin="0,0,0,8" Click="BtnExport_Click"/>
+            <Button x:Name="BtnExportFbx" Content="FBX exportieren" Padding="12,6" Margin="0,0,0,4" Click="BtnExport_Click"/>
+            <Button x:Name="BtnExportGlb" Content="GLB exportieren" Padding="12,6" Margin="0,0,0,8" Click="BtnExportGlb_Click"/>
             <TextBlock Text="Unreal-Zielordner:" Foreground="Gray" Margin="0,0,0,2"/>
             <Grid Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>

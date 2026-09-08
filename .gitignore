@@ -9,3 +9,10 @@ obj/
 
 # User config (local paths, etc.)
 config.json
+
+# Python / Anny worker
+.venv/
+__pycache__/
+workers/anny/.venv/
+*.pyc
+
