@@ -19,6 +19,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return ImageTo3DRuntime.Probe("triposr").Availability;
         if (featureId == FeatureIds.AiGenerateAsset)
             return FeatureAvailability.Experimental;
+        if (featureId == FeatureIds.Remesh)
+            return FeatureAvailability.Available;
         return _inner.GetStatus(featureId);
     }
 
@@ -42,6 +44,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return ImageTo3DRuntime.Probe("triposr").Message;
         if (featureId == FeatureIds.AiGenerateAsset)
             return "Experimental – procedural catalog assets (jewelry). FLUX/TripoSR remain NotInstalled.";
+        if (featureId == FeatureIds.Remesh)
+            return "Available – in-process vertex-cluster remesh + spherical UVs. Not instant-meshes / xatlas.";
         return _inner.GetStatusMessage(featureId);
     }
 }

@@ -39,6 +39,8 @@ public class CompositionTests
         Assert.IsType<ImageTo3DService>(provider.GetRequiredService<IImageTo3DService>());
         Assert.NotNull(provider.GetRequiredService<IAssetGenerationService>());
         Assert.IsType<AiAssetPipeline>(provider.GetRequiredService<IAssetGenerationService>());
+        Assert.NotNull(provider.GetRequiredService<IRemeshService>());
+        Assert.IsType<RemeshService>(provider.GetRequiredService<IRemeshService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

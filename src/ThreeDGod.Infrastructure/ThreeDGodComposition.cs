@@ -28,6 +28,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
         services.AddSingleton<AssetLibrary>();
         services.AddSingleton<IAssetGenerationService, AiAssetPipeline>();
+        services.AddSingleton<IRemeshService, RemeshService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

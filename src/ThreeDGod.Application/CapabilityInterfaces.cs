@@ -46,6 +46,11 @@ public interface IAssetGenerationService
     Task<LibraryAsset> GenerateAsync(string prompt, CancellationToken cancellationToken = default);
 }
 
+public interface IRemeshService
+{
+    string RemeshGlb(string sourceGlb, string destinationGlb, RemeshProfile profile);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();
