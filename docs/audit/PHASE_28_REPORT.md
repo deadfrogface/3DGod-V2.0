@@ -1,8 +1,14 @@
-﻿# PHASE_28 Report
+﻿# PHASE 28 Report
 
-- Phase: 28 – SPAR3D
-- Status: **PASS**
+- Phase: 28 – SPAR3D Quality Provider
+- Status: **PASS** (Profile + Router, kein Fake-Mesh)
 
-NotInstalled.
+## Was wirklich existiert
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- Profile `normal` (12 GB) und `low-vram` (6 GB)
+- Router wählt SPAR3D nur bei License + CUDA + genug VRAM
+- Sonst kein Provider, kein Mesh
+
+## Nicht vorhanden
+
+- Kein SPAR3D-Install

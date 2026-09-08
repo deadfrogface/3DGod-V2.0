@@ -1,8 +1,15 @@
-﻿# PHASE_29 Report
+﻿# PHASE 29 Report
 
 - Phase: 29 – TRELLIS optional
-- Status: **PASS**
+- Status: **PASS** (optional, nicht ausgewählt)
 
-NotInstalled.
+## Was wirklich existiert
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- TRELLIS ist im Registry als optionales Backend
+- State **NotInstalled**, License nicht akzeptiert
+- Router wählt TRELLIS nicht automatisch
+- Probe nie Available, nie "success"
+
+## Nicht vorhanden
+
+- TRELLIS / TRELLIS.2 Runtime

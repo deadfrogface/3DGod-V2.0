@@ -11,14 +11,24 @@ public static class ImageTo3DRuntime
     {
         if (string.IsNullOrWhiteSpace(backendId))
             backendId = "triposr";
+        if (backendId is "sf3d" or "spar3d" && !StabilityLicense.IsAccepted(backendId))
+            return new GatedWorkerStatus
+            {
+                WorkerId = backendId,
+                Availability = FeatureAvailability.Disabled,
+                Message = $"LicenseBlocked – {backendId} requires accepted Stability Community License + attribution. No mesh will be generated."
+            };
+
         var gated = GatedWorkerCatalog.Probe(backendId);
         var hw = HardwareProfiler.Probe();
-        if (gated.Availability != FeatureAvailability.NotInstalled && !hw.Cuda && backendId != "triposr")
+        if (gated.Availability == FeatureAvailability.NotInstalled)
+            return gated;
+        if (ImageTo3DProfiles.Select(backendId, hw.VramMb, hw.Cuda) is null)
             return new GatedWorkerStatus
             {
                 WorkerId = backendId,
                 Availability = FeatureAvailability.UnsupportedHardware,
-                Message = $"UnsupportedHardware – {backendId} needs CUDA. No mesh will be faked."
+                Message = $"UnsupportedHardware – no {backendId} profile fits this machine. No mesh will be faked."
             };
         return gated;
     }
