@@ -5,6 +5,7 @@ using ThreeDGod.Workers;
 
 namespace ThreeDGodCreator.Core.Tests;
 
+[Collection("AnnySerial")]
 public class AnnyRuntimeTests
 {
     [Fact]

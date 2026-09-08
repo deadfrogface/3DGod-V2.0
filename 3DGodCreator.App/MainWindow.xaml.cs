@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private readonly IDiagnosticService _diagnostics;
     private readonly IProjectService _projects;
     private readonly AnnyHumanService _anny;
+    private AnnyInspectorPanel? _annyInspector;
 
     public MainWindow(
         ConfigService configService,
@@ -100,6 +101,8 @@ public partial class MainWindow : Window
     private void LoadPanels()
     {
         DebugConsoleHost.Content = new DebugConsole();
+        _annyInspector = new AnnyInspectorPanel(_anny, _features, _commandStack, LoadPreview);
+        AnnyPanel.Content = _annyInspector;
         FormPanel.Content = new FormPanel(_characterSystem);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
@@ -413,10 +416,9 @@ public partial class MainWindow : Window
 
     private async void MenuNewProject_Click(object sender, RoutedEventArgs e)
     {
-        var bundle = new ProjectBundle { Project = new ProjectDocument { Name = "Untitled" } };
+        if (_annyInspector is not null)
+            await _annyInspector.ApplyStateAsync(new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" }, generate: false);
         DebugLog.Write("[Project] Neues leeres Domain-Projekt im Speicher.");
-        await Task.CompletedTask;
-        _ = bundle;
     }
 
     private async void MenuOpenProject_Click(object sender, RoutedEventArgs e)
@@ -426,6 +428,9 @@ public partial class MainWindow : Window
         try
         {
             var bundle = await _projects.LoadAsync(dlg.FileName);
+            var state = bundle.Characters.FirstOrDefault()?.ParametricHumanState;
+            if (state is not null && _annyInspector is not null)
+                await _annyInspector.ApplyStateAsync(state, generate: _features.IsInvocable(FeatureIds.AnnyHuman));
             DebugLog.Write($"[Project] Geladen: {bundle.Project.Name} ({bundle.Project.ProjectId})");
         }
         catch (Exception ex)
@@ -440,9 +445,22 @@ public partial class MainWindow : Window
         if (dlg.ShowDialog() != true) return;
         try
         {
+            var state = _annyInspector is null ? new ParametricHumanState() : AnnyInspectorPanel.Clone(_annyInspector.State);
+            var character = new CharacterDocument
+            {
+                Name = Path.GetFileNameWithoutExtension(dlg.FileName),
+                CharacterKind = CharacterKind.ParametricHuman,
+                SourceRepresentation = SourceRepresentation.AnnyParameters,
+                ParametricHumanState = state
+            };
             var bundle = new ProjectBundle
             {
-                Project = new ProjectDocument { Name = Path.GetFileNameWithoutExtension(dlg.FileName) }
+                Project = new ProjectDocument
+                {
+                    Name = character.Name,
+                    CharacterIds = [character.CharacterId]
+                },
+                Characters = [character]
             };
             await _projects.SaveAsync(bundle, dlg.FileName);
             DebugLog.Write($"[Project] Gespeichert: {dlg.FileName}");

@@ -31,6 +31,9 @@
         </Grid.ColumnDefinitions>
 
         <TabControl x:Name="Tabs" Grid.Row="0" Grid.Column="0" Background="#2d2d2d" BorderThickness="0">
+            <TabItem Header="Anny">
+                <ContentControl x:Name="AnnyPanel"/>
+            </TabItem>
             <TabItem Header="Form">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ContentControl x:Name="FormPanel"/>

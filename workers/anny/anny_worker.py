@@ -44,6 +44,9 @@ def _to_numpy(value):
     return np.asarray(value)
 
 
+_MODEL = None
+
+
 def load_anny():
     real_out = sys.stdout
     sys.stdout = sys.stderr
@@ -56,35 +59,62 @@ def load_anny():
     return anny
 
 
+def get_model(anny):
+    global _MODEL
+    if _MODEL is None:
+        real_out = sys.stdout
+        sys.stdout = sys.stderr
+        try:
+            # Default Anny topology only. Never topology="smplx".
+            _MODEL = anny.Anny(phenotypes="all", local_changes="default", facial_actions="all")
+        finally:
+            sys.stdout = real_out
+    return _MODEL
+
+
+def _pick(keys, values):
+    picked = {}
+    for key in keys:
+        if key in values:
+            picked[key] = float(values[key])
+    return picked
+
+
 def catalog(anny):
-    model = anny.Anny()  # default topology="anny"; never SMPL-X
+    model = get_model(anny)
     labels = list(getattr(model, "phenotype_labels", []) or [])
-    bones = list(getattr(model, "bone_labels", []) or [])
+    local = list(getattr(model, "local_change_labels", []) or [])
+    face = list(getattr(model, "facial_action_labels", []) or [])
+    bones = [str(x) for x in (getattr(model, "bone_labels", None) or [])]
     return {
         "backendId": "anny",
         "backendVersion": getattr(anny, "__version__", "unknown"),
         "topology": "anny",
         "license": "Apache-2.0+CC0",
         "phenotypeKeys": labels,
+        "localChangeKeys": local,
+        "facialActionKeys": face,
         "boneLabels": bones,
-        "count": len(labels),
+        "count": len(labels) + len(local) + len(face),
     }
 
 
 def generate_obj(anny, params, dest: Path):
     import torch
 
-    model = anny.Anny()
-    labels = list(getattr(model, "phenotype_labels", []) or [])
-    kwargs = {}
-    for key in labels:
-        if key in params:
-            kwargs[key] = float(params[key])
+    model = get_model(anny)
+    phenotypes = _pick(getattr(model, "phenotype_labels", []) or [], params.get("phenotypes") or {})
+    local = _pick(getattr(model, "local_change_labels", []) or [], params.get("localChanges") or {})
+    face = _pick(getattr(model, "facial_action_labels", []) or [], params.get("facialActions") or {})
     real_out = sys.stdout
     sys.stdout = sys.stderr
     try:
         with torch.no_grad():
-            output = model(phenotype_kwargs=kwargs) if kwargs else model()
+            output = model(
+                phenotype_kwargs=phenotypes or None,
+                local_changes_kwargs=local or None,
+                facial_actions=face or None,
+            )
     finally:
         sys.stdout = real_out
     if not isinstance(output, dict) or "vertices" not in output:
@@ -119,7 +149,7 @@ def handle_request(msg):
         if method == "human.generate":
             dest = Path(params.get("objPath") or (Path.cwd() / "anny_human.obj"))
             send({"v": PROTOCOL, "type": "progress", "id": req_id, "percent": 20})
-            vcount, fcount = generate_obj(anny, params.get("phenotypes") or {}, dest)
+            vcount, fcount = generate_obj(anny, params, dest)
             send(
                 {
                     "v": PROTOCOL,
@@ -135,7 +165,7 @@ def handle_request(msg):
             )
             return
         if method == "human.get_rig":
-            model = anny.Anny()
+            model = get_model(anny)
             bones = [str(x) for x in (getattr(model, "bone_labels", None) or [])]
             if not bones:
                 error(req_id, "NotImplemented", "Anny default topology exposes no verified bone_labels.", "human.get_rig")

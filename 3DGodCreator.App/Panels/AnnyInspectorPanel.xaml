@@ -1,0 +1,12 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.AnnyInspectorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8">
+            <TextBlock Text="Anny Inspector" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+            <TextBlock x:Name="StatusLabel" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <TextBlock Text="Körper / Local Shape / Gesicht. Debounced Preview. Kein Uniform-Scale." Foreground="#888" FontSize="11" Margin="0,0,0,8"/>
+            <StackPanel x:Name="SlidersHost"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
