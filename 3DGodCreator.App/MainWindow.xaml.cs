@@ -54,24 +54,14 @@ public partial class MainWindow : Window
             DebugLog.Write($"[Startup] {line}");
         if (!readiness.AllCriticalPassed)
             DebugLog.Write($"[Startup] Einige Prüfungen fehlgeschlagen. Details: {StartupLogger.GetLogFilePath()}");
-        _blenderService.OnLog += msg => DebugLog.Write($"[Blender] {msg}");
+        _blenderService.OnLog += msg => DebugLog.Write($"[LegacyRuntime] {msg}");
         _blenderService.OnBlenderNotFound += () => Dispatcher.Invoke(() =>
         {
-            Tabs.SelectedIndex = 9;
-            MessageBox.Show(
-                "Blender wurde nicht gefunden.\n\nBitte setze den Blender-Pfad in den Einstellungen (z.B. C:\\Program Files\\Blender Foundation\\Blender 4.0\\blender.exe).",
-                "Blender fehlt",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            DebugLog.Write("[LegacyRuntime] Unavailable – capability not installed. App bleibt stabil.");
         });
         _blenderService.OnBlenderFailed += (info) => Dispatcher.Invoke(() =>
         {
-            Tabs.SelectedIndex = 9;
-            var msg = $"{info.Message}\n\n";
-            if (!string.IsNullOrEmpty(info.Detail)) msg += $"Details: {info.Detail}\n\n";
-            if (!string.IsNullOrEmpty(info.SuggestedFix)) msg += $"-> {info.SuggestedFix}\n\n";
-            msg += $"Log: {AppLogger.GetLogFilePath()}";
-            MessageBox.Show(msg, "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            DebugLog.Write($"[LegacyRuntime] {info.Code}: {info.Message}");
         });
 
         ApplyTheme(_configService.Load().Theme);

@@ -6,15 +6,15 @@ using ThreeDGodCreator.Core.Services;
 namespace ThreeDGod.Infrastructure;
 
 /// <summary>
-/// Existing V2 Blender process host. PHASE 03 will wrap this as LegacyBlenderBackend.
+/// Headless legacy Blender process host. Never opens a Blender UI window.
 /// </summary>
-public class BlenderService : IBlenderOperations
+public class LegacyBlenderBackend : IBlenderOperations
 {
     private readonly ConfigService _configService;
     private readonly string _basePath;
     private Process? _lastBlenderProcess;
 
-    public BlenderService(ConfigService configService)
+    public LegacyBlenderBackend(ConfigService configService)
     {
         _configService = configService;
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -23,7 +23,7 @@ public class BlenderService : IBlenderOperations
     public string GetBlenderPath()
     {
         var config = _configService.Load();
-        if (!string.IsNullOrEmpty(config.BlenderPath) && File.Exists(config.BlenderPath))
+        if (!string.IsNullOrEmpty(config.BlenderPath))
             return config.BlenderPath;
         return DetectBlenderPath() ?? "blender";
     }
@@ -67,7 +67,7 @@ public class BlenderService : IBlenderOperations
             Directory.CreateDirectory(Path.GetDirectoryName(inputPath)!);
             var json = JsonSerializer.Serialize(sculptData, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(inputPath, json);
-            AppLogger.Write($"[Blender] Sculpt data written to {inputPath}");
+            AppLogger.Write($"[LegacyRuntime] Sculpt data written to {inputPath}");
         }
         catch (Exception ex)
         {
@@ -83,8 +83,8 @@ public class BlenderService : IBlenderOperations
         var path = GetBlenderPath();
         if (string.IsNullOrEmpty(path) || path == "blender" || !File.Exists(path))
         {
-            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "Blender executable not found",
-                $"Path: {path}", "Install Blender or set path in Settings (Einstellungen).");
+            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "External mesh tool not found",
+                $"Path: {path}", "Set optional runtime path in Settings.");
             ReportBlenderError(err);
             OnBlenderNotFound?.Invoke();
             return;
@@ -103,8 +103,7 @@ public class BlenderService : IBlenderOperations
             return;
         }
 
-        AppLogger.Write($"[Blender] Script path: {scriptPath}");
-        LaunchBlenderProcess(path, $"--python \"{scriptPath}\"", "Sculpt", keepAlive: true);
+        LaunchHeadlessProcess(path, $"--background --python \"{scriptPath}\"", "Sculpt");
     }
 
     public void LaunchAutoRig() => LaunchSculpt();
@@ -114,8 +113,8 @@ public class BlenderService : IBlenderOperations
         var path = GetBlenderPath();
         if (string.IsNullOrEmpty(path) || path == "blender" || !File.Exists(path))
         {
-            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "Blender executable not found", null,
-                "Set Blender path in Settings.");
+            var err = new BlenderErrorInfo(BlenderErrorCode.NotInstalled, "External mesh tool not found", null,
+                "Set optional runtime path in Settings.");
             ReportBlenderError(err);
             OnBlenderNotFound?.Invoke();
             return;
@@ -131,34 +130,97 @@ public class BlenderService : IBlenderOperations
             return;
         }
 
-        LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export", keepAlive: false);
+        LaunchHeadlessProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export");
     }
 
-    private void LaunchBlenderProcess(string blenderPath, string arguments, string operation, bool keepAlive = false)
+    public bool TryRunHeadlessJob(string pythonScriptPath, out string output, out string? error)
     {
-        AppLogger.Write($"[Blender] Launching: {blenderPath} {arguments} (keepAlive={keepAlive})");
+        output = "";
+        error = null;
+        var blenderPath = GetBlenderPath();
+        if (string.IsNullOrEmpty(blenderPath) || blenderPath == "blender" || !File.Exists(blenderPath))
+        {
+            error = "Legacy runtime unavailable (not installed).";
+            return false;
+        }
+
+        if (!File.Exists(pythonScriptPath))
+        {
+            error = "Script not found: " + pythonScriptPath;
+            return false;
+        }
 
         try
         {
             var psi = new ProcessStartInfo
             {
                 FileName = blenderPath,
-                Arguments = arguments,
+                Arguments = $"--background --python \"{pythonScriptPath}\"",
                 WorkingDirectory = _basePath,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = false
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null)
+            {
+                error = "Process.Start returned null.";
+                return false;
+            }
+
+            output = proc.StandardOutput.ReadToEnd();
+            var stderr = proc.StandardError.ReadToEnd();
+            if (!proc.WaitForExit(20000))
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+                error = "Headless job timed out.";
+                return false;
+            }
+
+            if (proc.ExitCode != 0 && proc.ExitCode != -1)
+            {
+                error = string.IsNullOrWhiteSpace(stderr) ? $"Exit code {proc.ExitCode}" : stderr.Trim();
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            AppLogger.LogException(ex, "TryRunHeadlessJob");
+            return false;
+        }
+    }
+
+    private void LaunchHeadlessProcess(string blenderPath, string arguments, string operation)
+    {
+        var args = arguments.Contains("--background", StringComparison.Ordinal)
+            ? arguments
+            : "--background " + arguments;
+        AppLogger.Write($"[LegacyRuntime] Launching headless: {blenderPath} {args}");
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = blenderPath,
+                Arguments = args,
+                WorkingDirectory = _basePath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
 
             var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            var startTime = DateTime.UtcNow;
 
             proc.OutputDataReceived += (_, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
                 {
-                    AppLogger.Write($"[Blender stdout] {e.Data}");
+                    AppLogger.Write($"[LegacyRuntime stdout] {e.Data}");
                     Log(e.Data);
                 }
             };
@@ -166,7 +228,7 @@ public class BlenderService : IBlenderOperations
             {
                 if (!string.IsNullOrEmpty(e.Data))
                 {
-                    AppLogger.Write($"[Blender stderr] {e.Data}", isError: true);
+                    AppLogger.Write($"[LegacyRuntime stderr] {e.Data}", isError: true);
                     Log($"[stderr] {e.Data}");
                 }
             };
@@ -174,22 +236,13 @@ public class BlenderService : IBlenderOperations
             proc.Exited += (_, _) =>
             {
                 _lastBlenderProcess = null;
-                var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
-
-                AppLogger.Write($"[Blender] Process exited. Code={proc.ExitCode}, Elapsed={elapsed:F1}s");
-
-                var isSuspicious = keepAlive && elapsed < 5;
-                var isError = proc.ExitCode != 0 && proc.ExitCode != -1;
-
-                if (isSuspicious || isError)
+                AppLogger.Write($"[LegacyRuntime] Process exited. Code={proc.ExitCode}");
+                if (proc.ExitCode != 0 && proc.ExitCode != -1)
                 {
-                    var reason = isSuspicious
-                        ? $"Blender quit after {elapsed:F1}s. Sculpt mode should keep Blender OPEN."
-                        : $"Process exited with code {proc.ExitCode}";
-                    var err = new BlenderErrorInfo(BlenderErrorCode.ProcessExitedUnexpectedly,
-                        reason, "Check error_log.txt for stdout/stderr and Python traceback.",
-                        "Verify sculpt_input.json exists. Script path logged at launch.");
-                    ReportBlenderError(err);
+                    ReportBlenderError(new BlenderErrorInfo(BlenderErrorCode.ProcessExitedUnexpectedly,
+                        $"Process exited with code {proc.ExitCode}",
+                        "Check error_log.txt.",
+                        "Verify scripts exist and the runtime path is valid."));
                 }
             };
 
@@ -197,23 +250,18 @@ public class BlenderService : IBlenderOperations
             proc.BeginOutputReadLine();
             proc.BeginErrorReadLine();
             _lastBlenderProcess = proc;
-
-            Log($"{operation} gestartet (PID {proc.Id})" + (keepAlive ? " - Blender bleibt offen" : ""));
-            AppLogger.Write($"[Blender] {operation} started PID={proc.Id}");
+            Log($"{operation} headless gestartet (PID {proc.Id})");
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
-            var err = new BlenderErrorInfo(BlenderErrorCode.PermissionDenied,
-                "Could not start Blender process", ex.Message,
-                "Check path and permissions. Try running as administrator.");
-            ReportBlenderError(err);
+            ReportBlenderError(new BlenderErrorInfo(BlenderErrorCode.PermissionDenied,
+                "Could not start legacy runtime process", ex.Message, "Check path and permissions."));
         }
         catch (Exception ex)
         {
-            var err = new BlenderErrorInfo(BlenderErrorCode.ProcessStartFailed, ex.Message, ex.StackTrace,
-                "Verify Blender path in Settings.");
-            ReportBlenderError(err);
-            AppLogger.LogException(ex, "LaunchBlenderProcess");
+            ReportBlenderError(new BlenderErrorInfo(BlenderErrorCode.ProcessStartFailed, ex.Message, ex.StackTrace,
+                "Verify optional runtime path in Settings."));
+            AppLogger.LogException(ex, "LaunchHeadlessProcess");
         }
     }
 
@@ -222,7 +270,7 @@ public class BlenderService : IBlenderOperations
         var msg = $"{info.Code}: {info.Message}";
         if (!string.IsNullOrEmpty(info.Detail)) msg += $" | {info.Detail}";
         if (!string.IsNullOrEmpty(info.SuggestedFix)) msg += $" -> {info.SuggestedFix}";
-        AppLogger.Write($"[Blender] {msg}", isError: true);
+        AppLogger.Write($"[LegacyRuntime] {msg}", isError: true);
         Log(msg);
         OnBlenderFailed?.Invoke(info);
     }

@@ -50,8 +50,8 @@ public partial class SettingsPanel : UserControl
     {
         var dlg = new OpenFileDialog
         {
-            Filter = "Blender (blender.exe)|blender.exe|Alle Dateien|*.*",
-            Title = "Blender auswählen"
+            Filter = "Runtime (blender.exe)|blender.exe|Alle Dateien|*.*",
+            Title = "Optionales Legacy-Runtime auswählen"
         };
         if (dlg.ShowDialog() == true)
         {
@@ -66,11 +66,11 @@ public partial class SettingsPanel : UserControl
         if (_blenderService.VerifyCanLaunch(out var error))
         {
             var path = _blenderService.GetBlenderPath();
-            MessageBox.Show($"Blender wurde erfolgreich gestartet.\n\nPfad: {path}", "Blender OK", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Legacy-Runtime ist verfügbar (headless).\n\nPfad: {path}", "Runtime OK", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         else
         {
-            MessageBox.Show($"Blender konnte nicht gestartet werden.\n\n{error}\n\nBitte prüfe den Pfad in den Einstellungen.", "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"Legacy-Runtime ist nicht verfügbar.\n\n{error}\n\nDas ist kein App-Absturz. Optionalen Pfad in den Einstellungen setzen, falls du den Fallback brauchst.", "Runtime unavailable", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

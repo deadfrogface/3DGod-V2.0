@@ -22,7 +22,7 @@ public class CompositionRootTests
         Assert.NotNull(character);
         Assert.NotNull(blender);
         Assert.NotNull(model);
-        Assert.IsType<BlenderService>(blender);
+        Assert.IsType<LegacyBlenderBackend>(blender);
         Assert.IsType<CharacterModelServiceAdapter>(model);
     }
 

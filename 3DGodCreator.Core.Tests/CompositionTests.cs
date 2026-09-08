@@ -18,7 +18,7 @@ public class CompositionTests
         Assert.NotNull(provider.GetRequiredService<ConfigService>());
         Assert.NotNull(provider.GetRequiredService<PresetService>());
         Assert.NotNull(provider.GetRequiredService<IBlenderOperations>());
-        Assert.IsType<BlenderService>(provider.GetRequiredService<IBlenderOperations>());
+        Assert.IsType<LegacyBlenderBackend>(provider.GetRequiredService<IBlenderOperations>());
         Assert.NotNull(provider.GetRequiredService<CharacterSystem>());
         Assert.NotNull(provider.GetRequiredService<ICharacterModelService>());
 

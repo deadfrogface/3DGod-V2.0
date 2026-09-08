@@ -17,6 +17,7 @@ public interface IBlenderOperations
     void ExportFbx(string filename = "exported_character");
     bool IsBlenderConfigured();
     bool IsBlenderProcessRunning { get; }
+    bool TryRunHeadlessJob(string pythonScriptPath, out string output, out string? error);
     event Action<string>? OnLog;
     event Action? OnBlenderNotFound;
     event Action<BlenderErrorInfo>? OnBlenderFailed;

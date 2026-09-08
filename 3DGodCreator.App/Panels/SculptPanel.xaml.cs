@@ -21,8 +21,8 @@ public partial class SculptPanel : UserControl
     private void BtnStart_Click(object sender, RoutedEventArgs e)
     {
         StatusLabel.Text = "Sculpting wird geladen...";
-        DebugLog.Write("[Sculpt] Starte Blender Sculpting...");
+        DebugLog.Write("[Sculpt] Sende headless Legacy-Runtime-Job...");
         _cs.Sculpt();
-        StatusLabel.Text = "Sculpting-Modus aktiv (in Blender)";
+        StatusLabel.Text = "Headless-Job gesendet (kein sichtbares Runtime-Fenster).";
     }
 }

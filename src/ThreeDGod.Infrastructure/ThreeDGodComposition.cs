@@ -15,8 +15,7 @@ public static class ThreeDGodComposition
     {
         services.AddSingleton<ConfigService>();
         services.AddSingleton<PresetService>();
-        services.AddSingleton<IBlenderOperations, BlenderService>();
-        services.AddSingleton(sp => (BlenderService)sp.GetRequiredService<IBlenderOperations>());
+        services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();
         return services;
