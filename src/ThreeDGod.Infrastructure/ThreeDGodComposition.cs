@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
+using ThreeDGod.Persistence;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -17,6 +18,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<PresetService>();
         services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
         services.AddSingleton<IFeatureAvailabilityService, FeatureAvailabilityService>();
+        services.AddSingleton<IProjectService, GodProjectArchive>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();
         return services;

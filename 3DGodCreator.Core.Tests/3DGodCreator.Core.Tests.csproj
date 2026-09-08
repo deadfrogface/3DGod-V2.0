@@ -28,6 +28,7 @@
     <ProjectReference Include="..\src\ThreeDGod.Application\ThreeDGod.Application.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Infrastructure\ThreeDGod.Infrastructure.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Core\ThreeDGod.Core.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Persistence\ThreeDGod.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

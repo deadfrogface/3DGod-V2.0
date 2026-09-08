@@ -33,7 +33,7 @@ public class CompositionRootTests
             .AddThreeDGodCoreServices()
             .BuildServiceProvider();
 
-        Assert.Null(provider.GetService<IProjectService>());
+        Assert.NotNull(provider.GetService<IProjectService>());
         Assert.Null(provider.GetService<IWorkerHost>());
         Assert.Null(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());

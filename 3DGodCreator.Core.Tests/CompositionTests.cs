@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
 using ThreeDGod.Infrastructure;
+using ThreeDGod.Persistence;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -24,7 +25,8 @@ public class CompositionTests
         Assert.NotNull(provider.GetRequiredService<IFeatureAvailabilityService>());
         Assert.IsType<FeatureAvailabilityService>(provider.GetRequiredService<IFeatureAvailabilityService>());
 
-        Assert.Null(provider.GetService<IProjectService>());
+        Assert.NotNull(provider.GetRequiredService<IProjectService>());
+        Assert.IsType<GodProjectArchive>(provider.GetRequiredService<IProjectService>());
         Assert.Null(provider.GetService<IWorkerHost>());
         Assert.Null(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());

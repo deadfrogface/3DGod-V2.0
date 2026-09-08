@@ -1,9 +1,15 @@
+using ThreeDGod.Core.Domain;
+
 namespace ThreeDGod.Application;
 
 /// <summary>
 /// Capability contracts. Implementations are registered only when a real backend exists.
 /// </summary>
-public interface IProjectService;
+public interface IProjectService
+{
+    Task SaveAsync(ProjectBundle bundle, string destinationPath, CancellationToken cancellationToken = default);
+    Task<ProjectBundle> LoadAsync(string sourcePath, CancellationToken cancellationToken = default);
+}
 
 public interface IWorkerHost;
 
