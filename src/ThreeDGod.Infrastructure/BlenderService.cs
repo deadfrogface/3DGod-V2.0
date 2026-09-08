@@ -1,10 +1,14 @@
 using System.Diagnostics;
 using System.Text.Json;
 using ThreeDGodCreator.Core.Models;
+using ThreeDGodCreator.Core.Services;
 
-namespace ThreeDGodCreator.Core.Services;
+namespace ThreeDGod.Infrastructure;
 
-public class BlenderService
+/// <summary>
+/// Existing V2 Blender process host. PHASE 03 will wrap this as LegacyBlenderBackend.
+/// </summary>
+public class BlenderService : IBlenderOperations
 {
     private readonly ConfigService _configService;
     private readonly string _basePath;
@@ -16,9 +20,6 @@ public class BlenderService
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
     }
 
-    /// <summary>
-    /// Gets Blender executable path: config first, then auto-detect.
-    /// </summary>
     public string GetBlenderPath()
     {
         var config = _configService.Load();
@@ -77,9 +78,6 @@ public class BlenderService
         }
     }
 
-    /// <summary>
-    /// Launch Blender with sculpt script. GUI mode so Blender STAYS OPEN.
-    /// </summary>
     public void LaunchSculpt()
     {
         var path = GetBlenderPath();
@@ -136,9 +134,6 @@ public class BlenderService
         LaunchBlenderProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export", keepAlive: false);
     }
 
-    /// <summary>
-    /// Launch Blender process. keepAlive=true = GUI mode (no --background).
-    /// </summary>
     private void LaunchBlenderProcess(string blenderPath, string arguments, string operation, bool keepAlive = false)
     {
         AppLogger.Write($"[Blender] Launching: {blenderPath} {arguments} (keepAlive={keepAlive})");
@@ -244,19 +239,5 @@ public class BlenderService
 
     public bool IsBlenderProcessRunning => _lastBlenderProcess != null && !_lastBlenderProcess.HasExited;
 
-    private void Log(string msg)
-    {
-        OnLog?.Invoke(msg);
-    }
-
-    private bool EnsureBlender()
-    {
-        var p = GetBlenderPath();
-        if (string.IsNullOrEmpty(p) || p == "blender" || !File.Exists(p))
-        {
-            OnBlenderNotFound?.Invoke();
-            return false;
-        }
-        return true;
-    }
+    private void Log(string msg) => OnLog?.Invoke(msg);
 }

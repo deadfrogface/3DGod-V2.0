@@ -14,7 +14,7 @@ namespace ThreeDGodCreator.App;
 public partial class MainWindow : Window
 {
     private readonly ConfigService _configService;
-    private readonly BlenderService _blenderService;
+    private readonly IBlenderOperations _blenderService;
     private readonly PresetService _presetService;
     private readonly CharacterSystem _characterSystem;
     private readonly string _basePath;
@@ -26,15 +26,19 @@ public partial class MainWindow : Window
     /// </summary>
     private ScaleTransform3D? _sculptScaleTransform;
 
-    public MainWindow()
+    public MainWindow(
+        ConfigService configService,
+        IBlenderOperations blenderService,
+        PresetService presetService,
+        CharacterSystem characterSystem)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-        _configService = new ConfigService();
-        _blenderService = new BlenderService(_configService);
-        _presetService = new PresetService();
-        _characterSystem = new CharacterSystem(_configService, _blenderService, _presetService);
+        _configService = configService;
+        _blenderService = blenderService;
+        _presetService = presetService;
+        _characterSystem = characterSystem;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;

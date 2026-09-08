@@ -11,10 +11,10 @@ public partial class SettingsPanel : UserControl
 {
     private readonly CharacterSystem _characterSystem;
     private readonly ConfigService _configService;
-    private readonly BlenderService _blenderService;
+    private readonly IBlenderOperations _blenderService;
     private readonly Window _mainWindow;
 
-    public SettingsPanel(CharacterSystem cs, ConfigService configService, BlenderService blenderService, Window mainWindow)
+    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow)
     {
         InitializeComponent();
         _characterSystem = cs;

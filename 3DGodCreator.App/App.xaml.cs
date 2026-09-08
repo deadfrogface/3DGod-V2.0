@@ -1,19 +1,30 @@
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using ThreeDGod.Infrastructure;
 using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.App;
 
 public partial class App : Application
 {
+    public IServiceProvider Services { get; private set; } = null!;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         AppLogger.Initialize();
 
-        // Prevent silent crashes - log all unhandled exceptions
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+
+        var services = new ServiceCollection();
+        services.AddThreeDGodCoreServices();
+        services.AddSingleton<MainWindow>();
+        Services = services.BuildServiceProvider();
+
+        var window = Services.GetRequiredService<MainWindow>();
+        window.Show();
     }
 
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

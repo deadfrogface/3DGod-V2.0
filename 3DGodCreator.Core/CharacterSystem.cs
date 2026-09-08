@@ -7,7 +7,7 @@ namespace ThreeDGodCreator.Core;
 public class CharacterSystem
 {
     private readonly ConfigService _configService;
-    private readonly BlenderService _blenderService;
+    private readonly IBlenderOperations _blenderService;
     private readonly PresetService _presetService;
     private readonly string _basePath;
     private System.Threading.Timer? _sculptDebounceTimer;
@@ -27,7 +27,7 @@ public class CharacterSystem
     public Action? AnatomySyncCallback { get; set; }
     public bool IsCurrentModelRigged { get; set; }
 
-    public CharacterSystem(ConfigService configService, BlenderService blenderService, PresetService presetService)
+    public CharacterSystem(ConfigService configService, IBlenderOperations blenderService, PresetService presetService)
     {
         _configService = configService;
         _blenderService = blenderService;

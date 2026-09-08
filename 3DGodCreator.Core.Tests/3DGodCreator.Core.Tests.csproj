@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
     <PackageReference Include="xunit" Version="2.5.3" />
@@ -24,6 +25,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\3DGodCreator.Core\3DGodCreator.Core.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Application\ThreeDGod.Application.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Infrastructure\ThreeDGod.Infrastructure.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Core\ThreeDGod.Core.csproj" />
   </ItemGroup>
 
 </Project>
