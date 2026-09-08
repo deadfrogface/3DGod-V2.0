@@ -22,7 +22,8 @@ public static class PbrMaterials
         new() { Name = "Leather", BaseColor = new Vector4(0.36f, 0.22f, 0.13f, 1), Metallic = 0f, Roughness = 0.7f },
         new() { Name = "Cloth", BaseColor = new Vector4(0.45f, 0.42f, 0.40f, 1), Metallic = 0f, Roughness = 0.85f },
         new() { Name = "Plastic", BaseColor = new Vector4(0.2f, 0.2f, 0.22f, 1), Metallic = 0f, Roughness = 0.4f },
-        new() { Name = "Skin", BaseColor = new Vector4(0.82f, 0.64f, 0.52f, 1), Metallic = 0f, Roughness = 0.55f }
+        new() { Name = "Skin", BaseColor = new Vector4(0.82f, 0.64f, 0.52f, 1), Metallic = 0f, Roughness = 0.55f },
+        new() { Name = "OrcSkin", BaseColor = new Vector4(0.28f, 0.42f, 0.22f, 1), Metallic = 0f, Roughness = 0.72f }
     ];
 
     public static PbrPreset Get(string name) =>

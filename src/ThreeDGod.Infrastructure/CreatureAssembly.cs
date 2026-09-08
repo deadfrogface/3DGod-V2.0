@@ -45,6 +45,76 @@ public sealed class CreatureAssembly : ICreatureAssembly
         return character;
     }
 
+    public CharacterDocument CreateOrc(ProjectBundle bundle, string meshRoot)
+    {
+        Directory.CreateDirectory(meshRoot);
+        var earL = WritePart(bundle, meshRoot, "ear.L", SemanticBodyPartType.Ear, "head", "boundary:head.ear.L",
+            builder => builder.AddCone(new Vector3(-0.12f, 1.68f, 0), new Vector3(-0.28f, 1.88f, -0.02f), 0.045f, 10));
+        var earR = WritePart(bundle, meshRoot, "ear.R", SemanticBodyPartType.Ear, "head", "boundary:head.ear.R",
+            builder => builder.AddCone(new Vector3(0.12f, 1.68f, 0), new Vector3(0.28f, 1.88f, -0.02f), 0.045f, 10));
+        var tuskL = WritePart(bundle, meshRoot, "tusk.L", SemanticBodyPartType.Tusk, "head", "boundary:jaw.canine.L",
+            builder => builder.AddCone(new Vector3(-0.04f, 1.58f, 0.08f), new Vector3(-0.07f, 1.48f, 0.16f), 0.012f, 8));
+        var tuskR = WritePart(bundle, meshRoot, "tusk.R", SemanticBodyPartType.Tusk, "head", "boundary:jaw.canine.R",
+            builder => builder.AddCone(new Vector3(0.04f, 1.58f, 0.08f), new Vector3(0.07f, 1.48f, 0.16f), 0.012f, 8));
+
+        var bodyGlb = Path.Combine(meshRoot, "orc-body.glb");
+        ThreeDGod.Rigging.HumanoidTestRig.WriteGood(bodyGlb);
+        var bodyDoc = CanonicalGltfPipeline.Load(bodyGlb);
+        var body = new MeshAsset
+        {
+            Name = "orc-body",
+            CanonicalGlbPath = bodyGlb,
+            VertexCount = bodyDoc.VertexCount,
+            TriangleCount = bodyDoc.TriangleCount,
+            HasSkin = bodyDoc.SkinCount > 0,
+            ValidationState = "orc-body"
+        };
+        bundle.Meshes.Add(body);
+
+        var orcSkin = PbrMaterials.Get("OrcSkin");
+        var material = PbrMaterials.ToDefinition(orcSkin);
+        bundle.Materials.Add(material);
+
+        var character = new CharacterDocument
+        {
+            Name = "Orc",
+            CharacterKind = CharacterKind.HumanoidCreature,
+            SourceRepresentation = SourceRepresentation.ModularCreature,
+            ParametricHumanState = new ParametricHumanState
+            {
+                BackendId = "anny",
+                TopologyProfile = "anny",
+                PhenotypeParameters =
+                {
+                    ["muscle"] = 0.92f,
+                    ["weight"] = 0.7f,
+                    ["proportions"] = 0.35f,
+                    ["height"] = 0.62f
+                }
+            },
+            CreatureState = new CreatureState
+            {
+                BaseFamily = "orc",
+                SkeletonProfileId = "humanoid",
+                TopologyCompatibilityGroup = "humanoid-modular",
+                RigStrategy = "humanoid",
+                BodyPlan = new BodyPlan
+                {
+                    IsBiped = true,
+                    SemanticLimbDescriptors = ["biped", "orc-ears", "tusks"],
+                    CustomTags = ["family:orc"]
+                },
+                ExtraBodyParts = [earL.Slot, earR.Slot, tuskL.Slot, tuskR.Slot]
+            }
+        };
+        character.MeshSet.MeshAssetIds.AddRange(
+            [body.MeshAssetId, earL.Asset.MeshAssetId, earR.Asset.MeshAssetId, tuskL.Asset.MeshAssetId, tuskR.Asset.MeshAssetId]);
+        character.MaterialSet.MaterialIds.Add(material.MaterialId);
+        bundle.Characters.Add(character);
+        bundle.Project.CharacterIds.Add(character.CharacterId);
+        return character;
+    }
+
     private static (BodyPartSlot Slot, MeshAsset Asset) WritePart(
         ProjectBundle bundle,
         string meshRoot,
