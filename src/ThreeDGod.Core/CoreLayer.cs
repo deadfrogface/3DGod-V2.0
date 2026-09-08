@@ -1,7 +1,7 @@
 namespace ThreeDGod.Core;
 
 /// <summary>
-/// Tool-agnostic core layer assembly. Existing V2 domain currently lives in 3DGodCreator.Core
-/// and is migrated here incrementally in later phases.
+/// Tool-agnostic core layer. Domain documents live in <see cref="Domain"/>.
+/// Existing V2 runtime types remain in 3DGodCreator.Core until later migration phases.
 /// </summary>
 public static class CoreLayer { }
