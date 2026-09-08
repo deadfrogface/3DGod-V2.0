@@ -34,6 +34,7 @@
     <ProjectReference Include="..\src\ThreeDGod.Rendering\ThreeDGod.Rendering.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Export\ThreeDGod.Export.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.AI\ThreeDGod.AI.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Rigging\ThreeDGod.Rigging.csproj" />
   </ItemGroup>
 
 </Project>

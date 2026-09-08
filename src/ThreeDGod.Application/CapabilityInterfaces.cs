@@ -58,6 +58,11 @@ public interface ISkinTokensRigService
     Task<string> RigGlbAsync(string sourceGlb, string destinationGlb, CancellationToken cancellationToken = default);
 }
 
+public interface IRigValidator
+{
+    bool ValidateGlb(string glbPath, out IReadOnlyList<string> failures, bool requireHumanoid = true);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

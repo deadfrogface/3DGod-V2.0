@@ -6,6 +6,7 @@
     <ProjectReference Include="..\ThreeDGod.Persistence\ThreeDGod.Persistence.csproj" />
     <ProjectReference Include="..\ThreeDGod.Workers\ThreeDGod.Workers.csproj" />
     <ProjectReference Include="..\ThreeDGod.Mesh\ThreeDGod.Mesh.csproj" />
+    <ProjectReference Include="..\ThreeDGod.Rigging\ThreeDGod.Rigging.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />

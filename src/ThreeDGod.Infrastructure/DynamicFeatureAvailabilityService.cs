@@ -23,6 +23,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.SkinTokens)
             return SkinTokensRuntime.Probe().Availability;
+        if (featureId == FeatureIds.RigValidate)
+            return FeatureAvailability.Available;
         return _inner.GetStatus(featureId);
     }
 
@@ -50,6 +52,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – in-process vertex-cluster remesh + spherical UVs. Not instant-meshes / xatlas.";
         if (featureId == FeatureIds.SkinTokens)
             return SkinTokensRuntime.Probe().Message;
+        if (featureId == FeatureIds.RigValidate)
+            return "Available – hierarchy/weight/bind validator and linear-blend test poses.";
         return _inner.GetStatusMessage(featureId);
     }
 }

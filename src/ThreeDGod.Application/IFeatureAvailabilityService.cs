@@ -32,6 +32,7 @@ public static class FeatureIds
     public const string ImageTo3D = "image.to3d";
     public const string Remesh = "mesh.remesh";
     public const string SkinTokens = "rig.skintokens";
+    public const string RigValidate = "rig.validate";
 }
 
 public interface IFeatureAvailabilityService

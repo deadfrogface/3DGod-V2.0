@@ -43,6 +43,8 @@ public class CompositionTests
         Assert.IsType<RemeshService>(provider.GetRequiredService<IRemeshService>());
         Assert.NotNull(provider.GetRequiredService<ISkinTokensRigService>());
         Assert.IsType<SkinTokensRigService>(provider.GetRequiredService<ISkinTokensRigService>());
+        Assert.NotNull(provider.GetRequiredService<IRigValidator>());
+        Assert.IsType<RigValidationService>(provider.GetRequiredService<IRigValidator>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }
