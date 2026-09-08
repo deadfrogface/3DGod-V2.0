@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Editing;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
@@ -28,13 +29,15 @@ public partial class MainWindow : Window
     private ScaleTransform3D? _sculptScaleTransform;
 
     private readonly IFeatureAvailabilityService _features;
+    private readonly CommandStack _commandStack;
 
     public MainWindow(
         ConfigService configService,
         IBlenderOperations blenderService,
         PresetService presetService,
         CharacterSystem characterSystem,
-        IFeatureAvailabilityService features)
+        IFeatureAvailabilityService features,
+        CommandStack commandStack)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -44,6 +47,7 @@ public partial class MainWindow : Window
         _presetService = presetService;
         _characterSystem = characterSystem;
         _features = features;
+        _commandStack = commandStack;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -378,6 +382,18 @@ public partial class MainWindow : Window
             DebugPanelHost.Visibility = DebugPanelHost.Visibility == Visibility.Visible
                 ? Visibility.Collapsed : Visibility.Visible;
         }));
+        CommandBindings.Add(new System.Windows.Input.CommandBinding(
+            System.Windows.Input.ApplicationCommands.Undo,
+            async (_, _) => await _commandStack.UndoAsync(),
+            (_, e) => e.CanExecute = _commandStack.CanUndo));
+        CommandBindings.Add(new System.Windows.Input.CommandBinding(
+            System.Windows.Input.ApplicationCommands.Redo,
+            async (_, _) => await _commandStack.RedoAsync(),
+            (_, e) => e.CanExecute = _commandStack.CanRedo));
+        InputBindings.Add(new System.Windows.Input.KeyBinding(
+            System.Windows.Input.ApplicationCommands.Undo, System.Windows.Input.Key.Z, System.Windows.Input.ModifierKeys.Control));
+        InputBindings.Add(new System.Windows.Input.KeyBinding(
+            System.Windows.Input.ApplicationCommands.Redo, System.Windows.Input.Key.Y, System.Windows.Input.ModifierKeys.Control));
     }
 
     private class ViewportAdapter : IViewport

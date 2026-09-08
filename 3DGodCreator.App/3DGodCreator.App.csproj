@@ -29,6 +29,7 @@
     <ProjectReference Include="..\src\ThreeDGod.Rigging\ThreeDGod.Rigging.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Export\ThreeDGod.Export.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Persistence\ThreeDGod.Persistence.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Core\ThreeDGod.Core.csproj" />
   </ItemGroup>
 
   <Target Name="CopyAssets" AfterTargets="Build">
