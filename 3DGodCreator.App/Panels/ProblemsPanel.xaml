@@ -1,0 +1,24 @@
+<UserControl x:Class="ThreeDGodCreator.App.Panels.ProblemsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="120"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Probleme / Diagnostics" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+        <ListBox x:Name="IssueList" Grid.Row="1" Background="#333" Foreground="White" SelectionChanged="IssueList_SelectionChanged"/>
+        <TextBlock x:Name="ShortView" Grid.Row="2" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,8"/>
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+            <TextBox x:Name="DetailsView" IsReadOnly="True" TextWrapping="Wrap" Background="#1e1e1e" Foreground="White" FontFamily="Consolas" BorderThickness="0"/>
+        </ScrollViewer>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,8,0,0">
+            <Button Content="Fehler kopieren" Padding="10,6" Margin="0,0,8,0" Click="BtnCopyError_Click"/>
+            <Button Content="Details kopieren" Padding="10,6" Margin="0,0,8,0" Click="BtnCopyDetails_Click"/>
+            <Button Content="Im Log öffnen" Padding="10,6" Click="BtnOpenLog_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

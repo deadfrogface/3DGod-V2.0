@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Editing;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
 
     private readonly IFeatureAvailabilityService _features;
     private readonly CommandStack _commandStack;
+    private readonly IDiagnosticService _diagnostics;
 
     public MainWindow(
         ConfigService configService,
@@ -37,7 +39,8 @@ public partial class MainWindow : Window
         PresetService presetService,
         CharacterSystem characterSystem,
         IFeatureAvailabilityService features,
-        CommandStack commandStack)
+        CommandStack commandStack,
+        IDiagnosticService diagnostics)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -48,6 +51,7 @@ public partial class MainWindow : Window
         _characterSystem = characterSystem;
         _features = features;
         _commandStack = commandStack;
+        _diagnostics = diagnostics;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -97,6 +101,7 @@ public partial class MainWindow : Window
         ExportPanel.Content = new ExportPanel(_characterSystem, _features);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
         AiPanel.Content = new AiPanel(_characterSystem, _features);
+        ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
     }
 
     private void ApplyTheme(string theme)

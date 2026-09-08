@@ -52,6 +52,11 @@
             <TabItem Header="KI">
                 <ContentControl x:Name="AiPanel"/>
             </TabItem>
+            <TabItem Header="Probleme">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ContentControl x:Name="ProblemsPanel"/>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#404040"/>
