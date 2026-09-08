@@ -67,6 +67,7 @@ public interface ICreatureAssembly
 {
     CharacterDocument AttachHumanTailAndHorns(ProjectBundle bundle, string meshRoot);
     CharacterDocument CreateOrc(ProjectBundle bundle, string meshRoot);
+    CharacterDocument CreateRat(ProjectBundle bundle, string meshRoot);
 }
 
 public interface IReferenceImageGenerationService

@@ -115,6 +115,66 @@ public sealed class CreatureAssembly : ICreatureAssembly
         return character;
     }
 
+    public CharacterDocument CreateRat(ProjectBundle bundle, string meshRoot)
+    {
+        Directory.CreateDirectory(meshRoot);
+        var muzzle = WritePart(bundle, meshRoot, "muzzle", SemanticBodyPartType.Head, "head", "boundary:head.face.muzzle",
+            builder => builder.AddCone(new Vector3(0, 1.62f, 0.08f), new Vector3(0, 1.58f, 0.28f), 0.045f, 14));
+        var earL = WritePart(bundle, meshRoot, "ear.L", SemanticBodyPartType.Ear, "head", "boundary:head.ear.L",
+            builder => builder.AddSphere(new Vector3(-0.14f, 1.78f, 0), 0.055f, 10, 8));
+        var earR = WritePart(bundle, meshRoot, "ear.R", SemanticBodyPartType.Ear, "head", "boundary:head.ear.R",
+            builder => builder.AddSphere(new Vector3(0.14f, 1.78f, 0), 0.055f, 10, 8));
+        var tail = WritePart(bundle, meshRoot, "tail", SemanticBodyPartType.Tail, "tail.base", "boundary:hips.posterior",
+            builder => builder.AddTorus(new Vector3(0, 0.02f, -0.28f), Vector3.UnitX, 0.22f, 0.025f, 28, 10));
+
+        var bodyGlb = Path.Combine(meshRoot, "rat-body.glb");
+        ThreeDGod.Rigging.HumanoidTestRig.WriteGood(bodyGlb);
+        var bodyDoc = CanonicalGltfPipeline.Load(bodyGlb);
+        var body = new MeshAsset
+        {
+            Name = "rat-body",
+            CanonicalGlbPath = bodyGlb,
+            VertexCount = bodyDoc.VertexCount,
+            TriangleCount = bodyDoc.TriangleCount,
+            HasSkin = bodyDoc.SkinCount > 0,
+            ValidationState = "rat-body"
+        };
+        bundle.Meshes.Add(body);
+
+        var character = new CharacterDocument
+        {
+            Name = "Humanoid Rat",
+            CharacterKind = CharacterKind.HumanoidCreature,
+            SourceRepresentation = SourceRepresentation.ModularCreature,
+            ParametricHumanState = new ParametricHumanState
+            {
+                BackendId = "anny",
+                TopologyProfile = "anny",
+                PhenotypeParameters = { ["height"] = 0.28f, ["proportions"] = 0.2f, ["weight"] = 0.35f }
+            },
+            CreatureState = new CreatureState
+            {
+                BaseFamily = "rat",
+                SkeletonProfileId = "humanoid+tail",
+                TopologyCompatibilityGroup = "humanoid-modular",
+                RigStrategy = "humanoid-plus-custom",
+                BodyPlan = new BodyPlan
+                {
+                    IsBiped = true,
+                    TailCount = 1,
+                    SemanticLimbDescriptors = ["biped", "muzzle", "rat-ears", "tail"],
+                    CustomTags = ["family:rat", "skeleton:tail.base"]
+                },
+                ExtraBodyParts = [muzzle.Slot, earL.Slot, earR.Slot, tail.Slot]
+            }
+        };
+        character.MeshSet.MeshAssetIds.AddRange(
+            [body.MeshAssetId, muzzle.Asset.MeshAssetId, earL.Asset.MeshAssetId, earR.Asset.MeshAssetId, tail.Asset.MeshAssetId]);
+        bundle.Characters.Add(character);
+        bundle.Project.CharacterIds.Add(character.CharacterId);
+        return character;
+    }
+
     private static (BodyPartSlot Slot, MeshAsset Asset) WritePart(
         ProjectBundle bundle,
         string meshRoot,
