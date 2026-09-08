@@ -269,7 +269,7 @@ public partial class MainWindow : Window
         var vp = new HelixViewport3D { Background = Brushes.Black };
         vp.RotateGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick);
         vp.PanGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick, System.Windows.Input.ModifierKeys.Shift);
-        vp.PanGesture2 = null; // Mausrad = Zoom, nicht Pan
+        vp.PanGesture2 = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.None);
         vp.Children.Add(new DefaultLights());
         vp.Children.Add(new ModelVisual3D { Content = wrapper });
         vp.ZoomExtents();
