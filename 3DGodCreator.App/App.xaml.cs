@@ -19,6 +19,7 @@ public partial class App : Application
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         var services = new ServiceCollection();
         services.AddThreeDGodCoreServices();
@@ -33,6 +34,7 @@ public partial class App : Application
     {
         AppLogger.LogException(e.Exception, "DispatcherUnhandledException");
         GodLog.LogCrash(e.Exception, "DispatcherUnhandledException");
+        TryCapture(e.Exception, "DispatcherUnhandledException");
         AppLogger.SetShutdownReason($"CRASH: {e.Exception.GetType().Name}: {e.Exception.Message}");
         DebugLog.Write($"[FATAL] Unbehandelte Exception: {e.Exception.Message}");
         e.Handled = true;
@@ -44,7 +46,28 @@ public partial class App : Application
         {
             AppLogger.LogException(ex, "UnhandledException");
             GodLog.LogCrash(ex, "UnhandledException");
+            TryCapture(ex, "UnhandledException");
             AppLogger.SetShutdownReason($"CRASH: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        GodLog.LogCrash(e.Exception, "UnobservedTaskException");
+        TryCapture(e.Exception, "UnobservedTaskException");
+        e.SetObserved();
+    }
+
+    private static void TryCapture(Exception exception, string source)
+    {
+        try
+        {
+            if (Current is App app)
+                app.Services?.GetService<ThreeDGod.Core.Diagnostics.IDiagnosticService>()?.Capture(exception, source);
+        }
+        catch (Exception captureEx)
+        {
+            GodLog.Write($"Diagnostic capture failed: {captureEx.Message}");
         }
     }
 }
