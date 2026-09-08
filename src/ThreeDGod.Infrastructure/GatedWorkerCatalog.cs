@@ -28,6 +28,12 @@ public static class GatedWorkerCatalog
             var probe = AnnyRuntime.Probe();
             return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
         }
+        if (string.Equals(workerId, "flux", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(workerId, "qwen", StringComparison.OrdinalIgnoreCase))
+        {
+            var probe = ReferenceImageRuntime.Probe(workerId);
+            return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
+        }
 
         var installDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

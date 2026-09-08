@@ -28,6 +28,7 @@ public partial class AiPanel : UserControl
         var personOk = _features.IsInvocable(FeatureIds.AiGeneratePerson);
         var assetOk = _features.IsInvocable(FeatureIds.AiGenerateAsset);
         BtnAnnyHuman.IsEnabled = annyOk;
+        BtnReferenceImage.IsEnabled = _features.IsInvocable(FeatureIds.ReferenceImageGenerate);
         BtnGeneratePerson.IsEnabled = personOk;
         BtnGenerateAsset.IsEnabled = assetOk;
         TxtPrompt.IsEnabled = personOk || assetOk;
@@ -77,6 +78,11 @@ public partial class AiPanel : UserControl
         {
             BtnAnnyHuman.IsEnabled = _features.IsInvocable(FeatureIds.AnnyHuman);
         }
+    }
+
+    private void BtnReferenceImage_Click(object sender, RoutedEventArgs e)
+    {
+        StatusLabel.Text = _features.GetStatusMessage(FeatureIds.ReferenceImageGenerate);
     }
 
     private void BtnGeneratePerson_Click(object sender, RoutedEventArgs e)

@@ -28,6 +28,7 @@ public static class FeatureIds
     public const string AnnyHuman = "human.anny";
     public const string ExportGlb = "export.glb";
     public const string ProjectSave = "project.save";
+    public const string ReferenceImageGenerate = "image.reference.generate";
 }
 
 public interface IFeatureAvailabilityService

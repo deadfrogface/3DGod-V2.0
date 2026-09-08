@@ -36,6 +36,14 @@ public interface IRiggingService;
 
 public interface IImageTo3DService;
 
+public interface IReferenceImageGenerationService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+    Task<ReferenceImage> GenerateAsync(string prompt, long? seed, ProjectBundle bundle, CancellationToken cancellationToken = default);
+    ReferenceImage AttachExistingPng(string pngPath, string prompt, long? seed, ProjectBundle bundle);
+}
+
 public interface ICharacterModelService
 {
     void SetGender(string gender);

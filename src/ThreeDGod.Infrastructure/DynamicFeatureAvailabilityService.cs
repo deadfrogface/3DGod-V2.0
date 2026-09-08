@@ -13,6 +13,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return AnnyRuntime.Probe().Availability;
         if (featureId == FeatureIds.ExportGlb || featureId == FeatureIds.ProjectSave)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.ReferenceImageGenerate)
+            return ReferenceImageRuntime.Probe().Availability;
         return _inner.GetStatus(featureId);
     }
 
@@ -30,6 +32,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – GLB export copies a verified source mesh.";
         if (featureId == FeatureIds.ProjectSave)
             return "Available – .3dgod ZIP save/load.";
+        if (featureId == FeatureIds.ReferenceImageGenerate)
+            return ReferenceImageRuntime.Probe().Message;
         return _inner.GetStatusMessage(featureId);
     }
 }
