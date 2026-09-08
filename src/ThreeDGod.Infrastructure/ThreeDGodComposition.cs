@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Editing;
 using ThreeDGod.Persistence;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
@@ -27,6 +28,7 @@ public static class ThreeDGodComposition
                 "Recovery");
             return new AutosaveService(root);
         });
+        services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();
         return services;
