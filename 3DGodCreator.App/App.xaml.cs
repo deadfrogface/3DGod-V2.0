@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Infrastructure;
+using ThreeDGod.Infrastructure.Logging;
 using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.App;
@@ -14,6 +15,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         AppLogger.Initialize();
+        GodLog.Initialize();
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -30,6 +32,7 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppLogger.LogException(e.Exception, "DispatcherUnhandledException");
+        GodLog.LogCrash(e.Exception, "DispatcherUnhandledException");
         AppLogger.SetShutdownReason($"CRASH: {e.Exception.GetType().Name}: {e.Exception.Message}");
         DebugLog.Write($"[FATAL] Unbehandelte Exception: {e.Exception.Message}");
         e.Handled = true;
@@ -40,6 +43,7 @@ public partial class App : Application
         if (e.ExceptionObject is Exception ex)
         {
             AppLogger.LogException(ex, "UnhandledException");
+            GodLog.LogCrash(ex, "UnhandledException");
             AppLogger.SetShutdownReason($"CRASH: {ex.GetType().Name}: {ex.Message}");
         }
     }

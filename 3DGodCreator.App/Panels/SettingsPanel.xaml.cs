@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using ThreeDGod.Application;
+using ThreeDGod.Infrastructure.Logging;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
@@ -84,5 +85,17 @@ public partial class SettingsPanel : UserControl
     {
         var report = DiagnosticsService.RunSystemCheck();
         MessageBox.Show(report, "System-Check", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnOpenLogs_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            GodLog.OpenLogFolder();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Log-Ordner konnte nicht geöffnet werden: {ex.Message}", "Logs", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

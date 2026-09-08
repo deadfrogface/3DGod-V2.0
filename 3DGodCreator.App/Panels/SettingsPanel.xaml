@@ -22,7 +22,8 @@
         <CheckBox x:Name="ChkController" Content="Controller-Unterstützung" Foreground="White" Margin="0,0,0,8" Checked="ChkController_Changed" Unchecked="ChkController_Changed"/>
         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
             <Button x:Name="BtnTestBlender" Content="Runtime prüfen" Padding="12,6" Margin="0,0,8,0" Click="BtnTestBlender_Click" ToolTip="Prüft ob das optionale Legacy-Runtime headless startet"/>
-            <Button x:Name="BtnDiagnostics" Content="System-Check" Padding="12,6" Click="BtnDiagnostics_Click" ToolTip="Vollständige Projekt-Prüfung"/>
+            <Button x:Name="BtnDiagnostics" Content="System-Check" Padding="12,6" Margin="0,0,8,0" Click="BtnDiagnostics_Click" ToolTip="Vollständige Projekt-Prüfung"/>
+            <Button x:Name="BtnOpenLogs" Content="Log-Ordner öffnen" Padding="12,6" Click="BtnOpenLogs_Click"/>
         </StackPanel>
     </StackPanel>
 </UserControl>
