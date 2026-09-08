@@ -63,6 +63,11 @@ public interface IRigValidator
     bool ValidateGlb(string glbPath, out IReadOnlyList<string> failures, bool requireHumanoid = true);
 }
 
+public interface ICreatureAssembly
+{
+    CharacterDocument AttachHumanTailAndHorns(ProjectBundle bundle, string meshRoot);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

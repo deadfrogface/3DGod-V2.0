@@ -81,4 +81,29 @@ public sealed class MeshBuilder3D
             }
         }
     }
+
+    public void AddCone(Vector3 baseCenter, Vector3 tip, float radius, int slices)
+    {
+        var axis = tip - baseCenter;
+        var height = axis.Length();
+        if (height < 1e-6f)
+            return;
+        axis /= height;
+        var tangent = Vector3.Normalize(Vector3.Cross(MathF.Abs(axis.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX, axis));
+        var bitangent = Vector3.Normalize(Vector3.Cross(axis, tangent));
+        var tipIndex = Positions.Count;
+        Positions.Add(tip);
+        var ringStart = Positions.Count;
+        for (var i = 0; i < slices; i++)
+        {
+            var a = 2 * MathF.PI * i / slices;
+            Positions.Add(baseCenter + (tangent * MathF.Cos(a) + bitangent * MathF.Sin(a)) * radius);
+        }
+        for (var i = 0; i < slices; i++)
+        {
+            Indices.Add(tipIndex);
+            Indices.Add(ringStart + i);
+            Indices.Add(ringStart + (i + 1) % slices);
+        }
+    }
 }

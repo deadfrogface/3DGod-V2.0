@@ -25,6 +25,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return SkinTokensRuntime.Probe().Availability;
         if (featureId == FeatureIds.RigValidate)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.CreatureParts)
+            return FeatureAvailability.Available;
         return _inner.GetStatus(featureId);
     }
 
@@ -54,6 +56,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return SkinTokensRuntime.Probe().Message;
         if (featureId == FeatureIds.RigValidate)
             return "Available – hierarchy/weight/bind validator and linear-blend test poses.";
+        if (featureId == FeatureIds.CreatureParts)
+            return "Available – modular extra parts (tail/horns) persist in .3dgod.";
         return _inner.GetStatusMessage(featureId);
     }
 }

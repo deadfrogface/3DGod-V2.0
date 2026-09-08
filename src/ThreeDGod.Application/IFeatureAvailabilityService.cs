@@ -33,6 +33,7 @@ public static class FeatureIds
     public const string Remesh = "mesh.remesh";
     public const string SkinTokens = "rig.skintokens";
     public const string RigValidate = "rig.validate";
+    public const string CreatureParts = "creature.parts";
 }
 
 public interface IFeatureAvailabilityService
