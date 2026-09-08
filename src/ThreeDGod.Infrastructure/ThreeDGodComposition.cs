@@ -19,6 +19,14 @@ public static class ThreeDGodComposition
         services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
         services.AddSingleton<IFeatureAvailabilityService, FeatureAvailabilityService>();
         services.AddSingleton<IProjectService, GodProjectArchive>();
+        services.AddSingleton(sp =>
+        {
+            var root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod",
+                "Recovery");
+            return new AutosaveService(root);
+        });
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();
         return services;
