@@ -31,6 +31,18 @@ public static class ThreeDGodComposition
             return new AutosaveService(root);
         });
         services.AddSingleton<IWorkerHost, WorkerProcessHost>();
+        services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
+        [
+            new BackendManifest
+            {
+                Id = "echo",
+                Priority = 1,
+                State = BackendRuntimeState.Available,
+                License = new LicenseProfile { Id = "mit", Accepted = true },
+                Capabilities = new BackendCapabilities { HumanGenerate = true }
+            }
+        ]));
+        services.AddSingleton<IGpuJobScheduler, GpuJobScheduler>();
         services.AddSingleton<IDiagnosticService, DiagnosticService>();
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();

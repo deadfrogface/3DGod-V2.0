@@ -28,8 +28,6 @@ public interface IWorkerHost
     Task<WorkerRunResult> RunAsync(string executable, IReadOnlyList<string> arguments, WorkerRequest request, TimeSpan timeout, CancellationToken cancellationToken = default);
 }
 
-public interface IBackendRegistry;
-
 public interface IImportService;
 
 public interface IExportService;

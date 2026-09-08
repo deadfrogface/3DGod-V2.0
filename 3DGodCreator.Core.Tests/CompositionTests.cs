@@ -29,7 +29,7 @@ public class CompositionTests
         Assert.IsType<GodProjectArchive>(provider.GetRequiredService<IProjectService>());
         Assert.NotNull(provider.GetRequiredService<IWorkerHost>());
         Assert.IsType<ThreeDGod.Workers.WorkerProcessHost>(provider.GetRequiredService<IWorkerHost>());
-        Assert.Null(provider.GetService<IBackendRegistry>());
+        Assert.NotNull(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());
         Assert.Null(provider.GetService<IRiggingService>());
