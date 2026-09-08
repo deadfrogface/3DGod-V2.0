@@ -16,9 +16,24 @@ public static class DeterministicAiParser
             "gold chain" => Plan("valid", "attachment.add", "deterministic", "type", "necklace", "material", "gold"),
             "rat head" => Plan("valid", "creature.swapPart", "deterministic", "slot", "head", "family", "rat"),
             "make it nicer" or "improve" => new AiEditPlan { Status = "Ambiguous", Provider = "deterministic", Reason = "Prompt is too vague." },
+            "größer und haut dunkler" or "groesser und haut dunkler" => Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.15"),
             _ => new AiEditPlan { Status = "Unsupported", Provider = "deterministic" }
         };
         return AiEditPlanValidator.Validate(plan);
+    }
+
+    public static IReadOnlyList<AiEditPlan> ParseComposite(string prompt)
+    {
+        var p = prompt.Trim().ToLowerInvariant();
+        if (p is "größer und haut dunkler" or "groesser und haut dunkler")
+        {
+            return
+            [
+                AiEditPlanValidator.Validate(Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.15")),
+                AiEditPlanValidator.Validate(Plan("valid", "material.recolor", "deterministic", "color", "darker"))
+            ];
+        }
+        return [Parse(prompt)];
     }
 
     private static AiEditPlan Plan(string status, string op, string provider, params string[] kv)

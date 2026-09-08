@@ -168,6 +168,16 @@ public sealed class CommandStack
         _openTransaction.Clear();
     }
 
+    public async Task AbortTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_transactionOpen)
+            return;
+        _transactionOpen = false;
+        for (var i = _openTransaction.Count - 1; i >= 0; i--)
+            await _openTransaction[i].UndoAsync(cancellationToken);
+        _openTransaction.Clear();
+    }
+
     public async Task CommitTransactionAsync(string descriptionResourceKey = "edit.composite", CancellationToken cancellationToken = default)
     {
         if (!_transactionOpen)
