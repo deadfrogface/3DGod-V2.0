@@ -29,6 +29,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<AssetLibrary>();
         services.AddSingleton<IAssetGenerationService, AiAssetPipeline>();
         services.AddSingleton<IRemeshService, RemeshService>();
+        services.AddSingleton<ISkinTokensRigService, SkinTokensRigService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

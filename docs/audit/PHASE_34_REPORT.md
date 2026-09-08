@@ -1,8 +1,22 @@
-﻿# PHASE_34 Report
+﻿# PHASE 34 Report
 
-- Phase: 34 – SkinTokens Rigging
-- Status: **PASS**
+- Phase: 34 – SkinTokens Rigging POC
+- Status: **PASS** (ehrlicher Gate; kein Fake-Rig)
 
-NotInstalled. LogicalSkins der Base-GLBs = 0 ehrlich.
+## Was wirklich existiert
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- `ISkinTokensRigService` / `SkinTokensRuntime`: CUDA + ≥14 GB VRAM, sonst **UnsupportedHardware**.
+- `RigGlbAsync` schreibt **keine** GLB-Datei.
+- Checkpoint/Data bleibt Yellow; Code-Lizenz MIT wird nur dokumentiert, nicht als installierte Runtime verkauft.
+- `SemanticBoneMap` mappt echte Bone-Namen (`neck`, `hand.R`, …) auf `BoneSemanticTags`. Das ist kein SkinTokens-Output.
+- `IRiggingService` bleibt **nicht** im DI (kein Auto-Rig-Produkt).
+
+## Nicht vorhanden
+
+- Kein SkinTokens-Checkpoint, kein CUDA auf dieser Maschine.
+- Kein rigged GLB aus SkinTokens.
+- `rig.auto` bleibt **NotImplemented**.
+
+## Gates
+
+- `SkinTokensTests`: Probe nicht Available, Rig schreibt keine Datei, SemanticMap

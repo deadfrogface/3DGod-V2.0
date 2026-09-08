@@ -51,6 +51,13 @@ public interface IRemeshService
     string RemeshGlb(string sourceGlb, string destinationGlb, RemeshProfile profile);
 }
 
+public interface ISkinTokensRigService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+    Task<string> RigGlbAsync(string sourceGlb, string destinationGlb, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

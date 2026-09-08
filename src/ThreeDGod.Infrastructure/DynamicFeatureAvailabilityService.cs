@@ -21,6 +21,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Experimental;
         if (featureId == FeatureIds.Remesh)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.SkinTokens)
+            return SkinTokensRuntime.Probe().Availability;
         return _inner.GetStatus(featureId);
     }
 
@@ -46,6 +48,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Experimental – procedural catalog assets (jewelry). FLUX/TripoSR remain NotInstalled.";
         if (featureId == FeatureIds.Remesh)
             return "Available – in-process vertex-cluster remesh + spherical UVs. Not instant-meshes / xatlas.";
+        if (featureId == FeatureIds.SkinTokens)
+            return SkinTokensRuntime.Probe().Message;
         return _inner.GetStatusMessage(featureId);
     }
 }

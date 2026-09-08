@@ -41,6 +41,8 @@ public class CompositionTests
         Assert.IsType<AiAssetPipeline>(provider.GetRequiredService<IAssetGenerationService>());
         Assert.NotNull(provider.GetRequiredService<IRemeshService>());
         Assert.IsType<RemeshService>(provider.GetRequiredService<IRemeshService>());
+        Assert.NotNull(provider.GetRequiredService<ISkinTokensRigService>());
+        Assert.IsType<SkinTokensRigService>(provider.GetRequiredService<ISkinTokensRigService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }
