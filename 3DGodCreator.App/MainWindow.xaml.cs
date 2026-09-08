@@ -4,6 +4,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
+using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
+using ThreeDGod.Core.Editing;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
@@ -14,7 +17,7 @@ namespace ThreeDGodCreator.App;
 public partial class MainWindow : Window
 {
     private readonly ConfigService _configService;
-    private readonly BlenderService _blenderService;
+    private readonly IBlenderOperations _blenderService;
     private readonly PresetService _presetService;
     private readonly CharacterSystem _characterSystem;
     private readonly string _basePath;
@@ -26,15 +29,29 @@ public partial class MainWindow : Window
     /// </summary>
     private ScaleTransform3D? _sculptScaleTransform;
 
-    public MainWindow()
+    private readonly IFeatureAvailabilityService _features;
+    private readonly CommandStack _commandStack;
+    private readonly IDiagnosticService _diagnostics;
+
+    public MainWindow(
+        ConfigService configService,
+        IBlenderOperations blenderService,
+        PresetService presetService,
+        CharacterSystem characterSystem,
+        IFeatureAvailabilityService features,
+        CommandStack commandStack,
+        IDiagnosticService diagnostics)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-        _configService = new ConfigService();
-        _blenderService = new BlenderService(_configService);
-        _presetService = new PresetService();
-        _characterSystem = new CharacterSystem(_configService, _blenderService, _presetService);
+        _configService = configService;
+        _blenderService = blenderService;
+        _presetService = presetService;
+        _characterSystem = characterSystem;
+        _features = features;
+        _commandStack = commandStack;
+        _diagnostics = diagnostics;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -50,24 +67,14 @@ public partial class MainWindow : Window
             DebugLog.Write($"[Startup] {line}");
         if (!readiness.AllCriticalPassed)
             DebugLog.Write($"[Startup] Einige Prüfungen fehlgeschlagen. Details: {StartupLogger.GetLogFilePath()}");
-        _blenderService.OnLog += msg => DebugLog.Write($"[Blender] {msg}");
+        _blenderService.OnLog += msg => DebugLog.Write($"[LegacyRuntime] {msg}");
         _blenderService.OnBlenderNotFound += () => Dispatcher.Invoke(() =>
         {
-            Tabs.SelectedIndex = 9;
-            MessageBox.Show(
-                "Blender wurde nicht gefunden.\n\nBitte setze den Blender-Pfad in den Einstellungen (z.B. C:\\Program Files\\Blender Foundation\\Blender 4.0\\blender.exe).",
-                "Blender fehlt",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            DebugLog.Write("[LegacyRuntime] Unavailable – capability not installed. App bleibt stabil.");
         });
         _blenderService.OnBlenderFailed += (info) => Dispatcher.Invoke(() =>
         {
-            Tabs.SelectedIndex = 9;
-            var msg = $"{info.Message}\n\n";
-            if (!string.IsNullOrEmpty(info.Detail)) msg += $"Details: {info.Detail}\n\n";
-            if (!string.IsNullOrEmpty(info.SuggestedFix)) msg += $"-> {info.SuggestedFix}\n\n";
-            msg += $"Log: {AppLogger.GetLogFilePath()}";
-            MessageBox.Show(msg, "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            DebugLog.Write($"[LegacyRuntime] {info.Code}: {info.Message}");
         });
 
         ApplyTheme(_configService.Load().Theme);
@@ -86,14 +93,15 @@ public partial class MainWindow : Window
         FormPanel.Content = new FormPanel(_characterSystem);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
-        ClothingPanel.Content = new ClothingPanel(_characterSystem);
-        PhysicsPanel.Content = new PhysicsPanel(_characterSystem);
+        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features);
+        PhysicsPanel.Content = new PhysicsPanel(_characterSystem, _features);
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
-        RiggingPanel.Content = new RiggingPanel(_characterSystem);
-        ExportPanel.Content = new ExportPanel(_characterSystem);
-        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this);
-        AiPanel.Content = new AiPanel(_characterSystem);
+        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features);
+        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
+        AiPanel.Content = new AiPanel(_characterSystem, _features);
+        ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
     }
 
     private void ApplyTheme(string theme)
@@ -269,7 +277,7 @@ public partial class MainWindow : Window
         var vp = new HelixViewport3D { Background = Brushes.Black };
         vp.RotateGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick);
         vp.PanGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick, System.Windows.Input.ModifierKeys.Shift);
-        vp.PanGesture2 = null; // Mausrad = Zoom, nicht Pan
+        vp.PanGesture2 = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.None);
         vp.Children.Add(new DefaultLights());
         vp.Children.Add(new ModelVisual3D { Content = wrapper });
         vp.ZoomExtents();
@@ -379,6 +387,18 @@ public partial class MainWindow : Window
             DebugPanelHost.Visibility = DebugPanelHost.Visibility == Visibility.Visible
                 ? Visibility.Collapsed : Visibility.Visible;
         }));
+        CommandBindings.Add(new System.Windows.Input.CommandBinding(
+            System.Windows.Input.ApplicationCommands.Undo,
+            async (_, _) => await _commandStack.UndoAsync(),
+            (_, e) => e.CanExecute = _commandStack.CanUndo));
+        CommandBindings.Add(new System.Windows.Input.CommandBinding(
+            System.Windows.Input.ApplicationCommands.Redo,
+            async (_, _) => await _commandStack.RedoAsync(),
+            (_, e) => e.CanExecute = _commandStack.CanRedo));
+        InputBindings.Add(new System.Windows.Input.KeyBinding(
+            System.Windows.Input.ApplicationCommands.Undo, System.Windows.Input.Key.Z, System.Windows.Input.ModifierKeys.Control));
+        InputBindings.Add(new System.Windows.Input.KeyBinding(
+            System.Windows.Input.ApplicationCommands.Redo, System.Windows.Input.Key.Y, System.Windows.Input.ModifierKeys.Control));
     }
 
     private class ViewportAdapter : IViewport

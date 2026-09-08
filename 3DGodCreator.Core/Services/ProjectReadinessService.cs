@@ -123,7 +123,7 @@ public static class ProjectReadinessService
         $"Step {step}: {name} {(ok ? "[OK]" : "[FAIL]")}";
 
     /// <summary>
-    /// Check if .NET SDK (net8.0) is available.
+    /// Check if a .NET SDK is available. Project targets net10.0 / net10.0-windows.
     /// </summary>
     public static CheckResult CheckDotNet()
     {
@@ -141,23 +141,25 @@ public static class ProjectReadinessService
             using var proc = Process.Start(psi);
             if (proc == null)
                 return new CheckResult(false, "Could not start dotnet process",
-                    "Install .NET 8 SDK: https://dotnet.microsoft.com/download");
+                    "Install .NET 10 SDK: https://dotnet.microsoft.com/download");
 
             var output = proc.StandardOutput.ReadToEnd();
             proc.WaitForExit(5000);
             if (proc.ExitCode != 0)
                 return new CheckResult(false, $"dotnet --version failed (exit {proc.ExitCode})",
-                    "Install .NET 8 SDK: https://dotnet.microsoft.com/download");
+                    "Install .NET 10 SDK: https://dotnet.microsoft.com/download");
 
             var version = output.Trim();
-            if (version.StartsWith("8.") || version.StartsWith("9."))
+            if (version.StartsWith("10.", StringComparison.Ordinal))
                 return new CheckResult(true, $"Version {version}");
-            return new CheckResult(true, $"Version {version} (project targets net8.0)");
+            if (version.StartsWith("8.", StringComparison.Ordinal) || version.StartsWith("9.", StringComparison.Ordinal))
+                return new CheckResult(true, $"Version {version} (project targets net10.0; install .NET 10 SDK for a matching toolchain)");
+            return new CheckResult(true, $"Version {version} (project targets net10.0)");
         }
         catch (System.ComponentModel.Win32Exception)
         {
             return new CheckResult(false, "dotnet not found in PATH",
-                "Install .NET 8 SDK and ensure it is in your system PATH");
+                "Install .NET 10 SDK and ensure it is in your system PATH");
         }
         catch (Exception ex)
         {

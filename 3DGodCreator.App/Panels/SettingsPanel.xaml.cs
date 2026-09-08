@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using ThreeDGod.Application;
+using ThreeDGod.Infrastructure.Logging;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
@@ -11,10 +13,10 @@ public partial class SettingsPanel : UserControl
 {
     private readonly CharacterSystem _characterSystem;
     private readonly ConfigService _configService;
-    private readonly BlenderService _blenderService;
+    private readonly IBlenderOperations _blenderService;
     private readonly Window _mainWindow;
 
-    public SettingsPanel(CharacterSystem cs, ConfigService configService, BlenderService blenderService, Window mainWindow)
+    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow, IFeatureAvailabilityService features)
     {
         InitializeComponent();
         _characterSystem = cs;
@@ -29,6 +31,11 @@ public partial class SettingsPanel : UserControl
         ChkController.IsChecked = cfg.ControllerEnabled;
 
         TxtBlenderPath.LostFocus += (_, _) => SaveConfig();
+        if (!features.IsInvocable(FeatureIds.ControllerInput))
+        {
+            ChkController.IsEnabled = false;
+            ChkController.ToolTip = features.GetStatusMessage(FeatureIds.ControllerInput);
+        }
     }
 
     private void SaveConfig()
@@ -50,8 +57,8 @@ public partial class SettingsPanel : UserControl
     {
         var dlg = new OpenFileDialog
         {
-            Filter = "Blender (blender.exe)|blender.exe|Alle Dateien|*.*",
-            Title = "Blender auswählen"
+            Filter = "Runtime (blender.exe)|blender.exe|Alle Dateien|*.*",
+            Title = "Optionales Legacy-Runtime auswählen"
         };
         if (dlg.ShowDialog() == true)
         {
@@ -66,11 +73,11 @@ public partial class SettingsPanel : UserControl
         if (_blenderService.VerifyCanLaunch(out var error))
         {
             var path = _blenderService.GetBlenderPath();
-            MessageBox.Show($"Blender wurde erfolgreich gestartet.\n\nPfad: {path}", "Blender OK", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Legacy-Runtime ist verfügbar (headless).\n\nPfad: {path}", "Runtime OK", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         else
         {
-            MessageBox.Show($"Blender konnte nicht gestartet werden.\n\n{error}\n\nBitte prüfe den Pfad in den Einstellungen.", "Blender Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"Legacy-Runtime ist nicht verfügbar.\n\n{error}\n\nDas ist kein App-Absturz. Optionalen Pfad in den Einstellungen setzen, falls du den Fallback brauchst.", "Runtime unavailable", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -78,5 +85,17 @@ public partial class SettingsPanel : UserControl
     {
         var report = DiagnosticsService.RunSystemCheck();
         MessageBox.Show(report, "System-Check", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnOpenLogs_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            GodLog.OpenLogFolder();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Log-Ordner konnte nicht geöffnet werden: {ex.Message}", "Logs", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

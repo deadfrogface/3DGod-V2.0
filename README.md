@@ -4,9 +4,13 @@ Native C#-Migration des 3D God Creator (Python V1.2). Kein Python-Runtime, kein 
 
 ## Anforderungen
 
-- .NET 8 SDK
-- Windows (WPF)
-- Blender (optional, für Sculpting/Export)
+- .NET 10 SDK (LTS), Windows x64
+- Ziel-Framework: App `net10.0-windows`, Core/Tests `net10.0`
+- Blender (optional, für Legacy-Sculpt/Export)
+
+SDK-Pin: siehe `global.json`.
+
+Der tatsächliche Funktionsstand (echt vs. Stub) steht in `docs/audit/V2_FEATURE_AUDIT.md`, nicht in der historischen Tabellenübersicht unten.
 
 ## Build & Start
 
