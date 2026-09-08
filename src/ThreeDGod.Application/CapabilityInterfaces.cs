@@ -41,6 +41,11 @@ public interface IImageTo3DService
     Task<string> GenerateGlbAsync(string imagePath, string destinationGlb, string backendId = "triposr", CancellationToken cancellationToken = default);
 }
 
+public interface IAssetGenerationService
+{
+    Task<LibraryAsset> GenerateAsync(string prompt, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

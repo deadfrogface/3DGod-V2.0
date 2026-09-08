@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private readonly IDiagnosticService _diagnostics;
     private readonly IProjectService _projects;
     private readonly AnnyHumanService _anny;
+    private readonly IAssetGenerationService _assets;
     private AnnyInspectorPanel? _annyInspector;
 
     public MainWindow(
@@ -49,7 +50,8 @@ public partial class MainWindow : Window
         CommandStack commandStack,
         IDiagnosticService diagnostics,
         IProjectService projects,
-        AnnyHumanService anny)
+        AnnyHumanService anny,
+        IAssetGenerationService assets)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -63,6 +65,7 @@ public partial class MainWindow : Window
         _diagnostics = diagnostics;
         _projects = projects;
         _anny = anny;
+        _assets = assets;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -113,7 +116,7 @@ public partial class MainWindow : Window
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, () => _currentPreviewPath);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
-        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview);
+        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
         ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
     }
 

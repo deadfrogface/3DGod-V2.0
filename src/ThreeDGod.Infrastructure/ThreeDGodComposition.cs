@@ -26,6 +26,8 @@ public static class ThreeDGodComposition
         services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton<IReferenceImageGenerationService, ReferenceImageService>();
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
+        services.AddSingleton<AssetLibrary>();
+        services.AddSingleton<IAssetGenerationService, AiAssetPipeline>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

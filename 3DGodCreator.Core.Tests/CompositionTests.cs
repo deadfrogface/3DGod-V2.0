@@ -37,6 +37,8 @@ public class CompositionTests
         Assert.Null(provider.GetService<IRiggingService>());
         Assert.NotNull(provider.GetService<IImageTo3DService>());
         Assert.IsType<ImageTo3DService>(provider.GetRequiredService<IImageTo3DService>());
+        Assert.NotNull(provider.GetRequiredService<IAssetGenerationService>());
+        Assert.IsType<AiAssetPipeline>(provider.GetRequiredService<IAssetGenerationService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

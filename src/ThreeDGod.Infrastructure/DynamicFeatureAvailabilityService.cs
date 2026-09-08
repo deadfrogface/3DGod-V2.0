@@ -17,6 +17,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return ReferenceImageRuntime.Probe().Availability;
         if (featureId == FeatureIds.ImageTo3D)
             return ImageTo3DRuntime.Probe("triposr").Availability;
+        if (featureId == FeatureIds.AiGenerateAsset)
+            return FeatureAvailability.Experimental;
         return _inner.GetStatus(featureId);
     }
 
@@ -38,6 +40,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return ReferenceImageRuntime.Probe().Message;
         if (featureId == FeatureIds.ImageTo3D)
             return ImageTo3DRuntime.Probe("triposr").Message;
+        if (featureId == FeatureIds.AiGenerateAsset)
+            return "Experimental – procedural catalog assets (jewelry). FLUX/TripoSR remain NotInstalled.";
         return _inner.GetStatusMessage(featureId);
     }
 }

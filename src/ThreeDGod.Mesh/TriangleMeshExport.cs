@@ -8,15 +8,25 @@ namespace ThreeDGod.Mesh;
 
 public static class TriangleMeshExport
 {
-    public static void WriteGlb(string destinationPath, IReadOnlyList<Vector3> positions, IReadOnlyList<int> indices)
+    public static void WriteGlb(string destinationPath, IReadOnlyList<Vector3> positions, IReadOnlyList<int> indices) =>
+        WriteGlb(destinationPath, positions, indices, new Vector4(0.82f, 0.64f, 0.52f, 1), metallic: 0, roughness: 0.8f);
+
+    public static void WriteGlb(
+        string destinationPath,
+        IReadOnlyList<Vector3> positions,
+        IReadOnlyList<int> indices,
+        Vector4 baseColor,
+        float metallic,
+        float roughness)
     {
         if (positions.Count < 3 || indices.Count < 3)
             throw new InvalidOperationException("Mesh has no triangles.");
 
-        var material = new MaterialBuilder("skin")
+        var material = new MaterialBuilder("pbr")
             .WithDoubleSide(true)
             .WithMetallicRoughnessShader()
-            .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, new Vector4(0.82f, 0.64f, 0.52f, 1));
+            .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, baseColor)
+            .WithMetallicRoughness(metallic, roughness);
 
         var mesh = new MeshBuilder<VertexPosition>("human");
         var primitive = mesh.UsePrimitive(material);

@@ -13,15 +13,17 @@ public partial class AiPanel : UserControl
     private readonly CharacterSystem _cs;
     private readonly IFeatureAvailabilityService _features;
     private readonly AnnyHumanService _anny;
+    private readonly IAssetGenerationService _assets;
     private readonly Action<string> _loadPreview;
     private string? _selectedImagePath;
 
-    public AiPanel(CharacterSystem cs, IFeatureAvailabilityService features, AnnyHumanService anny, Action<string> loadPreview)
+    public AiPanel(CharacterSystem cs, IFeatureAvailabilityService features, AnnyHumanService anny, Action<string> loadPreview, IAssetGenerationService assets)
     {
         InitializeComponent();
         _cs = cs;
         _features = features;
         _anny = anny;
+        _assets = assets;
         _loadPreview = loadPreview;
         AvailabilityLabel.Text = _features.GetStatusMessage(FeatureIds.AnnyHuman);
         var annyOk = _features.IsInvocable(FeatureIds.AnnyHuman);
@@ -31,7 +33,7 @@ public partial class AiPanel : UserControl
         BtnReferenceImage.IsEnabled = _features.IsInvocable(FeatureIds.ReferenceImageGenerate);
         BtnGeneratePerson.IsEnabled = personOk;
         BtnGenerateAsset.IsEnabled = assetOk;
-        TxtPrompt.IsEnabled = personOk || assetOk;
+        TxtPrompt.IsEnabled = personOk || assetOk || _features.IsInvocable(FeatureIds.AiGenerateAsset);
         StatusLabel.Text = annyOk
             ? _features.GetStatusMessage(FeatureIds.AnnyHuman)
             : _features.GetStatusMessage(FeatureIds.ImageTo3D);
@@ -90,8 +92,28 @@ public partial class AiPanel : UserControl
         StatusLabel.Text = _features.GetStatusMessage(FeatureIds.AiGeneratePerson);
     }
 
-    private void BtnGenerateAsset_Click(object sender, RoutedEventArgs e)
+    private async void BtnGenerateAsset_Click(object sender, RoutedEventArgs e)
     {
-        StatusLabel.Text = _features.GetStatusMessage(FeatureIds.AiGenerateAsset);
+        if (!_features.IsInvocable(FeatureIds.AiGenerateAsset))
+        {
+            StatusLabel.Text = _features.GetStatusMessage(FeatureIds.AiGenerateAsset);
+            return;
+        }
+        try
+        {
+            BtnGenerateAsset.IsEnabled = false;
+            StatusLabel.Text = "Erzeuge Asset…";
+            var asset = await _assets.GenerateAsync(TxtPrompt.Text);
+            _loadPreview(asset.GlbPath);
+            StatusLabel.Text = $"Asset: {asset.Name} ({asset.Provenance.BackendId})";
+        }
+        catch (Exception ex)
+        {
+            StatusLabel.Text = ex.Message;
+        }
+        finally
+        {
+            BtnGenerateAsset.IsEnabled = _features.IsInvocable(FeatureIds.AiGenerateAsset);
+        }
     }
 }
