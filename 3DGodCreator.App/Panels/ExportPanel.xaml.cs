@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using ThreeDGod.Application;
 using ThreeDGodCreator.App;
 using ThreeDGodCreator.Core;
 
@@ -12,11 +13,20 @@ public partial class ExportPanel : UserControl
     private readonly CharacterSystem _cs;
     private readonly string _basePath;
 
-    public ExportPanel(CharacterSystem cs)
+    private readonly IFeatureAvailabilityService _features;
+
+    public ExportPanel(CharacterSystem cs, IFeatureAvailabilityService features)
     {
         InitializeComponent();
         _cs = cs;
+        _features = features;
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
+        BtnSavePreset.IsEnabled = _features.IsInvocable(FeatureIds.PresetSave);
+        BtnExportFbx.IsEnabled = _features.IsInvocable(FeatureIds.ExportFbx);
+        BtnExportUnreal.IsEnabled = _features.IsInvocable(FeatureIds.ExportUnreal);
+        WriteLog(_features.GetStatusMessage(FeatureIds.PresetSave), "INFO");
+        WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
+        WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "INFO");
     }
 
     private void WriteLog(string message, string level = "INFO")
@@ -40,12 +50,17 @@ public partial class ExportPanel : UserControl
     {
         var name = TxtFilename.Text.Trim();
         if (string.IsNullOrEmpty(name)) name = "my_character";
-        WriteLog("Starte FBX-Export");
+        WriteLog("FBX-Export ist Experimental und wird nicht als Erfolg gemeldet, bevor eine Datei existiert.", "INFO");
+        WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
         try
         {
             _cs.SavePreset(name);
             _cs.ExportFbx(name);
-            WriteLog($"FBX-Export abgeschlossen: exports/{name}.fbx", "SUCCESS");
+            var fbx = Path.Combine(_basePath, "exports", $"{name}.fbx");
+            if (File.Exists(fbx))
+                WriteLog($"FBX-Datei vorhanden: {fbx}", "INFO");
+            else
+                WriteLog($"Kein FBX verifiziert unter {fbx}. Job wurde nur angestoßen.", "WARN");
         }
         catch (Exception ex)
         {
@@ -66,7 +81,7 @@ public partial class ExportPanel : UserControl
             if (!string.IsNullOrEmpty(dir))
             {
                 TxtUnrealPath.Text = dir;
-                WriteLog($"Unreal-Zielordner: {dir}", "SUCCESS");
+                WriteLog($"Unreal-Zielordner ausgewählt (Copy-Ziel, keine UE5-Pipeline): {dir}", "INFO");
             }
         }
     }
@@ -93,7 +108,8 @@ public partial class ExportPanel : UserControl
         {
             var dstFbx = Path.Combine(dstDir, $"{name}.fbx");
             File.Copy(srcFbx, dstFbx, overwrite: true);
-            WriteLog($"FBX kopiert nach Unreal: {dstFbx}", "SUCCESS");
+            WriteLog($"FBX nach Ordner kopiert (kein UE5-Pipeline): {dstFbx}", "INFO");
+            WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "WARN");
         }
         catch (Exception ex)
         {

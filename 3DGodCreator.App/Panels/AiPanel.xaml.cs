@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using ThreeDGod.Application;
 using ThreeDGodCreator.Core;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -8,12 +9,21 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class AiPanel : UserControl
 {
     private readonly CharacterSystem _cs;
+    private readonly IFeatureAvailabilityService _features;
     private string? _selectedImagePath;
 
-    public AiPanel(CharacterSystem cs)
+    public AiPanel(CharacterSystem cs, IFeatureAvailabilityService features)
     {
         InitializeComponent();
         _cs = cs;
+        _features = features;
+        AvailabilityLabel.Text = _features.GetStatusMessage(FeatureIds.AiGeneratePerson);
+        var personOk = _features.IsInvocable(FeatureIds.AiGeneratePerson);
+        var assetOk = _features.IsInvocable(FeatureIds.AiGenerateAsset);
+        BtnGeneratePerson.IsEnabled = personOk;
+        BtnGenerateAsset.IsEnabled = assetOk;
+        TxtPrompt.IsEnabled = personOk || assetOk;
+        StatusLabel.Text = personOk ? "" : "NotImplemented – es wird kein Mesh erzeugt.";
     }
 
     private void BtnLoadImage_Click(object sender, RoutedEventArgs e)
@@ -27,17 +37,17 @@ public partial class AiPanel : UserControl
         {
             _selectedImagePath = dlg.FileName;
             LblImage.Text = System.IO.Path.GetFileName(_selectedImagePath);
-            StatusLabel.Text = "Bild ausgewählt.";
+            StatusLabel.Text = "Bild ausgewählt. Generierung ist trotzdem nicht implementiert.";
         }
     }
 
     private void BtnGeneratePerson_Click(object sender, RoutedEventArgs e)
     {
-        StatusLabel.Text = "KI-Generierung (Phase 2: ONNX-Service nicht implementiert). Bild laden und TripoSR-Python-Backend nutzen.";
+        StatusLabel.Text = _features.GetStatusMessage(FeatureIds.AiGeneratePerson);
     }
 
     private void BtnGenerateAsset_Click(object sender, RoutedEventArgs e)
     {
-        StatusLabel.Text = "KI-Asset-Generierung (Phase 2: ONNX-Service nicht implementiert).";
+        StatusLabel.Text = _features.GetStatusMessage(FeatureIds.AiGenerateAsset);
     }
 }

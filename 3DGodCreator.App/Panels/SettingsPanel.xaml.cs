@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using ThreeDGod.Application;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
@@ -14,7 +15,7 @@ public partial class SettingsPanel : UserControl
     private readonly IBlenderOperations _blenderService;
     private readonly Window _mainWindow;
 
-    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow)
+    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow, IFeatureAvailabilityService features)
     {
         InitializeComponent();
         _characterSystem = cs;
@@ -29,6 +30,11 @@ public partial class SettingsPanel : UserControl
         ChkController.IsChecked = cfg.ControllerEnabled;
 
         TxtBlenderPath.LostFocus += (_, _) => SaveConfig();
+        if (!features.IsInvocable(FeatureIds.ControllerInput))
+        {
+            ChkController.IsEnabled = false;
+            ChkController.ToolTip = features.GetStatusMessage(FeatureIds.ControllerInput);
+        }
     }
 
     private void SaveConfig()

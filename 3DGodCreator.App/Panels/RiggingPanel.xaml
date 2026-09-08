@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Margin="8">
         <TextBlock Text="Rigging &amp; Skeleton Setup" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-        <Button Content="Auto-Rig erstellen" Padding="12,6" Margin="0,0,0,4" Click="BtnAutoRig_Click"/>
-        <Button Content="Metahuman-kompatibles Rig exportieren" Padding="12,6" Click="BtnMetahuman_Click"/>
+        <TextBlock x:Name="AvailabilityLabel" Foreground="#f0c14b" Margin="0,0,0,8" TextWrapping="Wrap"/>
+        <Button x:Name="BtnAutoRig" Content="Auto-Rig erstellen" Padding="12,6" Margin="0,0,0,4" Click="BtnAutoRig_Click"/>
+        <Button x:Name="BtnMetahuman" Content="Metahuman-kompatibles Rig exportieren" Padding="12,6" Click="BtnMetahuman_Click"/>
     </StackPanel>
 </UserControl>

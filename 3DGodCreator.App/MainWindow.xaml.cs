@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
+using ThreeDGod.Application;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
@@ -26,11 +27,14 @@ public partial class MainWindow : Window
     /// </summary>
     private ScaleTransform3D? _sculptScaleTransform;
 
+    private readonly IFeatureAvailabilityService _features;
+
     public MainWindow(
         ConfigService configService,
         IBlenderOperations blenderService,
         PresetService presetService,
-        CharacterSystem characterSystem)
+        CharacterSystem characterSystem,
+        IFeatureAvailabilityService features)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -39,6 +43,7 @@ public partial class MainWindow : Window
         _blenderService = blenderService;
         _presetService = presetService;
         _characterSystem = characterSystem;
+        _features = features;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -80,14 +85,14 @@ public partial class MainWindow : Window
         FormPanel.Content = new FormPanel(_characterSystem);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
-        ClothingPanel.Content = new ClothingPanel(_characterSystem);
-        PhysicsPanel.Content = new PhysicsPanel(_characterSystem);
+        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features);
+        PhysicsPanel.Content = new PhysicsPanel(_characterSystem, _features);
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
-        RiggingPanel.Content = new RiggingPanel(_characterSystem);
-        ExportPanel.Content = new ExportPanel(_characterSystem);
-        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this);
-        AiPanel.Content = new AiPanel(_characterSystem);
+        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features);
+        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
+        AiPanel.Content = new AiPanel(_characterSystem, _features);
     }
 
     private void ApplyTheme(string theme)
