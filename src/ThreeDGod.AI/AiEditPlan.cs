@@ -31,6 +31,7 @@ public static class AiEditPlanSchema
         "creature.swapPart",
         "creature.replacePart",
         "creature.addPart",
+        "garment.parameter.delta",
         "parameter.set",
         "parameter.delta"
     };

@@ -82,6 +82,14 @@ public interface IFreeformCharacterPipeline
     Task<CharacterDocument> RunAsync(string prompt, ProjectBundle bundle, string workRoot, CancellationToken cancellationToken = default);
 }
 
+public interface IGarmentService
+{
+    GarmentDefinition GetTemplate(string name);
+    GarmentInstance Instantiate(GarmentDefinition definition, Guid characterId);
+    string BuildMesh(GarmentDefinition definition, GarmentInstance instance, string destinationGlb);
+    Task ApplyTextAsync(GarmentDefinition definition, GarmentInstance instance, string prompt, CommandStack stack, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

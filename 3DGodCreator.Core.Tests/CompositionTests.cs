@@ -51,6 +51,8 @@ public class CompositionTests
         Assert.IsType<CreatureTextEditService>(provider.GetRequiredService<ICreatureTextEditService>());
         Assert.NotNull(provider.GetRequiredService<IFreeformCharacterPipeline>());
         Assert.IsType<FreeformPipeline>(provider.GetRequiredService<IFreeformCharacterPipeline>());
+        Assert.NotNull(provider.GetRequiredService<IGarmentService>());
+        Assert.IsType<GarmentService>(provider.GetRequiredService<IGarmentService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

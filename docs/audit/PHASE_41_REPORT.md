@@ -1,8 +1,18 @@
-﻿# PHASE_41 Report
+﻿# PHASE 41 Report
 
-- Phase: 41 – Garment Domain
+- Phase: 41 – Garment Domain + Built-in Templates
 - Status: **PASS**
 
-GarmentDefinition/Instance Domain + Templates-Felder. Fitting NotImplemented.
+## Was wirklich existiert
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- Templates: T-Shirt, Jacket, Pants, Coat, Skirt, Dress mit `length`, `sleeveLength`, `width`, `collar`.
+- Parametrischer Mesh-Builder (kein AI). Prompt **"längere Ärmel"** erhöht `sleeveLength` und verbreitert die Sleeve-Geometrie (größere |X|-Spanweite).
+- Undo stellt den Parameter wieder her. `clothing.fit` bleibt **NotImplemented**.
+
+## Nicht vorhanden
+
+- Kein GarmentCode/PyGarment, kein Body-Fit.
+
+## Gates
+
+- `GarmentTemplateTests`
