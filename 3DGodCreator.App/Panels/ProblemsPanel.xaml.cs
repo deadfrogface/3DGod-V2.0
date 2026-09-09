@@ -8,11 +8,18 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class ProblemsPanel : UserControl
 {
     private readonly IDiagnosticService _diagnostics;
+    private readonly Func<DiagnosticIssue, bool>? _showInViewport;
+    private readonly Action? _clearHighlight;
 
-    public ProblemsPanel(IDiagnosticService diagnostics)
+    public ProblemsPanel(
+        IDiagnosticService diagnostics,
+        Func<DiagnosticIssue, bool>? showInViewport = null,
+        Action? clearHighlight = null)
     {
         InitializeComponent();
         _diagnostics = diagnostics;
+        _showInViewport = showInViewport;
+        _clearHighlight = clearHighlight;
         Refresh();
     }
 
@@ -35,11 +42,39 @@ public partial class ProblemsPanel : UserControl
         {
             ShortView.Text = "";
             DetailsView.Text = "";
+            BtnShowObject.IsEnabled = false;
             return;
         }
         ShortView.Text = $"{issue.ExceptionType}: {issue.Message} @ {issue.Location.Method}:{issue.Location.Line}";
         DetailsView.Text = CursorReportBuilder.CreateCursorReport(issue);
+        BtnShowObject.IsEnabled = issue.Scene is not null;
     }
+
+    private void BtnShowObject_Click(object sender, RoutedEventArgs e)
+    {
+        var issue = Selected;
+        if (issue is null)
+            return;
+        if (issue.Scene is null)
+        {
+            MessageBox.Show(
+                "Dieses Diagnostic hat keine Mesh-/Vertex-Referenz. Betroffenes Objekt kann nicht fokussiert werden.",
+                "Betroffenes Objekt",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (_showInViewport is null)
+        {
+            MessageBox.Show("Viewport ist nicht verdrahtet.", "Betroffenes Objekt", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _showInViewport(issue);
+    }
+
+    private void BtnClearHighlight_Click(object sender, RoutedEventArgs e) => _clearHighlight?.Invoke();
 
     private void BtnCopyError_Click(object sender, RoutedEventArgs e)
     {

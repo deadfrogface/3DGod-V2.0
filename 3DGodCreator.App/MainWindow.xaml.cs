@@ -1,4 +1,5 @@
 using System.IO;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -10,6 +11,8 @@ using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Export;
+using ThreeDGod.Mesh;
+using ThreeDGod.Rendering;
 using ThreeDGod.Workers;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
@@ -39,7 +42,10 @@ public partial class MainWindow : Window
     private readonly IProjectService _projects;
     private readonly AnnyHumanService _anny;
     private readonly IAssetGenerationService _assets;
+    private readonly ViewportSelectionService _viewportSelection;
+    private readonly HelixViewportSession _viewportSession;
     private AnnyInspectorPanel? _annyInspector;
+    private ProblemsPanel? _problemsPanel;
 
     public MainWindow(
         ConfigService configService,
@@ -51,7 +57,8 @@ public partial class MainWindow : Window
         IDiagnosticService diagnostics,
         IProjectService projects,
         AnnyHumanService anny,
-        IAssetGenerationService assets)
+        IAssetGenerationService assets,
+        ViewportSelectionService viewportSelection)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -66,6 +73,9 @@ public partial class MainWindow : Window
         _projects = projects;
         _anny = anny;
         _assets = assets;
+        _viewportSelection = viewportSelection;
+        _viewportSession = new HelixViewportSession(_viewportSelection);
+        _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -117,8 +127,40 @@ public partial class MainWindow : Window
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, () => _currentPreviewPath);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
         AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
-        ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
+        _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);
+        ProblemsPanel.Content = _problemsPanel;
     }
+
+    private void UpdateSelectionInspector(Guid? domainObjectId)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            SelectionInfo.Text = domainObjectId is Guid id
+                ? $"Auswahl DomainObjectId: {id}"
+                : "Auswahl: (keine)";
+        });
+    }
+
+    public bool ShowDiagnosticIssueInViewport(DiagnosticIssue issue)
+    {
+        var ok = _viewportSession.ShowDiagnostic(issue);
+        if (!ok)
+        {
+            var reason = _viewportSession.Highlight.UnavailableReason
+                         ?? (issue.Scene is null
+                             ? "Diagnostic hat keine Scene-/Mesh-Referenz."
+                             : "Problemstelle konnte im aktuellen Viewport nicht aufgelöst werden.");
+            DebugLog.Write($"[Viewport] Diagnostic focus unavailable: {reason}");
+            MessageBox.Show(reason, "Betroffenes Objekt", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+
+        UpdateSelectionInspector(_viewportSelection.SelectedDomainObjectId);
+        Tabs.SelectedIndex = 0;
+        return true;
+    }
+
+    public void ClearDiagnosticHighlight() => _viewportSession.ClearDiagnostic();
 
     private void ApplyTheme(string theme)
     {
@@ -161,7 +203,19 @@ public partial class MainWindow : Window
                     if (content != null)
                     {
                         var rotated = WrapWithUprightTransform(content);
-                        var vp = CreateViewport3D(rotated);
+                        var positions = Array.Empty<Vector3>();
+                        var indices = Array.Empty<int>();
+                        try
+                        {
+                            if (ext == ".obj")
+                            {
+                                var imported = ObjImporter.ImportObj(path);
+                                positions = imported.Positions.ToArray();
+                                indices = imported.Indices.ToArray();
+                            }
+                        }
+                        catch { /* hit-test still works; diagnostic verts may be unavailable */ }
+                        var vp = CreateViewport3D(rotated, positions, indices, hasRealBones: false);
                         ViewportHost.Child = vp;
                         DebugLog.Write($"[Viewport] 3D-Modell geladen: {path}");
                     }
@@ -205,7 +259,22 @@ public partial class MainWindow : Window
                         });
                     }
 
-                    var vp = CreateViewport3D(content);
+                    IReadOnlyList<Vector3> positions = [];
+                    IReadOnlyList<int> indices = [];
+                    try
+                    {
+                        (positions, indices) = MeshCompare.ReadMesh(path);
+                    }
+                    catch (Exception meshEx)
+                    {
+                        DebugLog.Write($"[Viewport] Mesh positions unavailable for diagnostics: {meshEx.Message}");
+                    }
+
+                    var vp = CreateViewport3D(
+                        content,
+                        positions,
+                        indices,
+                        hasRealBones: _characterSystem.IsCurrentModelRigged);
                     ViewportHost.Child = vp;
                     ApplySculptTransform(_characterSystem.SculptData);
                     if (FormPanel.Content is FormPanel fp)
@@ -276,27 +345,29 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// Creates viewport. Model centered at origin. Height slider controls scale (size).
-    /// Viewport: Rechtsklick = Drehen, Shift+Rechtsklick = Verschieben, Mausrad = Zoom.
+    /// Viewport: Rechtsklick = Drehen, Shift+Rechtsklick = Verschieben, Mausrad = Zoom, Linksklick = Selection.
     /// </summary>
-    private HelixViewport3D CreateViewport3D(Model3D content)
+    private HelixViewport3D CreateViewport3D(
+        Model3D content,
+        IReadOnlyList<Vector3> positions,
+        IReadOnlyList<int> indices,
+        bool hasRealBones)
     {
         var centerOffset = GetModelCenterOffset(content);
         var centerTransform = new TranslateTransform3D(-centerOffset.X, -centerOffset.Y, -centerOffset.Z);
         _sculptScaleTransform = new ScaleTransform3D(1, 1, 1);
 
-        var transformGroup = new Transform3DGroup();
-        transformGroup.Children.Add(_sculptScaleTransform);
-        transformGroup.Children.Add(centerTransform);
-        var wrapper = new Model3DGroup { Transform = transformGroup };
-        wrapper.Children.Add(content);
-
-        var vp = new HelixViewport3D { Background = Brushes.Black };
-        vp.RotateGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick);
-        vp.PanGesture = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.RightClick, System.Windows.Input.ModifierKeys.Shift);
-        vp.PanGesture2 = new System.Windows.Input.MouseGesture(System.Windows.Input.MouseAction.None);
-        vp.Children.Add(new DefaultLights());
-        vp.Children.Add(new ModelVisual3D { Content = wrapper });
-        vp.ZoomExtents();
+        var meshId = Guid.NewGuid();
+        var vp = _viewportSession.Attach(
+            content,
+            meshId,
+            positions,
+            indices,
+            hasRealBones,
+            _sculptScaleTransform,
+            centerTransform);
+        UpdateSelectionInspector(null);
+        SelectionInfo.Text = $"Mesh DomainObjectId: {meshId} (Linksklick wählt aus)";
         return vp;
     }
 

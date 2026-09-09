@@ -1,8 +1,18 @@
-﻿# PHASE_17 Report
+﻿# PHASE 17 Report
 
 - Phase: 17 – Viewport Upgrade
-- Status: **PASS**
+- Status: **PASS** (audit repair)
+- Date: 2026-09-09
 
-Helix rotate/pan/zoom bleibt. ViewportSelectionService mappt RenderId auf DomainObjectId. Skeleton overlay nur bei echten Bones.
+## Build Book DONE
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- Helix rotate/pan/zoom unchanged
+- Linksklick hit-test selects mesh and maps render visual → `DomainObjectId`
+- DomainObjectId shown in viewport inspector (`SelectionInfo`)
+- Skeleton overlay only when model is actually rigged
+- `ViewportSelectionService` registered in DI and used by `MainWindow` / `HelixViewportSession`
+
+## Build / tests
+
+- `dotnet build -c Release`: 0 errors, 0 warnings
+- ProductPhase + Composition viewport tests: see PHASE_17A

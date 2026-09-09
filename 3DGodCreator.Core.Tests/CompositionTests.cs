@@ -63,6 +63,7 @@ public class CompositionTests
         Assert.IsType<ThreeDGod.Physics.AccessoryPhysicsService>(provider.GetRequiredService<IAccessoryPhysicsService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
+        Assert.NotNull(provider.GetRequiredService<ThreeDGod.Rendering.ViewportSelectionService>());
     }
 
     [Fact]

@@ -16,20 +16,64 @@ public class ProductPhaseTests
         var id = Guid.NewGuid();
         svc.Register(7, new ViewportObjectHit { DomainObjectId = id, Kind = "mesh" });
         Assert.Equal(id, svc.SelectRenderId(7));
+        Assert.Equal(id, svc.SelectedDomainObjectId);
         svc.EnableSkeletonOverlay(hasRealBones: false);
         Assert.False(svc.SkeletonOverlayEnabled);
         svc.EnableSkeletonOverlay(hasRealBones: true);
         Assert.True(svc.SkeletonOverlayEnabled);
+        svc.ClearSelection();
+        Assert.Null(svc.SelectedDomainObjectId);
     }
 
     [Fact]
-    public void ViewportDiagnostic_CanHighlightAndClear()
+    public void ViewportDiagnostic_ResolvesKnownVertexIds_AndClears()
     {
-        var hl = new ViewportDiagnosticHighlight { MeshAssetId = Guid.NewGuid(), VertexIndices = [1, 2] };
-        hl.Show();
+        var meshId = Guid.NewGuid();
+        var positions = new[]
+        {
+            new System.Numerics.Vector3(0, 0, 0),
+            new System.Numerics.Vector3(1, 0, 0),
+            new System.Numerics.Vector3(0, 1, 0),
+            new System.Numerics.Vector3(0, 0, 1)
+        };
+        var indices = new[] { 0, 1, 2, 0, 2, 3 };
+        var hl = new ViewportDiagnosticHighlight();
+        hl.Show(new DiagnosticSceneTarget
+        {
+            MeshAssetId = meshId,
+            VertexIndices = [1, 2],
+            TriangleIndices = [0]
+        }, positions, indices);
+
         Assert.True(hl.Active);
+        Assert.Equal(3, hl.HighlightedPositions.Count); // 2 verts + 1 triangle centroid
+        Assert.Equal(positions[1], hl.HighlightedPositions[0]);
+        Assert.Equal(positions[2], hl.HighlightedPositions[1]);
+        Assert.NotNull(hl.FocusPoint);
+
         hl.Clear();
         Assert.False(hl.Active);
+        Assert.Empty(hl.HighlightedPositions);
+        Assert.Null(hl.FocusPoint);
+    }
+
+    [Fact]
+    public void DiagnosticCapture_AttachesSceneRefs_ForViewportFocus()
+    {
+        var diagnostics = new ThreeDGod.Core.Diagnostics.DiagnosticService();
+        var meshId = Guid.NewGuid();
+        var issue = diagnostics.Capture(
+            new InvalidOperationException("non-manifold near vertex 2"),
+            "Mesh.Validate",
+            scene: new ThreeDGod.Core.Diagnostics.DiagnosticSceneRef
+            {
+                MeshAssetId = meshId,
+                VertexIndices = [2],
+                WorldPosition = [0.1, 0.2, 0.3]
+            });
+        Assert.NotNull(issue.Scene);
+        Assert.Equal(meshId, issue.Scene!.MeshAssetId);
+        Assert.Equal([2], issue.Scene.VertexIndices);
     }
 
     [Fact]

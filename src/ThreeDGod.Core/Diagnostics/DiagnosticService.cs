@@ -43,6 +43,18 @@ public sealed class DiagnosticBreadcrumb
     public string? Provider { get; init; }
 }
 
+public sealed class DiagnosticSceneRef
+{
+    public Guid? CharacterId { get; init; }
+    public Guid? MeshAssetId { get; init; }
+    public Guid? GarmentId { get; init; }
+    public Guid? RigId { get; init; }
+    public string? BoneId { get; init; }
+    public IReadOnlyList<int> VertexIndices { get; init; } = [];
+    public IReadOnlyList<int> TriangleIndices { get; init; } = [];
+    public double[]? WorldPosition { get; init; }
+}
+
 public sealed class DiagnosticIssue
 {
     public string ErrorCode { get; init; } = "UNHANDLED";
@@ -59,11 +71,18 @@ public sealed class DiagnosticIssue
     public string? Pipeline { get; init; }
     public string? LastSuccessfulStage { get; init; }
     public string? FailingStage { get; init; }
+    public DiagnosticSceneRef? Scene { get; init; }
 }
 
 public interface IDiagnosticService
 {
-    DiagnosticIssue Capture(Exception exception, string source, string? correlationId = null, string? jobId = null, string? backendId = null);
+    DiagnosticIssue Capture(
+        Exception exception,
+        string source,
+        string? correlationId = null,
+        string? jobId = null,
+        string? backendId = null,
+        DiagnosticSceneRef? scene = null);
     void AddBreadcrumb(DiagnosticBreadcrumb breadcrumb);
     IReadOnlyList<DiagnosticIssue> Issues { get; }
     IReadOnlyList<DiagnosticBreadcrumb> Breadcrumbs { get; }
@@ -78,7 +97,8 @@ public sealed class CSharpExceptionEnricher
         IReadOnlyList<DiagnosticBreadcrumb>? breadcrumbs = null,
         string? correlationId = null,
         string? jobId = null,
-        string? backendId = null)
+        string? backendId = null,
+        DiagnosticSceneRef? scene = null)
     {
         var trace = new System.Diagnostics.StackTrace(exception, fNeedFileInfo: true);
         var frames = new List<StackFrameDiagnostic>();
@@ -164,7 +184,8 @@ public sealed class CSharpExceptionEnricher
             Breadcrumbs = crumbs,
             Pipeline = failing?.Pipeline ?? lastOk?.Pipeline ?? crumbs.LastOrDefault()?.Pipeline,
             LastSuccessfulStage = lastOk?.Stage,
-            FailingStage = failing?.Stage
+            FailingStage = failing?.Stage,
+            Scene = scene
         };
     }
 }
@@ -198,12 +219,18 @@ public sealed class DiagnosticService : IDiagnosticService
             _breadcrumbs.Add(breadcrumb);
     }
 
-    public DiagnosticIssue Capture(Exception exception, string source, string? correlationId = null, string? jobId = null, string? backendId = null)
+    public DiagnosticIssue Capture(
+        Exception exception,
+        string source,
+        string? correlationId = null,
+        string? jobId = null,
+        string? backendId = null,
+        DiagnosticSceneRef? scene = null)
     {
         DiagnosticBreadcrumb[] crumbs;
         lock (_gate)
             crumbs = _breadcrumbs.ToArray();
-        var issue = _enricher.Enrich(exception, source, crumbs, correlationId, jobId, backendId);
+        var issue = _enricher.Enrich(exception, source, crumbs, correlationId, jobId, backendId, scene);
         lock (_gate)
             _issues.Add(issue);
         return issue;

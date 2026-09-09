@@ -88,8 +88,11 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Text="3D Vorschau" FontSize="16" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                <TextBlock Grid.Row="1" Text="Rechtsklick ziehen = Drehen · Shift+Rechtsklick = Verschieben · Mausrad = Zoom" 
-                           Foreground="#888" FontSize="11" Margin="0,0,0,6"/>
+                <StackPanel Grid.Row="1" Margin="0,0,0,6">
+                    <TextBlock Text="Rechtsklick ziehen = Drehen · Shift+Rechtsklick = Verschieben · Mausrad = Zoom · Linksklick = Auswahl"
+                               Foreground="#888" FontSize="11"/>
+                    <TextBlock x:Name="SelectionInfo" Text="Auswahl: (keine)" Foreground="#f0c14b" FontSize="11" Margin="0,4,0,0"/>
+                </StackPanel>
                 <Border Grid.Row="2" x:Name="ViewportHost" Background="#1a1a1a" MinHeight="300">
                     <Image x:Name="PreviewImage" Stretch="Uniform"/>
                 </Border>

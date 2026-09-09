@@ -16,6 +16,10 @@
             <TextBox x:Name="DetailsView" IsReadOnly="True" TextWrapping="Wrap" Background="#1e1e1e" Foreground="White" FontFamily="Consolas" BorderThickness="0"/>
         </ScrollViewer>
         <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,8,0,0">
+            <Button x:Name="BtnShowObject" Content="Betroffenes Objekt anzeigen" Padding="10,6" Margin="0,0,8,0"
+                    Click="BtnShowObject_Click" IsEnabled="False"
+                    ToolTip="Fokussiert und markiert die referenzierte Problemstelle im Viewport"/>
+            <Button Content="Highlight entfernen" Padding="10,6" Margin="0,0,8,0" Click="BtnClearHighlight_Click"/>
             <Button Content="Fehler kopieren" Padding="10,6" Margin="0,0,8,0" Click="BtnCopyError_Click"/>
             <Button Content="Details kopieren" Padding="10,6" Margin="0,0,8,0" Click="BtnCopyDetails_Click"/>
             <Button Content="Im Log öffnen" Padding="10,6" Click="BtnOpenLog_Click"/>

@@ -20,6 +20,16 @@ public static class CursorReportBuilder
         sb.AppendLine($"Failing Stage: {Redact(issue.FailingStage)}");
         sb.AppendLine($"Backend/Worker: {Redact(issue.BackendId)}");
         sb.AppendLine($"Object: {Redact(issue.Source)}");
+        if (issue.Scene is not null)
+        {
+            sb.AppendLine($"Scene.MeshAssetId: {issue.Scene.MeshAssetId}");
+            sb.AppendLine($"Scene.CharacterId: {issue.Scene.CharacterId}");
+            sb.AppendLine($"Scene.GarmentId: {issue.Scene.GarmentId}");
+            sb.AppendLine($"Scene.RigId: {issue.Scene.RigId}");
+            sb.AppendLine($"Scene.BoneId: {Redact(issue.Scene.BoneId)}");
+            sb.AppendLine($"Scene.VertexIndices: {string.Join(',', issue.Scene.VertexIndices)}");
+            sb.AppendLine($"Scene.TriangleIndices: {string.Join(',', issue.Scene.TriangleIndices)}");
+        }
         sb.AppendLine($"Source File: {Redact(issue.Location.FilePath)}");
         sb.AppendLine($"Method: {Redact(issue.Location.Method)}");
         sb.AppendLine($"Line: {issue.Location.Line?.ToString() ?? "Unavailable"}");
