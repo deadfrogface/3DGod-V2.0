@@ -1,5 +1,6 @@
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
+using ThreeDGod.Export;
 using ThreeDGod.Workers;
 
 namespace ThreeDGod.Infrastructure;
@@ -124,8 +125,13 @@ public static class ExportPreflight
                 var len = new FileInfo(path).Length;
                 if (len < 64)
                     issues.Add("FBX too small to be a valid scene.");
+                else
+                    issues.Add("FBX present – prefer UnrealEngine5ExportProfile on GLB; UE5 editor import not claimed.");
             }
             return (IReadOnlyList<string>)issues;
         }, provider: "ue5-preflight");
     }
+
+    public static Ue5PreflightReport EvaluateGlbForUe5(string glbPath, string? assetName = null, bool requireSkin = true, IDiagnosticService? diagnostics = null) =>
+        UnrealEngine5ExportProfile.EvaluateGlb(glbPath, assetName, requireSkin, diagnostics);
 }

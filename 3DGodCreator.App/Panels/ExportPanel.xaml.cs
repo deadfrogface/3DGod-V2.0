@@ -89,8 +89,21 @@ public partial class ExportPanel : UserControl
         if (dlg.ShowDialog() != true) return;
         try
         {
+            var assetName = Path.GetFileNameWithoutExtension(dlg.FileName);
+            var preflight = UnrealEngine5ExportProfile.EvaluateGlb(src, assetName);
+            foreach (var soft in preflight.SoftMessages)
+                WriteLog(soft, "INFO");
+            if (!preflight.Passed)
+            {
+                foreach (var hard in preflight.HardMessages)
+                    WriteLog(hard, "ERROR");
+                WriteLog("UE5-Preflight Hard-Fail – Export abgebrochen.", "ERROR");
+                return;
+            }
+
             GlbExportService.Export(src, dlg.FileName);
             WriteLog($"GLB geschrieben: {dlg.FileName}", "INFO");
+            WriteLog("Hinweis: Preflight ≠ erfolgreicher UE5-Editor-Import.", "INFO");
         }
         catch (Exception ex)
         {

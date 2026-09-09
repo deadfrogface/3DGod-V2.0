@@ -4,6 +4,7 @@
     <ProjectReference Include="..\ThreeDGod.Application\ThreeDGod.Application.csproj" />
     <ProjectReference Include="..\ThreeDGod.Core\ThreeDGod.Core.csproj" />
     <ProjectReference Include="..\ThreeDGod.Mesh\ThreeDGod.Mesh.csproj" />
+    <ProjectReference Include="..\ThreeDGod.Rigging\ThreeDGod.Rigging.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
