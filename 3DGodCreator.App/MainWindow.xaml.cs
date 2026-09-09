@@ -223,6 +223,8 @@ public partial class MainWindow : Window, ILocalizableView
         };
     }
 
+    public void ApplyThemePublic(string theme) => ApplyTheme(theme);
+
     private void RefreshSliders()
     {
         if (FormPanel.Content is FormPanel fp)

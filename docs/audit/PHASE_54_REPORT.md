@@ -1,8 +1,17 @@
-﻿# PHASE_54 Report
+﻿# PHASE 54 Report
 
 - Phase: 54 – Settings
 - Status: **PASS**
+- Date: 2026-09-10
 
-Theme, NSFW, Legacy-Runtime, Log-Ordner, Feature-Gates.
+## Build Book DONE
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+- Theme, Language, Project/Model/Cache/Export folders, Backend Quality, GPU prefer, Advanced Blender Fallback
+- Persistiert via `config.json`
+- Invalid paths recover to `%LocalAppData%/3DGod/...`
+- Missing Blender path cleared
+- Settings UI in ScrollViewer; main window remains freely resizable
+
+## Tests
+
+`ConfigServiceTests`: roundtrip folders/quality, sanitize invalid paths

@@ -1,7 +1,9 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using ThreeDGod.Application;
+using ThreeDGod.Infrastructure;
 using ThreeDGod.Infrastructure.Logging;
 using ThreeDGodCreator.App.Localization;
 using ThreeDGodCreator.Core;
@@ -18,6 +20,7 @@ public partial class SettingsPanel : UserControl, ILocalizableView
     private readonly IBlenderOperations _blenderService;
     private readonly Window _mainWindow;
     private bool _suppressLanguageChange;
+    private bool _suppressSave;
 
     public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow, IFeatureAvailabilityService features)
     {
@@ -27,14 +30,29 @@ public partial class SettingsPanel : UserControl, ILocalizableView
         _blenderService = blenderService;
         _mainWindow = mainWindow;
 
+        _suppressSave = true;
         var cfg = _configService.Load();
         TxtBlenderPath.Text = cfg.BlenderPath;
+        TxtProjectFolder.Text = cfg.ProjectFolder;
+        TxtModelFolder.Text = cfg.ModelFolder;
+        TxtCacheFolder.Text = cfg.CacheFolder;
+        TxtExportFolder.Text = cfg.ExportFolder;
         SelectTheme(cfg.Theme);
         SelectLanguage(cfg.Language);
+        SelectQuality(cfg.BackendQuality);
         ChkNsfw.IsChecked = cfg.NsfwEnabled;
         ChkController.IsChecked = cfg.ControllerEnabled;
+        ChkPreferGpu.IsChecked = cfg.PreferGpu;
+        ChkBlenderFallback.IsChecked = cfg.AdvancedBlenderFallback;
+        RefreshGpuLabel();
+        _suppressSave = false;
 
         TxtBlenderPath.LostFocus += (_, _) => SaveConfig();
+        TxtProjectFolder.LostFocus += (_, _) => SaveConfig();
+        TxtModelFolder.LostFocus += (_, _) => SaveConfig();
+        TxtCacheFolder.LostFocus += (_, _) => SaveConfig();
+        TxtExportFolder.LostFocus += (_, _) => SaveConfig();
+
         if (!features.IsInvocable(FeatureIds.ControllerInput))
         {
             ChkController.IsEnabled = false;
@@ -60,6 +78,7 @@ public partial class SettingsPanel : UserControl, ILocalizableView
 
         var selectedLanguage = (CmbLanguage.SelectedItem as ComboBoxItem)?.Tag as string ?? Loc.CurrentLocale;
         var selectedTheme = (CmbTheme.SelectedItem as ComboBoxItem)?.Tag as string ?? "dark";
+        var selectedQuality = (CmbQuality.SelectedItem as ComboBoxItem)?.Tag as string ?? "balanced";
 
         _suppressLanguageChange = true;
         CmbLanguage.Items.Clear();
@@ -72,7 +91,17 @@ public partial class SettingsPanel : UserControl, ILocalizableView
         CmbTheme.Items.Add(new ComboBoxItem { Tag = "light", Content = Loc.Get("settings.theme.light") });
         CmbTheme.Items.Add(new ComboBoxItem { Tag = "cyberpunk", Content = Loc.Get("settings.theme.cyberpunk") });
         SelectTheme(selectedTheme);
+        SelectQuality(selectedQuality);
         _suppressLanguageChange = false;
+        RefreshGpuLabel();
+    }
+
+    private void RefreshGpuLabel()
+    {
+        var hw = HardwareProfiler.Probe();
+        LblGpuInfo.Text = hw.Cuda
+            ? $"GPU: {hw.GpuName} · VRAM {hw.VramMb} MB · CUDA available"
+            : $"GPU: {hw.GpuName} · VRAM {hw.VramMb} MB · CUDA not detected (CPU/backends may gate)";
     }
 
     private void SelectLanguage(string locale)
@@ -103,19 +132,57 @@ public partial class SettingsPanel : UserControl, ILocalizableView
         CmbTheme.SelectedIndex = 0;
     }
 
-    private void SaveConfig()
+    private void SelectQuality(string quality)
     {
-        var cfg = _configService.Load();
-        cfg.BlenderPath = TxtBlenderPath.Text;
-        cfg.Theme = (CmbTheme.SelectedItem as ComboBoxItem)?.Tag as string ?? "dark";
-        cfg.Language = (CmbLanguage.SelectedItem as ComboBoxItem)?.Tag as string ?? "de";
-        cfg.NsfwEnabled = ChkNsfw.IsChecked == true;
-        cfg.ControllerEnabled = ChkController.IsChecked == true;
-        _characterSystem.NsfwEnabled = cfg.NsfwEnabled;
-        _configService.Save(cfg);
+        for (var i = 0; i < CmbQuality.Items.Count; i++)
+        {
+            if (CmbQuality.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Tag as string, quality, StringComparison.OrdinalIgnoreCase))
+            {
+                CmbQuality.SelectedIndex = i;
+                return;
+            }
+        }
+        CmbQuality.SelectedIndex = 1;
     }
 
-    private void CmbTheme_SelectionChanged(object sender, SelectionChangedEventArgs e) => SaveConfig();
+    private void SaveConfig()
+    {
+        if (_suppressSave) return;
+        var cfg = _configService.Load();
+        cfg.BlenderPath = TxtBlenderPath.Text;
+        cfg.ProjectFolder = TxtProjectFolder.Text;
+        cfg.ModelFolder = TxtModelFolder.Text;
+        cfg.CacheFolder = TxtCacheFolder.Text;
+        cfg.ExportFolder = TxtExportFolder.Text;
+        cfg.Theme = (CmbTheme.SelectedItem as ComboBoxItem)?.Tag as string ?? "dark";
+        cfg.Language = (CmbLanguage.SelectedItem as ComboBoxItem)?.Tag as string ?? "de";
+        cfg.BackendQuality = (CmbQuality.SelectedItem as ComboBoxItem)?.Tag as string ?? "balanced";
+        cfg.NsfwEnabled = ChkNsfw.IsChecked == true;
+        cfg.ControllerEnabled = ChkController.IsChecked == true;
+        cfg.PreferGpu = ChkPreferGpu.IsChecked == true;
+        cfg.AdvancedBlenderFallback = ChkBlenderFallback.IsChecked == true;
+        _characterSystem.NsfwEnabled = cfg.NsfwEnabled;
+        _configService.Save(cfg);
+
+        // Reflect recovered paths back into the UI.
+        var reloaded = _configService.Load();
+        TxtProjectFolder.Text = reloaded.ProjectFolder;
+        TxtModelFolder.Text = reloaded.ModelFolder;
+        TxtCacheFolder.Text = reloaded.CacheFolder;
+        TxtExportFolder.Text = reloaded.ExportFolder;
+        if (string.IsNullOrEmpty(reloaded.BlenderPath) && !string.IsNullOrEmpty(TxtBlenderPath.Text) && !File.Exists(TxtBlenderPath.Text))
+            TxtBlenderPath.Text = "";
+    }
+
+    private void CmbTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        SaveConfig();
+        if (_mainWindow is MainWindow mw && CmbTheme.SelectedItem is ComboBoxItem item)
+            mw.ApplyThemePublic(item.Tag as string ?? "dark");
+    }
+
+    private void CmbQuality_SelectionChanged(object sender, SelectionChangedEventArgs e) => SaveConfig();
 
     private void CmbLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -129,6 +196,8 @@ public partial class SettingsPanel : UserControl, ILocalizableView
 
     private void ChkNsfw_Changed(object sender, RoutedEventArgs e) => SaveConfig();
     private void ChkController_Changed(object sender, RoutedEventArgs e) => SaveConfig();
+    private void ChkGpu_Changed(object sender, RoutedEventArgs e) => SaveConfig();
+    private void ChkBlenderFallback_Changed(object sender, RoutedEventArgs e) => SaveConfig();
 
     private void BtnBrowseBlender_Click(object sender, RoutedEventArgs e)
     {

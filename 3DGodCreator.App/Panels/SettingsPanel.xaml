@@ -1,35 +1,66 @@
-<UserControl x:Class="ThreeDGodCreator.App.Panels.SettingsPanel"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel Margin="8">
-        <TextBlock x:Name="LblTitle" Text="Settings" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-        <TextBlock x:Name="LblLanguage" Text="Language" Foreground="Gray" Margin="0,0,0,2"/>
-        <ComboBox x:Name="CmbLanguage" Margin="0,0,0,8" SelectionChanged="CmbLanguage_SelectionChanged">
-            <ComboBoxItem Tag="de" Content="Deutsch"/>
-            <ComboBoxItem Tag="en" Content="English"/>
-        </ComboBox>
-        <TextBlock x:Name="LblLegacyRuntime" Text="Optional legacy runtime (headless)" Foreground="Gray" Margin="0,0,0,2"/>
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="TxtBlenderPath" Padding="8,4" Margin="0,0,8,0" Foreground="White" Background="#333"/>
-            <Button Grid.Column="1" Content="..." Padding="8,4" Click="BtnBrowseBlender_Click"/>
-        </Grid>
-        <TextBlock x:Name="LblTheme" Text="Theme" Foreground="Gray" Margin="0,0,0,2"/>
-        <ComboBox x:Name="CmbTheme" Margin="0,0,0,8" SelectionChanged="CmbTheme_SelectionChanged">
-            <ComboBoxItem Tag="dark" Content="Dark"/>
-            <ComboBoxItem Tag="light" Content="Light"/>
-            <ComboBoxItem Tag="cyberpunk" Content="Cyberpunk"/>
-        </ComboBox>
-        <CheckBox x:Name="ChkNsfw" Content="Enable NSFW mode" Foreground="White" Margin="0,0,0,4" Checked="ChkNsfw_Changed" Unchecked="ChkNsfw_Changed"/>
-        <CheckBox x:Name="ChkController" Content="Controller support" Foreground="White" Margin="0,0,0,8" Checked="ChkController_Changed" Unchecked="ChkController_Changed"/>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <Button x:Name="BtnTestBlender" Content="Test runtime" Padding="12,6" Margin="0,0,8,0" Click="BtnTestBlender_Click"/>
-            <Button x:Name="BtnDiagnostics" Content="System check" Padding="12,6" Margin="0,0,8,0" Click="BtnDiagnostics_Click"/>
-            <Button x:Name="BtnOpenLogs" Content="Open log folder" Padding="12,6" Click="BtnOpenLogs_Click"/>
-        </StackPanel>
-    </StackPanel>
-</UserControl>
-
+<UserControl x:Class="ThreeDGodCreator.App.Panels.SettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="8">
+            <TextBlock x:Name="LblTitle" Text="Settings" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+
+            <TextBlock x:Name="LblLanguage" Text="Language" Foreground="Gray" Margin="0,0,0,2"/>
+            <ComboBox x:Name="CmbLanguage" Margin="0,0,0,8" SelectionChanged="CmbLanguage_SelectionChanged">
+                <ComboBoxItem Tag="de" Content="Deutsch"/>
+                <ComboBoxItem Tag="en" Content="English"/>
+            </ComboBox>
+
+            <TextBlock x:Name="LblTheme" Text="Theme" Foreground="Gray" Margin="0,0,0,2"/>
+            <ComboBox x:Name="CmbTheme" Margin="0,0,0,8" SelectionChanged="CmbTheme_SelectionChanged">
+                <ComboBoxItem Tag="dark" Content="Dark"/>
+                <ComboBoxItem Tag="light" Content="Light"/>
+                <ComboBoxItem Tag="cyberpunk" Content="Cyberpunk"/>
+            </ComboBox>
+
+            <TextBlock Text="Project folder" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtProjectFolder" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+
+            <TextBlock Text="Model folder" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtModelFolder" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+
+            <TextBlock Text="Cache folder" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtCacheFolder" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+
+            <TextBlock Text="Export folder" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtExportFolder" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+
+            <TextBlock Text="Backend quality" Foreground="Gray" Margin="0,0,0,2"/>
+            <ComboBox x:Name="CmbQuality" Margin="0,0,0,8" SelectionChanged="CmbQuality_SelectionChanged">
+                <ComboBoxItem Tag="draft" Content="Draft / Fast"/>
+                <ComboBoxItem Tag="balanced" Content="Balanced"/>
+                <ComboBoxItem Tag="quality" Content="Quality"/>
+            </ComboBox>
+
+            <CheckBox x:Name="ChkPreferGpu" Content="Prefer GPU" Foreground="White" Margin="0,0,0,4"
+                      Checked="ChkGpu_Changed" Unchecked="ChkGpu_Changed"/>
+            <TextBlock x:Name="LblGpuInfo" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+            <TextBlock x:Name="LblLegacyRuntime" Text="Optional legacy runtime (headless)" Foreground="Gray" Margin="0,0,0,2"/>
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TxtBlenderPath" Padding="8,4" Margin="0,0,8,0" Foreground="White" Background="#333"/>
+                <Button Grid.Column="1" Content="..." Padding="8,4" Click="BtnBrowseBlender_Click"/>
+            </Grid>
+            <CheckBox x:Name="ChkBlenderFallback" Content="Advanced Blender fallback (headless FBX/jobs)" Foreground="White" Margin="0,0,0,8"
+                      Checked="ChkBlenderFallback_Changed" Unchecked="ChkBlenderFallback_Changed"/>
+
+            <CheckBox x:Name="ChkNsfw" Content="Enable NSFW mode" Foreground="White" Margin="0,0,0,4" Checked="ChkNsfw_Changed" Unchecked="ChkNsfw_Changed"/>
+            <CheckBox x:Name="ChkController" Content="Controller support" Foreground="White" Margin="0,0,0,8" Checked="ChkController_Changed" Unchecked="ChkController_Changed"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Button x:Name="BtnTestBlender" Content="Test runtime" Padding="12,6" Margin="0,0,8,0" Click="BtnTestBlender_Click"/>
+                <Button x:Name="BtnDiagnostics" Content="System check" Padding="12,6" Margin="0,0,8,0" Click="BtnDiagnostics_Click"/>
+                <Button x:Name="BtnOpenLogs" Content="Open log folder" Padding="12,6" Click="BtnOpenLogs_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
