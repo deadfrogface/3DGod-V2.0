@@ -77,6 +77,11 @@ public interface ICreatureTextEditService
     Task ApplyAsync(string prompt, ProjectBundle bundle, CharacterDocument character, string meshRoot, CommandStack stack, CancellationToken cancellationToken = default);
 }
 
+public interface IFreeformCharacterPipeline
+{
+    Task<CharacterDocument> RunAsync(string prompt, ProjectBundle bundle, string workRoot, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

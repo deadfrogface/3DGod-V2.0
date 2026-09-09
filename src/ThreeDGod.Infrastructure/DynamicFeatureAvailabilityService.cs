@@ -29,6 +29,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.CreatureTextEdit)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.FreeformPipeline)
+            return FeatureAvailability.Experimental;
         return _inner.GetStatus(featureId);
     }
 
@@ -62,6 +64,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – modular extra parts (tail/horns) persist in .3dgod.";
         if (featureId == FeatureIds.CreatureTextEdit)
             return "Available – catalog ReplaceBodyPart / AddCreaturePart from text. Generated AI parts remain NotInstalled.";
+        if (featureId == FeatureIds.FreeformPipeline)
+            return "Experimental – catalog freeform (dragon) + remesh + authored rig. FLUX/TripoSR/SkinTokens remain NotInstalled.";
         return _inner.GetStatusMessage(featureId);
     }
 }
