@@ -5,11 +5,13 @@ using Microsoft.Win32;
 using ThreeDGod.Application;
 using ThreeDGod.Export;
 using ThreeDGodCreator.App;
+using ThreeDGodCreator.App.Localization;
 using ThreeDGodCreator.Core;
+using ThreeDGodCreator.Core.Localization;
 
 namespace ThreeDGodCreator.App.Panels;
 
-public partial class ExportPanel : UserControl
+public partial class ExportPanel : UserControl, ILocalizableView
 {
     private readonly CharacterSystem _cs;
     private readonly string _basePath;
@@ -38,6 +40,20 @@ public partial class ExportPanel : UserControl
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportGlb), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "INFO");
+        ApplyLocalization();
+    }
+
+    public void ApplyLocalization()
+    {
+        LblTitle.Text = Loc.Get("export.title");
+        LblFilename.Text = Loc.Get("export.filename");
+        BtnSavePreset.Content = Loc.Get("export.save_preset");
+        BtnExportFbx.Content = Loc.Get("export.fbx");
+        BtnExportGlb.Content = Loc.Get("export.glb");
+        LblUnrealFolder.Text = Loc.Get("export.unreal_folder");
+        BtnBrowseUnreal.Content = Loc.Get("export.choose_folder");
+        BtnExportUnreal.Content = Loc.Get("export.to_unreal");
+        LblLog.Text = Loc.Get("export.log");
     }
 
     private void WriteLog(string message, string level = "INFO")

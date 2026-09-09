@@ -2,10 +2,12 @@ using System.Windows;
 using System.Windows.Controls;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Infrastructure.Logging;
+using ThreeDGodCreator.App.Localization;
+using ThreeDGodCreator.Core.Localization;
 
 namespace ThreeDGodCreator.App.Panels;
 
-public partial class ProblemsPanel : UserControl
+public partial class ProblemsPanel : UserControl, ILocalizableView
 {
     private readonly IDiagnosticService _diagnostics;
     private readonly Func<DiagnosticIssue, bool>? _showInViewport;
@@ -21,6 +23,18 @@ public partial class ProblemsPanel : UserControl
         _showInViewport = showInViewport;
         _clearHighlight = clearHighlight;
         Refresh();
+        ApplyLocalization();
+    }
+
+    public void ApplyLocalization()
+    {
+        LblTitle.Text = Loc.Get("problems.title");
+        BtnShowObject.Content = Loc.Get("problems.show_object");
+        BtnShowObject.ToolTip = Loc.Get("problems.show_object.tooltip");
+        BtnClearHighlight.Content = Loc.Get("problems.clear_highlight");
+        BtnCopyError.Content = Loc.Get("problems.copy_error");
+        BtnCopyDetails.Content = Loc.Get("problems.copy_details");
+        BtnOpenLog.Content = Loc.Get("problems.open_log");
     }
 
     public void Refresh()

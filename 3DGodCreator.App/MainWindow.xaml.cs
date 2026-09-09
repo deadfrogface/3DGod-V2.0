@@ -14,14 +14,16 @@ using ThreeDGod.Export;
 using ThreeDGod.Mesh;
 using ThreeDGod.Rendering;
 using ThreeDGod.Workers;
+using ThreeDGodCreator.App.Localization;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
+using ThreeDGodCreator.Core.Localization;
 using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, ILocalizableView
 {
     private readonly ConfigService _configService;
     private readonly IBlenderOperations _blenderService;
@@ -104,7 +106,11 @@ public partial class MainWindow : Window
             DebugLog.Write($"[LegacyRuntime] {info.Code}: {info.Message}");
         });
 
-        ApplyTheme(_configService.Load().Theme);
+        var cfg = _configService.Load();
+        Loc.SetCulture(cfg.Language);
+        Loc.CultureChanged += OnCultureChanged;
+        ApplyTheme(cfg.Theme);
+        ApplyLocalization();
 
         if (_presetService.Exists("default"))
             _characterSystem.LoadPreset("default");
@@ -139,9 +145,51 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() =>
         {
             SelectionInfo.Text = domainObjectId is Guid id
-                ? $"Auswahl DomainObjectId: {id}"
-                : "Auswahl: (keine)";
+                ? Loc.Get("preview.selection.domain", id)
+                : Loc.Get("preview.selection.none");
         });
+    }
+
+    public void ApplyLocalization()
+    {
+        Title = Loc.Get("app.title");
+        MenuFile.Header = Loc.Get("menu.file");
+        MenuFileNew.Header = Loc.Get("menu.file.new");
+        MenuFileOpen.Header = Loc.Get("menu.file.open");
+        MenuFileSave.Header = Loc.Get("menu.file.save");
+        MenuFileAnny.Header = Loc.Get("menu.file.anny");
+        MenuFileExportGlb.Header = Loc.Get("menu.file.export_glb");
+        MenuEdit.Header = Loc.Get("menu.edit");
+        MenuEditUndo.Header = Loc.Get("action.undo");
+        MenuEditRedo.Header = Loc.Get("action.redo");
+        TabAnny.Header = Loc.Get("tab.anny");
+        TabForm.Header = Loc.Get("tab.form");
+        TabSculpt.Header = Loc.Get("tab.sculpt");
+        TabNsfw.Header = Loc.Get("tab.nsfw");
+        TabClothing.Header = Loc.Get("tab.clothing");
+        TabPhysics.Header = Loc.Get("tab.physics");
+        TabMaterial.Header = Loc.Get("tab.material");
+        TabPresets.Header = Loc.Get("tab.presets");
+        TabRigging.Header = Loc.Get("tab.rigging");
+        TabExport.Header = Loc.Get("tab.export");
+        TabSettings.Header = Loc.Get("tab.settings");
+        TabAi.Header = Loc.Get("tab.ai");
+        TabProblems.Header = Loc.Get("tab.problems");
+        PreviewTitle.Text = Loc.Get("preview.title");
+        PreviewControls.Text = Loc.Get("preview.controls");
+        UpdateSelectionInspector(_viewportSelection.SelectedDomainObjectId);
+
+        if (ExportPanel.Content is ILocalizableView export)
+            export.ApplyLocalization();
+        if (SettingsPanel.Content is ILocalizableView settings)
+            settings.ApplyLocalization();
+        if (ProblemsPanel.Content is ILocalizableView problems)
+            problems.ApplyLocalization();
+    }
+
+    private void OnCultureChanged()
+    {
+        Dispatcher.Invoke(ApplyLocalization);
     }
 
     public bool ShowDiagnosticIssueInViewport(DiagnosticIssue issue)
@@ -372,7 +420,7 @@ public partial class MainWindow : Window
             _sculptScaleTransform,
             centerTransform);
         UpdateSelectionInspector(null);
-        SelectionInfo.Text = $"Mesh DomainObjectId: {meshId} (Linksklick wählt aus)";
+        SelectionInfo.Text = Loc.Get("preview.selection.mesh", meshId);
         return vp;
     }
 
@@ -485,7 +533,7 @@ public partial class MainWindow : Window
         var grid = new System.Windows.Controls.Grid { Background = Brushes.Black };
         grid.Children.Add(new System.Windows.Controls.TextBlock
         {
-            Text = "3D-Vorschau\n(GLB/OBJ/PNG)",
+            Text = Loc.Get("preview.placeholder"),
             Foreground = Brushes.Gray,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,

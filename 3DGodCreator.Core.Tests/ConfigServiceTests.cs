@@ -11,6 +11,7 @@ public class ConfigServiceTests
         var service = new ConfigService();
         var original = new Config
         {
+            Language = "en",
             Theme = "cyberpunk",
             NsfwEnabled = false,
             ControllerEnabled = false,
@@ -22,6 +23,7 @@ public class ConfigServiceTests
         service.Save(original);
         var loaded = service.Load();
 
+        Assert.Equal(original.Language, loaded.Language);
         Assert.Equal(original.Theme, loaded.Theme);
         Assert.Equal(original.NsfwEnabled, loaded.NsfwEnabled);
         Assert.Equal(original.ControllerEnabled, loaded.ControllerEnabled);
@@ -34,6 +36,7 @@ public class ConfigServiceTests
     public void Default_HasExpectedBaselineValues()
     {
         var cfg = Config.Default;
+        Assert.Equal("de", cfg.Language);
         Assert.Equal("dark", cfg.Theme);
         Assert.Equal("male", cfg.Gender);
         Assert.True(cfg.NsfwEnabled);

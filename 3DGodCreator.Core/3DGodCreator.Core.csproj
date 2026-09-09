@@ -7,4 +7,11 @@
     <RootNamespace>ThreeDGodCreator.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx" />
+    <EmbeddedResource Update="Resources\Strings.de.resx">
+      <DependentUpon>Strings.resx</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

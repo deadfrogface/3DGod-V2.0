@@ -99,6 +99,7 @@ public class ProductPhaseTests
     {
         Assert.Equal("Rückgängig", LocalizationCatalog.Get("de", "action.undo"));
         Assert.Equal("Undo", LocalizationCatalog.Get("en", "action.undo"));
+        Assert.DoesNotContain("action.undo", LocalizationCatalog.Get("de", "phase53.missing"), StringComparison.Ordinal);
     }
 
     [Fact]

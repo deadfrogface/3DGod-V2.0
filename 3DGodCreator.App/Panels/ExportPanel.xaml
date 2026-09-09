@@ -1,28 +1,29 @@
-<UserControl x:Class="ThreeDGodCreator.App.Panels.ExportPanel"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="8">
-            <TextBlock Text="Export" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
-            <TextBlock Text="Dateiname:" Foreground="Gray" Margin="0,0,0,2"/>
-            <TextBox x:Name="TxtFilename" Text="my_character" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
-            <Button x:Name="BtnSavePreset" Content="Preset speichern" Padding="12,6" Margin="0,0,0,4" Click="BtnSavePreset_Click"/>
-            <Button x:Name="BtnExportFbx" Content="FBX exportieren" Padding="12,6" Margin="0,0,0,4" Click="BtnExport_Click"/>
-            <Button x:Name="BtnExportGlb" Content="GLB exportieren" Padding="12,6" Margin="0,0,0,8" Click="BtnExportGlb_Click"/>
-            <TextBlock Text="Unreal-Zielordner:" Foreground="Gray" Margin="0,0,0,2"/>
-            <Grid Margin="0,0,0,4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtUnrealPath" Padding="8,4" Margin="0,0,8,0" Foreground="White" Background="#333"/>
-                <Button Grid.Column="1" Content="Ordner wählen" Padding="12,6" Click="BtnBrowseUnreal_Click"/>
-            </Grid>
-            <Button x:Name="BtnExportUnreal" Content="Exportiere nach Unreal" Padding="12,6" Margin="0,0,0,8" Click="BtnExportToUnreal_Click"/>
-            <TextBlock Text="Export-Log:" Foreground="Gray" Margin="0,0,0,2"/>
-            <TextBox x:Name="TxtLog" IsReadOnly="True" MinHeight="100" Padding="8" Margin="0,0,0,4"
-                     Foreground="#ccc" Background="#252526" FontFamily="Consolas" FontSize="11"
-                     TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-        </StackPanel>
-    </ScrollViewer>
-</UserControl>
+<UserControl x:Class="ThreeDGodCreator.App.Panels.ExportPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8">
+            <TextBlock x:Name="LblTitle" Text="Export" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
+            <TextBlock x:Name="LblFilename" Text="Filename:" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtFilename" Text="my_character" Padding="8,4" Margin="0,0,0,8" Foreground="White" Background="#333"/>
+            <Button x:Name="BtnSavePreset" Content="Save preset" Padding="12,6" Margin="0,0,0,4" Click="BtnSavePreset_Click"/>
+            <Button x:Name="BtnExportFbx" Content="Export FBX" Padding="12,6" Margin="0,0,0,4" Click="BtnExport_Click"/>
+            <Button x:Name="BtnExportGlb" Content="Export GLB" Padding="12,6" Margin="0,0,0,8" Click="BtnExportGlb_Click"/>
+            <TextBlock x:Name="LblUnrealFolder" Text="Unreal target folder:" Foreground="Gray" Margin="0,0,0,2"/>
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TxtUnrealPath" Padding="8,4" Margin="0,0,8,0" Foreground="White" Background="#333"/>
+                <Button x:Name="BtnBrowseUnreal" Grid.Column="1" Content="Choose folder" Padding="12,6" Click="BtnBrowseUnreal_Click"/>
+            </Grid>
+            <Button x:Name="BtnExportUnreal" Content="Export to Unreal" Padding="12,6" Margin="0,0,0,8" Click="BtnExportToUnreal_Click"/>
+            <TextBlock x:Name="LblLog" Text="Export log:" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtLog" IsReadOnly="True" MinHeight="100" Padding="8" Margin="0,0,0,4"
+                     Foreground="#ccc" Background="#252526" FontFamily="Consolas" FontSize="11"
+                     TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

@@ -2,6 +2,7 @@ using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Export;
 using ThreeDGod.Workers;
+using ThreeDGodCreator.Core.Localization;
 
 namespace ThreeDGod.Infrastructure;
 
@@ -93,16 +94,10 @@ public sealed class LayoutService
     }
 }
 
+/// <summary>Backward-compatible bridge to embedded .resx via <see cref="Loc"/>.</summary>
 public static class LocalizationCatalog
 {
-    private static readonly Dictionary<string, Dictionary<string, string>> Catalog = new()
-    {
-        ["de"] = new() { ["app.title"] = "3D God", ["action.undo"] = "Rückgängig" },
-        ["en"] = new() { ["app.title"] = "3D God", ["action.undo"] = "Undo" }
-    };
-
-    public static string Get(string locale, string key) =>
-        Catalog.TryGetValue(locale, out var map) && map.TryGetValue(key, out var value) ? value : key;
+    public static string Get(string locale, string key) => Loc.GetForLocale(locale, key);
 }
 
 public sealed class LicenseGate

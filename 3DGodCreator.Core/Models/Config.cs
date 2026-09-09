@@ -4,6 +4,8 @@ namespace ThreeDGodCreator.Core.Models;
 
 public class Config
 {
+    [JsonPropertyName("language")]
+    public string Language { get; set; } = "de";
     [JsonPropertyName("theme")]
     public string Theme { get; set; } = "dark";
     [JsonPropertyName("nsfw_enabled")]
@@ -19,6 +21,7 @@ public class Config
 
     public static Config Default => new()
     {
+        Language = "de",
         Theme = "dark",
         NsfwEnabled = true,
         ControllerEnabled = true,
