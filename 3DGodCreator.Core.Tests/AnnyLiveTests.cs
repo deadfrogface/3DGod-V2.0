@@ -10,7 +10,7 @@ namespace ThreeDGodCreator.Core.Tests;
 [Collection("AnnySerial")]
 public class AnnyLiveTests
 {
-    [Fact]
+    [SkippableFact]
     public async Task Catalog_HasAtLeastTenLiveParameters()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
@@ -27,7 +27,7 @@ public class AnnyLiveTests
         Assert.NotEmpty(catalog.FacialActionKeys);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task TenParameters_ChangeVertices_AndAreNotUniformScale()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());

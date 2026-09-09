@@ -16,13 +16,13 @@ public class FbxExportTests
             (src, dst) => backend.TryExportGlbToFbx(src, dst, out var err) ? null : err,
             diagnostics);
 
-    [Fact]
+    [SkippableFact]
     public void WhenBlenderMissing_ThrowsGatedNotInstalled()
     {
         var backend = new LegacyBlenderBackend(new ConfigService());
         if (backend.IsBlenderConfigured())
         {
-            TestGate.NotInstalled("Blender present on CI/dev machine – skip missing-runtime assertion.");
+            TestGate.NotInstalled("Blender present on CI/dev machine - skip missing-runtime assertion.");
             return;
         }
 
@@ -42,13 +42,13 @@ public class FbxExportTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void WhenBlenderPresent_ExportsCompleteSceneGlbToFbx()
     {
         var backend = new LegacyBlenderBackend(new ConfigService());
         if (!backend.IsBlenderConfigured())
         {
-            TestGate.NotInstalled("Blender runtime missing; live GLB→FBX export not executed.");
+            TestGate.NotInstalled("Blender runtime missing; live GLB->FBX export not executed.");
             return;
         }
 

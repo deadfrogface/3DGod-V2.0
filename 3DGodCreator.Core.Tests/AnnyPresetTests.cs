@@ -52,7 +52,7 @@ public class AnnyPresetTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task PresetApply_ChangesMesh_UndoRestoresParams()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());

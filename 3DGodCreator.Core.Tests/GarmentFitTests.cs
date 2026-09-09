@@ -19,7 +19,7 @@ public class GarmentFitTests
         Assert.True(m.TorsoCenterY > m.MinY);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task FitJacket_OnMaleBase_WritesClippingReport()
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
@@ -60,7 +60,7 @@ public class GarmentFitPresetTests
 {
     public static readonly string[] Presets = ["adult-average", "tall-slim", "muscular-male"];
 
-    [Fact(Timeout = 600000)]
+    [SkippableFact(Timeout = 600000)]
     public async Task JacketFitsThreeHumanPresets_WithClippingReports()
     {
         var anny = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());

@@ -27,7 +27,7 @@ public class LegacyBlenderBackendTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public void HeadlessSmoke_WhenRuntimePresent_PrintsOk()
     {
         var backend = new LegacyBlenderBackend(new ConfigService());

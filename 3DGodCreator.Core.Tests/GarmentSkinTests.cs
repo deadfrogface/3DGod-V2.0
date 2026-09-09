@@ -28,7 +28,7 @@ public class GarmentSkinTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task FittedJacket_FollowsArmAndElbowPose()
     {
         var gc = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());

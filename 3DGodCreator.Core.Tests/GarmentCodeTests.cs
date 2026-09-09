@@ -39,7 +39,7 @@ public class GarmentCodeTests
         Assert.DoesNotContain("success", probe.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Generate_WhenNotInstalled_ThrowsAndWritesNothing()
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
@@ -56,7 +56,7 @@ public class GarmentCodeTests
         Assert.False(File.Exists(Path.ChangeExtension(dest, ".obj")));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Generate_WhenInstalled_WritesPatternWithFourPanelsAndGlb()
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
@@ -94,7 +94,7 @@ public class GarmentCodeTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task LongerSleeves_ChangePatternGeometry()
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());

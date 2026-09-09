@@ -4,6 +4,7 @@ using ThreeDGod.Workers;
 
 namespace ThreeDGodCreator.Core.Tests;
 
+[Collection("WorkerSerial")]
 public class WorkerSmartDiagnosticsTests
 {
     [Fact]

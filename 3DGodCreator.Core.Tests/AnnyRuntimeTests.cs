@@ -39,7 +39,7 @@ public class AnnyRuntimeTests
             Assert.Contains("NotInstalled", status.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task AnnyGenerate_WhenNotInstalled_ThrowsHonestError()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
@@ -63,7 +63,7 @@ public class AnnyRuntimeTests
         Assert.DoesNotContain("success", probe.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [SkippableFact]
     public void AnnyPresetData_DoesNotImplyRuntimeExecution()
     {
         var store = new AnnyPresetStore(RepoPaths.FindRepoRoot());
@@ -74,7 +74,7 @@ public class AnnyRuntimeTests
             TestGate.NotInstalled("Preset JSON exists; live Anny mesh apply remains gated.");
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task AnnyGenerate_WhenInstalled_WritesRealGlb()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());

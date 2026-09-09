@@ -41,7 +41,7 @@ public class ImageTo3DTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task ExistingGlb_CanBeAttached_AndSavedInProject()
     {
         var src = Path.Combine(RepoPaths.FindRepoRoot(), "assets", "characters", "male_base.glb");
