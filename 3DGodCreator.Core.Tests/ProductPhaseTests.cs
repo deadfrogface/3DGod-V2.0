@@ -152,9 +152,15 @@ public class ProductPhaseTests
     }
 
     [Fact]
-    public void LodService_ReducesTriangles()
+    public void LodService_BudgetIsEstimate_BuildLodMeshReducesGeometry()
     {
-        Assert.True(LodService.TriangleCountForLod(1000, 2) < 1000);
+        Assert.True(LodService.EstimateTriangleBudget(1000, 2) < 1000);
+        var b = new MeshBuilder3D();
+        b.AddSphere(System.Numerics.Vector3.Zero, 0.5f, 24, 16);
+        var sourceTris = b.Indices.Count / 3;
+        var lod = LodService.BuildLodMesh(b.Positions, b.Indices, level: 2);
+        Assert.True(lod.Indices.Count / 3 < sourceTris);
+        Assert.Equal("lod-vertex-cluster", lod.BackendId);
     }
 
     [Fact]

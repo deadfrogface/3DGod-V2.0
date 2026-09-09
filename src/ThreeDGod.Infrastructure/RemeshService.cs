@@ -24,12 +24,14 @@ public sealed class RemeshService : IRemeshService
             });
 
             var remeshed = RemeshPipeline.Run(positions, indices, profile);
-            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.UV", "Completed", "vertex-cluster");
-            // Mesh.LOD is ratio-arithmetic only until meshoptimizer lands (PHASE 16/52 honesty).
-            _ = LodService.TriangleCountForLod(indices.Count / 3, 1);
-            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.LOD", "Completed", "ratio-arithmetic");
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.UV", "Completed", "spherical");
 
-            TriangleMeshExport.WriteGlb(destinationGlb, remeshed.Positions, remeshed.Indices, remeshed.Uvs);
+            // Real LOD mesh via RemeshPipeline profiles (not triangle-count arithmetic alone).
+            var lod = LodService.BuildLodMesh(remeshed.Positions, remeshed.Indices, level: 1);
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.LOD", "Completed", lod.BackendId);
+            _ = LodService.EstimateTriangleBudget(indices.Count / 3, 1);
+
+            TriangleMeshExport.WriteGlb(destinationGlb, lod.Positions, lod.Indices, lod.Uvs);
             return destinationGlb;
         }, provider: "remesh");
     }

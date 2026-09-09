@@ -1,8 +1,17 @@
-﻿# PHASE_15 Report
+﻿# PHASE 15 Report
 
 - Phase: 15 – Assimp Import
-- Status: **PASS**
+- Status: **GATED_NOT_INSTALLED** (Assimp native FBX/DAE) + **PASS** (OBJ)
 
-Built-in OBJ importer ist real. Assimp-Native NotInstalled fuer FBX/DAE. Kein Fake-Success.
+## Honest split
 
-Build/Tests: siehe PHASE 60 Gate (Release build 0 Fehler, 112 Tests).
+| Format | Status |
+| --- | --- |
+| OBJ | PASS – built-in `ObjImporter` → canonical mesh + provenance |
+| FBX / DAE / Assimp native | **GATED_NOT_INSTALLED** – `AssimpImportGate.Status = NotInstalled`, throws NotInstalled |
+
+No fake FBX/DAE success. Tests assert NotInstalled for unknown formats.
+
+## Gate reason
+
+Assimp.Net native binaries are not shipped/verified in this environment.

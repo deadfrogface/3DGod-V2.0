@@ -11,8 +11,13 @@ public partial class PhysicsPanel : UserControl
     {
         InitializeComponent();
         _ = cs;
-        AvailabilityLabel.Text = features.GetStatusMessage(FeatureIds.PhysicsSimulate);
-        _ = features.IsInvocable(FeatureIds.PhysicsSimulate);
+        AvailabilityLabel.Text = features.GetStatusMessage(FeatureIds.PhysicsSimulate)
+            + "\nUI checkboxes below are informational only (disabled). Live preview = Bepu rigid accessory chain/earring in tests/services, not cloth/softbody.";
+
+        ChkBreasts.Content = "Brust Softbody (Unavailable – NotImplemented)";
+        ChkCloth.Content = "Stoffsimulation (Unavailable – NotImplemented)";
+        ChkPiercing.Content = "Piercing Softbody (Unavailable) – Bepu earring chain is separate";
+
         ChkBreasts.IsEnabled = false;
         ChkCloth.IsEnabled = false;
         ChkPiercing.IsEnabled = false;
@@ -20,6 +25,6 @@ public partial class PhysicsPanel : UserControl
 
     private void OnChanged(object sender, RoutedEventArgs e)
     {
-        // No live WPF preview. Chain/earring exist via IAccessoryPhysicsService. Not cloth.
+        // Checkboxes stay disabled. No live cloth/softbody preview.
     }
 }

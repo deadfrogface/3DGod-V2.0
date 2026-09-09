@@ -24,7 +24,10 @@ public class GarmentFitTests
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("GarmentCode runtime missing; jacket fit on male_base not executed.");
             return;
+        }
 
         var body = Path.Combine(RepoPaths.AssetsDir, "characters", "male_base.glb");
         var work = Path.Combine(Path.GetTempPath(), "3dgod-fit-" + Guid.NewGuid().ToString("N"));
@@ -64,7 +67,10 @@ public class GarmentFitPresetTests
         var gc = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (anny.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental) ||
             gc.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("Anny and/or GarmentCode runtime missing; preset jacket fit test not executed.");
             return;
+        }
 
         var work = Path.Combine(Path.GetTempPath(), "3dgod-fit3-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);

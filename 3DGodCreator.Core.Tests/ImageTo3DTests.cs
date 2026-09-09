@@ -46,7 +46,10 @@ public class ImageTo3DTests
     {
         var src = Path.Combine(RepoPaths.FindRepoRoot(), "assets", "characters", "male_base.glb");
         if (!File.Exists(src))
+        {
+            TestGate.ExternalDependency("test asset male_base.glb missing; attach/save path not executed.");
             return;
+        }
         var project = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".3dgod");
         try
         {

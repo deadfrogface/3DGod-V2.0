@@ -15,7 +15,10 @@ public class AnnyLiveTests
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("Anny uv/runtime missing; live catalog probe not executed.");
             return;
+        }
         await using var svc = new AnnyHumanService(new WorkerProcessHost());
         var catalog = await svc.GetCatalogAsync();
         Assert.True(catalog.Count >= 10, $"Catalog has {catalog.Count} keys.");
@@ -29,7 +32,10 @@ public class AnnyLiveTests
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("Anny uv/runtime missing; live parameter vertex test not executed.");
             return;
+        }
 
         await using var svc = new AnnyHumanService(new WorkerProcessHost());
         var catalog = await svc.GetCatalogAsync();

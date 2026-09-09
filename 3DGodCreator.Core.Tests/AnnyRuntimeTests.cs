@@ -43,7 +43,10 @@ public class AnnyRuntimeTests
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+        {
+            TestGate.ExternalDependency("Anny runtime installed; NotInstalled throw path not exercised.");
             return;
+        }
         var svc = new AnnyHumanService(new WorkerProcessHost());
         var dest = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".glb");
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.GenerateGlbAsync(dest));
@@ -70,7 +73,10 @@ public class AnnyRuntimeTests
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("Anny uv/runtime missing; live generate not executed.");
             return;
+        }
         var dest = Path.Combine(Path.GetTempPath(), "3dgod-anny-" + Guid.NewGuid().ToString("N") + ".glb");
         try
         {

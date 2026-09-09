@@ -33,7 +33,10 @@ public class GarmentSkinTests
     {
         var gc = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (gc.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("GarmentCode runtime missing; fitted jacket skin pose test not executed.");
             return;
+        }
 
         var work = Path.Combine(Path.GetTempPath(), "3dgod-gs-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);

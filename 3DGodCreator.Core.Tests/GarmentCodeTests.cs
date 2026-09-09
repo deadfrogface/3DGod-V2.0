@@ -44,7 +44,10 @@ public class GarmentCodeTests
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+        {
+            TestGate.ExternalDependency("GarmentCode runtime installed; NotInstalled throw path not exercised.");
             return;
+        }
         await using var svc = new GarmentCodeService(new WorkerProcessHost());
         var dest = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".glb");
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.GenerateJacketGlbAsync(dest));
@@ -58,7 +61,10 @@ public class GarmentCodeTests
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("GarmentCode runtime missing; jacket generate test not executed.");
             return;
+        }
 
         var dest = Path.Combine(Path.GetTempPath(), "3dgod-gc-" + Guid.NewGuid().ToString("N") + ".glb");
         try
@@ -93,7 +99,10 @@ public class GarmentCodeTests
     {
         var probe = GarmentCodeRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("GarmentCode runtime missing; sleeve geometry compare not executed.");
             return;
+        }
 
         var shortPath = Path.Combine(Path.GetTempPath(), "3dgod-gc-short-" + Guid.NewGuid().ToString("N") + ".glb");
         var longPath = Path.Combine(Path.GetTempPath(), "3dgod-gc-long-" + Guid.NewGuid().ToString("N") + ".glb");

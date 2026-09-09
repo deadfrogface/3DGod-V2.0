@@ -33,7 +33,7 @@ public class LegacyBlenderBackendTests
         var backend = new LegacyBlenderBackend(new ConfigService());
         if (!backend.IsBlenderConfigured())
         {
-            Assert.True(true, "GATED_NOT_INSTALLED – Blender runtime missing; headless smoke not executed.");
+            TestGate.NotInstalled("Blender runtime missing; headless smoke not executed.");
             return;
         }
 

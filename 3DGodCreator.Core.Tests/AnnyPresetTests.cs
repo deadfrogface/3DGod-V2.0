@@ -57,7 +57,10 @@ public class AnnyPresetTests
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
         if (probe.Availability is not (FeatureAvailability.Available or FeatureAvailability.Experimental))
+        {
+            TestGate.NotInstalled("Anny uv/runtime missing; preset mesh apply test not executed.");
             return;
+        }
 
         var store = new AnnyPresetStore(RepoPaths.FindRepoRoot());
         var average = store.Load("adult-average");

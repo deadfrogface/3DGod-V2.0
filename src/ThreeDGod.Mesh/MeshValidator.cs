@@ -1,4 +1,5 @@
 using System.Numerics;
+using ThreeDGod.Core.Domain;
 
 namespace ThreeDGod.Mesh;
 
@@ -58,6 +59,40 @@ public static class GeometryQueryService
 
 public static class LodService
 {
+    /// <summary>
+    /// Triangle-budget arithmetic only. Does NOT generate a simplified mesh.
+    /// Use <see cref="BuildLodMesh"/> for real geometry reduction via RemeshPipeline.
+    /// </summary>
+    public static int EstimateTriangleBudget(int sourceTriangles, int level) =>
+        Math.Max(1, sourceTriangles / (int)Math.Pow(2, Math.Max(0, level)));
+
+    /// <summary>Obsolete alias kept for callers; not real LOD generation.</summary>
     public static int TriangleCountForLod(int sourceTriangles, int level) =>
-        Math.Max(1, sourceTriangles / (int)Math.Pow(2, level));
+        EstimateTriangleBudget(sourceTriangles, level);
+
+    /// <summary>
+    /// Builds a real reduced mesh for the given LOD level using vertex-cluster remesh (not integer division).
+    /// </summary>
+    public static RemeshMesh BuildLodMesh(
+        IReadOnlyList<Vector3> positions,
+        IReadOnlyList<int> indices,
+        int level)
+    {
+        var profile = level switch
+        {
+            <= 0 => RemeshProfile.KeepOriginal,
+            1 => RemeshProfile.CharacterCandidate,
+            2 => RemeshProfile.StaticGameAsset,
+            _ => RemeshProfile.Preview
+        };
+        var mesh = RemeshPipeline.Run(positions, indices, profile);
+        return new RemeshMesh
+        {
+            Positions = mesh.Positions,
+            Indices = mesh.Indices,
+            Uvs = mesh.Uvs,
+            Profile = mesh.Profile,
+            BackendId = "lod-vertex-cluster"
+        };
+    }
 }
