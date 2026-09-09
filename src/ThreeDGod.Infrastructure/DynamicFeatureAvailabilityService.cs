@@ -1,5 +1,6 @@
 using ThreeDGod.Application;
 using ThreeDGod.Workers;
+using ThreeDGod.AI;
 
 namespace ThreeDGod.Infrastructure;
 
@@ -50,6 +51,20 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.NotImplemented;
         if (featureId == FeatureIds.PhysicsSimulate)
             return FeatureAvailability.Experimental;
+        if (featureId == FeatureIds.AiCommandInterpret)
+            return FeatureAvailability.Available;
+        if (featureId == FeatureIds.AiLlamaSharp)
+        {
+            var llama = LlamaSharpProvider.Probe();
+            return llama.Availability switch
+            {
+                FeatureAvailability.Experimental => FeatureAvailability.NotImplemented,
+                FeatureAvailability.Available => FeatureAvailability.NotImplemented,
+                _ => llama.Availability
+            };
+        }
+        if (featureId == FeatureIds.MaterialEditorPbr)
+            return FeatureAvailability.Available;
         return _inner.GetStatus(featureId);
     }
 
@@ -104,6 +119,17 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "NotImplemented – BlendedPC/StructLDM/GaussCtrl/TrAME have no Anny mesh PoC. Parameter + catalog replace only. See docs/research/LOCAL_AI_EDIT_DECISION.md. No button.";
         if (featureId == FeatureIds.PhysicsSimulate)
             return "Experimental – Bepu rigid accessory chain/earring preview. Not cloth, not softbody, not ragdoll.";
+        if (featureId == FeatureIds.AiCommandInterpret)
+            return "Available – deterministic allow-listed parser + validator. Not LLM inference.";
+        if (featureId == FeatureIds.AiLlamaSharp)
+        {
+            var llama = LlamaSharpProvider.Probe();
+            if (llama.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.Disabled)
+                return llama.Message;
+            return "NotImplemented – LLamaSharp GGUF may be present but no verified prompt-to-plan inference. Deterministic parser only.";
+        }
+        if (featureId == FeatureIds.MaterialEditorPbr)
+            return "Available – catalog PBR presets edit baseColor/metallic/roughness in viewport and GLB.";
         return _inner.GetStatusMessage(featureId);
     }
 }

@@ -1,23 +1,27 @@
 ﻿# PHASE 23 Report
 
 - Phase: 23 – AI Command Interpreter
-- Status: **PASS**
+- Status: **PASS** (Deterministic Parser) + **GATED_NOT_INSTALLED / NotImplemented** (LLamaSharp-Inferenz)
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
 - Deterministic Parser für den Testkorpus → `valid` Pläne.
 - Unklare Prompts (`make it nicer`) → `Ambiguous`.
 - Unbekannte Prompts → `Unsupported`.
 - Schema `3dgod-ai-edit/1` + Allow-List der Operationen + Validator (kein Arbitrary Code).
-- LLamaSharp-Paket ist referenziert. Ohne akzeptiertes `license.json` + GGUF unter `%LOCALAPPDATA%/3DGod/Models/llama`: **NotInstalled/LicenseBlocked**.
-- Auch mit GGUF wird kein ungeprüfter Modell-JSON ausgeführt.
+- `FeatureIds.AiCommandInterpret` = **Available** – nur regelbasiert, nicht LLM.
+
+## GATED / NotImplemented (LLamaSharp)
+
+- LLamaSharp-Paket referenziert, aber **keine verifizierte prompt→AiEditPlan-Inferenz**.
+- Ohne GGUF: **NotInstalled**. Mit GGUF: **NotImplemented** (kein ungeprüftes Modell-JSON).
+- `LlamaSharp_NeverProducesValidPlanWithoutVerifiedMapping` – nie `valid` aus LLamaSharp.
+- `FeatureIds.AiLlamaSharp` ist **nicht invocable**.
 
 ## Gates
 
-- `dotnet test -c Release`: 135 bestanden
-- Kein Fake-LLM-Erfolg
+- `dotnet test -c Release`: AiInterpreterTests + FeatureAvailabilityTests
 
 ## Bewusst nicht fertig
 
-- PHASE 24 Executor (reale Edits + Composite Undo)
-- Kein GGUF im Repo
+- PHASE 24 Executor (reale Edits + Composite Undo) – separater Report

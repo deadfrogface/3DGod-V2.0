@@ -98,6 +98,8 @@ public class AssetPipelineTests
             var material = PbrMaterials.ToDefinition(edited);
             var json = DomainJson.Roundtrip(material);
             Assert.Equal(edited.Roughness, json.RoughnessFactor, 3);
+            var fromHex = PbrMaterials.FromHex("Gold", "#D4AF37", 1f, 0.45f);
+            Assert.InRange(fromHex.BaseColor.X, 0.7f, 1f);
         }
         finally
         {

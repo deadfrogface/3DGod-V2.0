@@ -56,11 +56,20 @@ public class AiInterpreterTests
         var status = LlamaSharpProvider.Probe();
         Assert.True(status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.Disabled or FeatureAvailability.Experimental);
         Assert.DoesNotContain("success", status.Message, StringComparison.OrdinalIgnoreCase);
+        var plan = LlamaSharpProvider.Interpret("shoulders wider");
+        Assert.Equal("Unsupported", plan.Status);
+        Assert.NotEqual("valid", plan.Status);
         if (status.Availability != FeatureAvailability.Experimental)
-        {
-            var plan = LlamaSharpProvider.Interpret("shoulders wider");
-            Assert.Equal("Unsupported", plan.Status);
             Assert.Contains("NotInstalled", plan.Reason + status.Message, StringComparison.OrdinalIgnoreCase);
-        }
+        else
+            Assert.Contains("no verified prompt-to-plan", plan.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LlamaSharp_NeverProducesValidPlanWithoutVerifiedMapping()
+    {
+        var plan = LlamaSharpProvider.Interpret("shoulders wider");
+        Assert.NotEqual("valid", plan.Status);
+        Assert.Equal("llamasharp", plan.Provider);
     }
 }

@@ -25,7 +25,6 @@ public partial class AiPanel : UserControl
         _anny = anny;
         _assets = assets;
         _loadPreview = loadPreview;
-        AvailabilityLabel.Text = _features.GetStatusMessage(FeatureIds.AnnyHuman);
         var annyOk = _features.IsInvocable(FeatureIds.AnnyHuman);
         var personOk = _features.IsInvocable(FeatureIds.AiGeneratePerson);
         var assetOk = _features.IsInvocable(FeatureIds.AiGenerateAsset);
@@ -34,6 +33,11 @@ public partial class AiPanel : UserControl
         BtnGeneratePerson.IsEnabled = personOk;
         BtnGenerateAsset.IsEnabled = assetOk;
         TxtPrompt.IsEnabled = personOk || assetOk || _features.IsInvocable(FeatureIds.AiGenerateAsset);
+        AvailabilityLabel.Text =
+            $"Anny: {_features.GetStatusMessage(FeatureIds.AnnyHuman)}\n" +
+            $"Referenzbild: {_features.GetStatusMessage(FeatureIds.ReferenceImageGenerate)}\n" +
+            $"Image→3D: {_features.GetStatusMessage(FeatureIds.ImageTo3D)}\n" +
+            $"Asset: {_features.GetStatusMessage(FeatureIds.AiGenerateAsset)}";
         StatusLabel.Text = annyOk
             ? _features.GetStatusMessage(FeatureIds.AnnyHuman)
             : _features.GetStatusMessage(FeatureIds.ImageTo3D);

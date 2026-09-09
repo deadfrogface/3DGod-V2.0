@@ -56,6 +56,34 @@ public class FeatureAvailabilityTests
         Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.ProjectSave));
     }
 
+    [Theory]
+    [InlineData(FeatureIds.ReferenceImageGenerate)]
+    [InlineData(FeatureIds.ImageTo3D)]
+    public void GenerativeBackends_AreNotAvailable_AndNeverSuccess(string id)
+    {
+        var svc = new DynamicFeatureAvailabilityService();
+        Assert.NotEqual(FeatureAvailability.Available, svc.GetStatus(id));
+        Assert.DoesNotContain("success", svc.GetStatusMessage(id), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AiLlamaSharp_IsNotInvocableWithoutVerifiedInference()
+    {
+        var svc = new DynamicFeatureAvailabilityService();
+        Assert.NotEqual(FeatureAvailability.Available, svc.GetStatus(FeatureIds.AiLlamaSharp));
+        Assert.False(svc.IsInvocable(FeatureIds.AiLlamaSharp));
+        Assert.Contains("Deterministic", svc.GetStatusMessage(FeatureIds.AiCommandInterpret), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("success", svc.GetStatusMessage(FeatureIds.AiLlamaSharp), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MaterialEditorPbr_IsAvailable()
+    {
+        var svc = new DynamicFeatureAvailabilityService();
+        Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.MaterialEditorPbr));
+        Assert.True(svc.IsInvocable(FeatureIds.MaterialEditorPbr));
+    }
+
     [Fact]
     public void Di_RegistersFeatureAvailabilityService()
     {

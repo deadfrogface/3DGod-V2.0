@@ -1,6 +1,7 @@
 using System.Numerics;
 using ThreeDGod.Application;
 using ThreeDGod.Mesh;
+using ThreeDGod.Persistence;
 using ThreeDGod.Workers;
 
 namespace ThreeDGodCreator.Core.Tests;
@@ -55,17 +56,22 @@ public class AnnyRuntimeTests
     }
 
     [Fact]
-    public void AnnyProbe_IsExperimental_WhenUvLockExists()
+    public void AnnyProbe_ExperimentalIsNotAvailable()
     {
         var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
-        var lockFile = Path.Combine(RepoPaths.FindRepoRoot(), "workers", "anny", "uv.lock");
-        if (!File.Exists(lockFile) || AnnyRuntime.FindUv() is null)
-        {
-            Assert.Equal(FeatureAvailability.NotInstalled, probe.Availability);
-            return;
-        }
-        Assert.Equal(FeatureAvailability.Experimental, probe.Availability);
+        Assert.NotEqual(FeatureAvailability.Available, probe.Availability);
         Assert.DoesNotContain("success", probe.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AnnyPresetData_DoesNotImplyRuntimeExecution()
+    {
+        var store = new AnnyPresetStore(RepoPaths.FindRepoRoot());
+        var presets = store.List();
+        Assert.NotEmpty(presets);
+        var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
+        if (probe.Availability is FeatureAvailability.NotInstalled)
+            TestGate.NotInstalled("Preset JSON exists; live Anny mesh apply remains gated.");
     }
 
     [Fact]

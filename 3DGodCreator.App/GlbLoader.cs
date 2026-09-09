@@ -2,13 +2,16 @@ using System.Numerics;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using SharpGLTF.Schema2;
+using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.App;
 
 public static class GlbLoader
 {
-    public static Model3DGroup? Load(string path)
+    public static Model3DGroup? Load(string path) => Load(path, materialOverride: null);
+
+    public static Model3DGroup? Load(string path, MaterialData? materialOverride)
     {
         try
         {
@@ -25,7 +28,9 @@ public static class GlbLoader
                     var geo = BuildMeshGeometry(primitive);
                     if (geo != null)
                     {
-                        var mat = new DiffuseMaterial(new SolidColorBrush(Colors.LightGray));
+                        var mat = materialOverride != null
+                            ? CreateWpfMaterial(materialOverride)
+                            : ReadWpfMaterial(primitive);
                         group.Children.Add(new GeometryModel3D(geo, mat));
                     }
                 }
@@ -39,6 +44,83 @@ public static class GlbLoader
             DebugLog.Write($"[GlbLoader] Fehler: {ex.Message}");
             return null;
         }
+    }
+
+    public static void ApplyMaterialOverride(Model3D model, MaterialData data)
+    {
+        if (model is GeometryModel3D gm)
+            gm.Material = CreateWpfMaterial(data);
+        else if (model is Model3DGroup grp)
+        {
+            foreach (Model3D child in grp.Children)
+                ApplyMaterialOverride(child, data);
+        }
+    }
+
+    public static System.Windows.Media.Media3D.Material CreateWpfMaterial(MaterialData data)
+    {
+        var rgba = ParseHexColor(data.Color);
+        return CreateWpfMaterial(rgba, (float)data.Metallic, (float)data.Roughness);
+    }
+
+    public static System.Windows.Media.Media3D.Material CreateWpfMaterial(Vector4 baseColor, float metallic, float roughness)
+    {
+        var brush = new SolidColorBrush(Color.FromArgb(
+            (byte)Math.Clamp(baseColor.W * 255f, 0, 255),
+            (byte)Math.Clamp(baseColor.X * 255f, 0, 255),
+            (byte)Math.Clamp(baseColor.Y * 255f, 0, 255),
+            (byte)Math.Clamp(baseColor.Z * 255f, 0, 255)));
+        brush.Freeze();
+
+        var specPower = Math.Clamp((1f - roughness) * (8f + metallic * 40f), 1f, 64f);
+        var specIntensity = Math.Clamp((1f - roughness) * (0.15f + metallic * 0.65f), 0f, 1f);
+        if (specIntensity <= 0.01f)
+        {
+            var diffuseOnly = new DiffuseMaterial(brush);
+            diffuseOnly.Freeze();
+            return diffuseOnly;
+        }
+
+        var specBrush = new SolidColorBrush(Color.FromScRgb(specIntensity, 1f, 1f, 1f));
+        specBrush.Freeze();
+        var group = new MaterialGroup
+        {
+            Children = { new DiffuseMaterial(brush), new SpecularMaterial(specBrush, specPower) }
+        };
+        group.Freeze();
+        return group;
+    }
+
+    private static System.Windows.Media.Media3D.Material ReadWpfMaterial(MeshPrimitive primitive)
+    {
+        var color = Vector4.One;
+        var metallic = 0f;
+        var roughness = 0.5f;
+        var gltfMat = primitive.Material;
+        if (gltfMat != null)
+        {
+            var bc = gltfMat.FindChannel("BaseColor");
+            if (bc?.Color is Vector4 rgba)
+                color = rgba;
+            var mr = gltfMat.FindChannel("MetallicRoughness");
+            if (mr is { } channel)
+            {
+                metallic = channel.GetFactor("MetallicFactor");
+                roughness = channel.GetFactor("RoughnessFactor");
+            }
+        }
+        return CreateWpfMaterial(color, metallic, roughness);
+    }
+
+    private static Vector4 ParseHexColor(string hex)
+    {
+        var h = hex.Trim().TrimStart('#');
+        if (h.Length == 6)
+            h += "FF";
+        if (h.Length != 8)
+            return new Vector4(0.8f, 0.8f, 0.8f, 1f);
+        static byte Parse(string s) => Convert.ToByte(s, 16);
+        return new Vector4(Parse(h[..2]) / 255f, Parse(h.Substring(2, 2)) / 255f, Parse(h.Substring(4, 2)) / 255f, Parse(h.Substring(6, 2)) / 255f);
     }
 
     private static MeshGeometry3D? BuildMeshGeometry(MeshPrimitive primitive)

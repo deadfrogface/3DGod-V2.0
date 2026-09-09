@@ -1,23 +1,23 @@
 ﻿# PHASE 25 Report
 
 - Phase: 25 – Reference Image Provider
-- Status: **PASS** (ehrlicher Gate, kein Fake-FLUX-Bild)
+- Status: **GATED_NOT_INSTALLED** (FLUX/Qwen-Generierung) + **PASS** (Import, Probe, Persistenz)
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
 - `IReferenceImageGenerationService` + `ReferenceImageService`
 - Hardwaretest (`nvidia-smi`, sonst kein erfundenes CUDA)
-- FLUX/Qwen-Probe unter `%LOCALAPPDATA%/3DGod/Models/{flux|qwen}` (Checkpoint > 1 MB)
 - Domain `ReferenceSet` / `ReferenceImage` mit prompt, seed, model hash, width/height, SHA256
 - Import eines **echten PNG** in das Project-ReferenceSet, Save/Reload im `.3dgod`
-- `GenerateAsync` ohne Checkpoint wirft **NotInstalled** und schreibt keine Datei
+- `Probe_IsNotAvailable_AndNeverSuccess` – nie Available, nie „success“
 
-## Nicht vorhanden
+## GATED_NOT_INSTALLED
 
 - Kein FLUX.1-schnell / Qwen-Image-Checkpoint
 - Kein CUDA
-- Text→Bild ist daher **nicht** als Generierung erfüllt
+- `GenerateAsync` ohne Checkpoint wirft **NotInstalled** und schreibt keine Datei
+- UI-Button deaktiviert wenn `FeatureAvailability` ≠ invocable
 
 ## Gates
 
-- `dotnet test -c Release`: 143 bestanden
+- `ReferenceImageTests`, `FeatureAvailabilityTests.GenerativeBackends_*`

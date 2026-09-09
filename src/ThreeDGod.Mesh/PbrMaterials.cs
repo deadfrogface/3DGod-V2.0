@@ -41,6 +41,29 @@ public static class PbrMaterials
         return new PbrPreset { Name = preset.Name, BaseColor = preset.BaseColor, Metallic = preset.Metallic, Roughness = roughness };
     }
 
+    public static PbrPreset FromHex(string name, string hexColor, float metallic, float roughness)
+    {
+        var rgba = ParseHex(hexColor);
+        return new PbrPreset
+        {
+            Name = name,
+            BaseColor = rgba,
+            Metallic = Math.Clamp(metallic, 0f, 1f),
+            Roughness = Math.Clamp(roughness, 0f, 1f)
+        };
+    }
+
+    public static Vector4 ParseHex(string hex)
+    {
+        var h = hex.Trim().TrimStart('#');
+        if (h.Length == 6)
+            h += "FF";
+        if (h.Length != 8)
+            return new Vector4(0.8f, 0.8f, 0.8f, 1f);
+        static byte Parse(string s) => Convert.ToByte(s, 16);
+        return new Vector4(Parse(h[..2]) / 255f, Parse(h.Substring(2, 2)) / 255f, Parse(h.Substring(4, 2)) / 255f, Parse(h.Substring(6, 2)) / 255f);
+    }
+
     public static MaterialDefinition ToDefinition(PbrPreset preset) =>
         new()
         {

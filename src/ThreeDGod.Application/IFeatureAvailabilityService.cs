@@ -41,6 +41,9 @@ public static class FeatureIds
     public const string GarmentSkin = "garment.skin";
     public const string GenerativeGarment = "garment.generate.ai";
     public const string LocalAiMeshEdit = "mesh.edit.ai";
+    public const string AiCommandInterpret = "ai.command.interpret";
+    public const string AiLlamaSharp = "ai.llama.inference";
+    public const string MaterialEditorPbr = "material.editor.pbr";
 }
 
 public interface IFeatureAvailabilityService

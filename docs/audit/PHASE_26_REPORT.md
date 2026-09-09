@@ -1,20 +1,21 @@
 ﻿# PHASE 26 Report
 
 - Phase: 26 – TripoSR Worker
-- Status: **PASS** (ehrlicher Gate, kein Fake-Mesh)
+- Status: **GATED_NOT_INSTALLED** (Image→3D-Generierung) + **PASS** (Probe, Attach, Persistenz)
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
 - `IImageTo3DService` / `ImageTo3DService`
-- Probe `triposr` über `GatedWorkerCatalog` + Hardware
-- `GenerateGlbAsync` ohne Runtime: **NotInstalled**, keine GLB-Datei
+- Probe `triposr` über `GatedWorkerCatalog` + Hardware – nie Available
 - Bestehendes verifiziertes GLB kann ins Projekt und per `.3dgod` Save/Reload
+- `Generate_WithoutRuntime_ThrowsAndWritesNoGlb`
 
-## Nicht vorhanden
+## GATED_NOT_INSTALLED
 
 - Kein TripoSR-Checkpoint/Runtime
-- Image→3D→Viewport aus einem Foto ist daher nicht erfüllt
+- Image→3D→Viewport aus einem Foto ist **nicht** erfüllt
+- UI meldet Probe-Status, kein Fake-PASS
 
 ## Gates
 
-- Filter-Tests ImageTo3D/Composition/GatedWorkers: bestanden
+- `ImageTo3DTests`, `FeatureAvailabilityTests.GenerativeBackends_*`

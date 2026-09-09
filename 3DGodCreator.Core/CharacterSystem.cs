@@ -18,6 +18,8 @@ public class CharacterSystem
     public Dictionary<string, List<string>> AssetState { get; } = new();
     public Dictionary<string, bool> PhysicsFlags { get; } = new();
     public Dictionary<string, MaterialData> Materials { get; } = new();
+    public string? PreviewGlbPath { get; set; }
+    public string ActiveMaterialSlot { get; set; } = "skin";
 
     public Config Config => _configService.Load();
     public bool NsfwEnabled { get; set; }
@@ -168,6 +170,7 @@ public class CharacterSystem
     {
         Viewport?.UpdatePreview(AnatomyState, AssetState);
         Viewport?.ApplySculptTransform(SculptData);
+        Viewport?.ApplyMaterialOverrides(Materials);
     }
 
     public void SavePreset(string name = "default")
@@ -220,13 +223,20 @@ public class CharacterSystem
         return Path.Combine("assets", "characters", $"{Config.Gender}_base.glb");
     }
 
-    public void SetMaterialColor(string matKey, string hexColor)
+    public void SetMaterialColor(string matKey, string hexColor) =>
+        SetMaterialPbr(matKey, hexColor, null, null);
+
+    public void SetMaterialPbr(string matKey, string? hexColor, double? roughness, double? metallic)
     {
-        if (Materials.TryGetValue(matKey, out var mat))
-        {
+        if (!Materials.TryGetValue(matKey, out var mat))
+            return;
+        if (hexColor != null)
             mat.Color = hexColor;
-            RefreshLayers();
-        }
+        if (roughness.HasValue)
+            mat.Roughness = roughness.Value;
+        if (metallic.HasValue)
+            mat.Metallic = metallic.Value;
+        RefreshLayers();
     }
 
     public void CreateAutoRig()
@@ -242,4 +252,5 @@ public interface IViewport
     void UpdateView();
     void UpdatePreview(Dictionary<string, bool> anatomy, Dictionary<string, List<string>> assets);
     void ApplySculptTransform(Dictionary<string, int> sculptData);
+    void ApplyMaterialOverrides(Dictionary<string, MaterialData> materials);
 }

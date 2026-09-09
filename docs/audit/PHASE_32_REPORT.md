@@ -1,20 +1,22 @@
 ﻿# PHASE 32 Report
 
 - Phase: 32 – PBR Material Editor
-- Status: **PASS**
+- Status: **PASS** (Katalog-PBR: GLB + Viewport) – **kein** KI-Text-to-PBR
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
 - Presets: Gold, Silver, Steel, Leather, Cloth, Plastic, Skin (Metallic/Roughness + BaseColor).
-- Prompt **"Kette Gold, weniger glänzend"** mappt auf Gold und erhöht Roughness.
+- Prompt **"Kette Gold, weniger glänzend"** mappt regelbasiert auf Gold + höhere Roughness (`PbrMaterials.FromPrompt`).
 - `ApplyToGlb` schreibt Faktoren ins GLB; `ReadFirst` liest sie nach Reload.
-- `MaterialDefinition` überlebt `DomainJson` Roundtrip.
+- `MaterialEditorPanel`: Katalog-Presets, Metallic/Roughness-Slider, Viewport-Material via `GlbLoader` (GLB-Channels oder Override).
+- `FeatureIds.MaterialEditorPbr` = **Available**.
 
-## Nicht vorhanden
+## Nicht vorhanden (ehrlich)
 
-- Kein interaktiver Viewport-Material-Editor / Texture-Paint.
 - Kein AI-Text-to-PBR über ein Modell; Mapping ist regelbasiert.
+- Kein Texture-Paint / Multi-Material-Slots im Viewport.
 
 ## Gates
 
 - `AssetPipelineTests.GoldLessShiny_ChangesRoughness_AndSurvivesGlbReload`
+- `FeatureAvailabilityTests.MaterialEditorPbr_IsAvailable`

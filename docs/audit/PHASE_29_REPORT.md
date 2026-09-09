@@ -1,15 +1,20 @@
 ﻿# PHASE 29 Report
 
 - Phase: 29 – TRELLIS optional
-- Status: **PASS** (optional, nicht ausgewählt)
+- Status: **GATED_NOT_INSTALLED** (TRELLIS-Runtime) + **PASS** (Registry + Router)
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
 - TRELLIS ist im Registry als optionales Backend
-- State **NotInstalled**, License nicht akzeptiert
 - Router wählt TRELLIS nicht automatisch
-- Probe nie Available, nie "success"
+- `ImageTo3DTests.Probe_IsNotAvailable_AndNeverSuccess("trellis")`
 
-## Nicht vorhanden
+## GATED_NOT_INSTALLED
 
-- TRELLIS / TRELLIS.2 Runtime
+- State **NotInstalled**, License nicht akzeptiert
+- Probe nie Available, nie „success“
+- Kein TRELLIS / TRELLIS.2 Runtime
+
+## Gates
+
+- Optionaler Provider bleibt explizit gated

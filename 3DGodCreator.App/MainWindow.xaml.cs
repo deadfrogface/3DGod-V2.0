@@ -181,6 +181,7 @@ public partial class MainWindow : Window
     public void LoadPreview(string path)
     {
         _currentPreviewPath = path;
+        _characterSystem.PreviewGlbPath = null;
         if (!File.Exists(path))
             path = Path.GetFullPath(Path.Combine(_basePath, path));
 
@@ -230,6 +231,7 @@ public partial class MainWindow : Window
             }
             else if (ext == ".glb")
             {
+                _characterSystem.PreviewGlbPath = path;
                 var content = GlbLoader.Load(path);
                 if (content != null)
                 {
@@ -422,6 +424,38 @@ public partial class MainWindow : Window
             AppLogger.Write($"[Transform] Scale changed from {prevS:F3} to {s:F3} (height={height})");
     }
 
+    public void ApplyMaterialOverridesToViewport(Dictionary<string, MaterialData> materials)
+    {
+        if (!IsShowing3DModel() || ViewportHost.Child is not HelixViewport3D vp)
+            return;
+        if (vp.Children.Count == 0 || vp.Children[0] is not ModelVisual3D visual || visual.Content == null)
+            return;
+
+        var slot = materials.GetValueOrDefault(_characterSystem.ActiveMaterialSlot)
+            ?? materials.GetValueOrDefault("skin")
+            ?? materials.Values.FirstOrDefault()
+            ?? new MaterialData();
+        GlbLoader.ApplyMaterialOverride(visual.Content, slot);
+
+        if (!string.IsNullOrWhiteSpace(_characterSystem.PreviewGlbPath)
+            && File.Exists(_characterSystem.PreviewGlbPath))
+        {
+            try
+            {
+                var preset = PbrMaterials.FromHex(
+                    _characterSystem.ActiveMaterialSlot,
+                    slot.Color,
+                    (float)slot.Metallic,
+                    (float)slot.Roughness);
+                PbrMaterials.ApplyToGlb(_characterSystem.PreviewGlbPath, preset);
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Write($"[Material] GLB PBR write skipped: {ex.Message}");
+            }
+        }
+    }
+
     private string GetAnatomyPreviewPath(Dictionary<string, bool> anatomy)
     {
         var previewDir = Path.Combine(_basePath, "assets", "view_preview");
@@ -602,5 +636,7 @@ public partial class MainWindow : Window
             _win.Dispatcher.Invoke(() => _win.UpdatePreviewFromAnatomy(anatomy));
         public void ApplySculptTransform(Dictionary<string, int> sculptData) =>
             _win.Dispatcher.Invoke(() => _win.ApplySculptTransform(sculptData));
+        public void ApplyMaterialOverrides(Dictionary<string, MaterialData> materials) =>
+            _win.Dispatcher.Invoke(() => _win.ApplyMaterialOverridesToViewport(materials));
     }
 }

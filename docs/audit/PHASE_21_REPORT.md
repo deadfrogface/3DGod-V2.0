@@ -1,24 +1,24 @@
 ﻿# PHASE 21 Report
 
 - Phase: 21 – Live Parametric Human
-- Status: **PASS**
+- Status: **PASS** (State, Undo, Persistenz) + **GATED_NOT_INSTALLED** (Live-Catalog / Vertex-Tests)
 
-## Was wirklich existiert
+## Was wirklich existiert (PASS)
 
-- Anny-Catalog aus dem laufenden Worker: Körper (`phenotypes="all"`, 11 Keys), Local Shape, Gesicht.
-- Persistente Worker-Session (`WorkerSession`) + gecachtes `anny.Anny(...)` für Debounce-Preview.
+- Persistente Worker-Session (`WorkerSession`) + gecachtes `anny.Anny(...)` für Debounce-Preview (wenn Runtime da).
 - Inspector-Tab mit Slidern; 800 ms Debounce; Undo/Redo über `CommandStack`/`PropertyChangeCommand`.
 - `.3dgod` speichert `ParametricHumanState` (Phenotype, Local, Face) und lädt ihn zurück.
-- Test `TenParameters_ChangeVertices_AndAreNotUniformScale`: 10 Catalog-Parameter ändern echte Vertices, **kein Uniform-Scale**.
-- `FeatureIds.HeightMorph` bleibt **NotImplemented** (WPF-Scale ist kein Morph).
+- `ParameterChange_UndoRedo_RestoresValues` und `ProjectSaveReload_ReproducesAnnyState` – **ohne** Runtime.
+
+## GATED_NOT_INSTALLED (Live-Runtime)
+
+- `Catalog_HasAtLeastTenLiveParameters` und `TenParameters_ChangeVertices_AndAreNotUniformScale` nutzen `TestGate.NotInstalled`, wenn Anny uv/Runtime fehlt.
+- Live-Catalog aus Worker ≠ statische Preset-JSON.
 
 ## Gates
 
-- `dotnet build -c Release`: 0 Fehler, 0 Warnungen
-- `dotnet test -c Release`: 122 bestanden
+- `dotnet test -c Release`: AnnyLiveTests mit ehrlichem Soft-Skip
 
 ## Bewusst nicht fertig
 
-- PHASE 22 Presets (Built-ins / User-Presets)
-- Height-Morph als eigener Feature-Pfad bleibt NotImplemented
-- Prompt-KI bleibt NotImplemented
+- `FeatureIds.HeightMorph` bleibt **NotImplemented** (WPF-Scale ist kein Morph).
