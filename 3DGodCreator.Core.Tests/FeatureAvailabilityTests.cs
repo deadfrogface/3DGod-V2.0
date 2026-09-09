@@ -45,6 +45,9 @@ public class FeatureAvailabilityTests
         var garment = svc.GetStatus(FeatureIds.GarmentCode);
         Assert.True(garment is FeatureAvailability.Experimental or FeatureAvailability.NotInstalled);
         Assert.DoesNotContain("success", svc.GetStatusMessage(FeatureIds.GarmentCode), StringComparison.OrdinalIgnoreCase);
+        var fit = svc.GetStatus(FeatureIds.ClothingFit);
+        Assert.DoesNotContain("success", svc.GetStatusMessage(FeatureIds.ClothingFit), StringComparison.OrdinalIgnoreCase);
+        Assert.True(fit is FeatureAvailability.Experimental or FeatureAvailability.NotInstalled);
         Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.ExportGlb));
         Assert.Equal(FeatureAvailability.Available, svc.GetStatus(FeatureIds.ProjectSave));
     }

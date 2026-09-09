@@ -97,6 +97,12 @@ public interface IGarmentCodeService
     Task<string> GenerateJacketGlbAsync(string destinationGlb, CancellationToken cancellationToken = default);
 }
 
+public interface IGarmentFitService
+{
+    Task<GarmentFitResult> FitJacketToBodyAsync(string bodyGlb, string workRoot, string presetName, CancellationToken cancellationToken = default);
+    Task<GarmentFitResult> FitJacketToPresetAsync(string presetName, string workRoot, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

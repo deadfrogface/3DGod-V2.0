@@ -55,6 +55,8 @@ public class CompositionTests
         Assert.IsType<FreeformPipeline>(provider.GetRequiredService<IFreeformCharacterPipeline>());
         Assert.NotNull(provider.GetRequiredService<IGarmentService>());
         Assert.IsType<GarmentService>(provider.GetRequiredService<IGarmentService>());
+        Assert.NotNull(provider.GetRequiredService<IGarmentFitService>());
+        Assert.IsType<GarmentFitService>(provider.GetRequiredService<IGarmentFitService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

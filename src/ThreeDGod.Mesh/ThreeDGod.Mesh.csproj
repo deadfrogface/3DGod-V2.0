@@ -4,6 +4,7 @@
     <ProjectReference Include="..\ThreeDGod.Core\ThreeDGod.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="geometry3Sharp" Version="1.0.324" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
   </ItemGroup>
 

@@ -35,6 +35,13 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.GarmentCode)
             return GarmentCodeRuntime.Probe().Availability;
+        if (featureId == FeatureIds.ClothingFit)
+        {
+            var gc = GarmentCodeRuntime.Probe().Availability;
+            return gc is FeatureAvailability.Available or FeatureAvailability.Experimental
+                ? FeatureAvailability.Experimental
+                : gc;
+        }
         return _inner.GetStatus(featureId);
     }
 
@@ -74,6 +81,13 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – parametric T-Shirt/Jacket/Pants/Coat templates. Fitting remains NotImplemented.";
         if (featureId == FeatureIds.GarmentCode)
             return GarmentCodeRuntime.Probe().Message;
+        if (featureId == FeatureIds.ClothingFit)
+        {
+            var gc = GarmentCodeRuntime.Probe();
+            if (gc.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
+                return gc.Message;
+            return "Experimental – geometry3Sharp proximity fit + inflate. Not cloth simulation.";
+        }
         return _inner.GetStatusMessage(featureId);
     }
 }
