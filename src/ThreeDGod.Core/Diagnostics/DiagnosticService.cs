@@ -66,6 +66,8 @@ public interface IDiagnosticService
     DiagnosticIssue Capture(Exception exception, string source, string? correlationId = null, string? jobId = null, string? backendId = null);
     void AddBreadcrumb(DiagnosticBreadcrumb breadcrumb);
     IReadOnlyList<DiagnosticIssue> Issues { get; }
+    IReadOnlyList<DiagnosticBreadcrumb> Breadcrumbs { get; }
+    void ClearBreadcrumbs();
 }
 
 public sealed class CSharpExceptionEnricher
@@ -177,6 +179,17 @@ public sealed class DiagnosticService : IDiagnosticService
     public IReadOnlyList<DiagnosticIssue> Issues
     {
         get { lock (_gate) return _issues.ToArray(); }
+    }
+
+    public IReadOnlyList<DiagnosticBreadcrumb> Breadcrumbs
+    {
+        get { lock (_gate) return _breadcrumbs.ToArray(); }
+    }
+
+    public void ClearBreadcrumbs()
+    {
+        lock (_gate)
+            _breadcrumbs.Clear();
     }
 
     public void AddBreadcrumb(DiagnosticBreadcrumb breadcrumb)

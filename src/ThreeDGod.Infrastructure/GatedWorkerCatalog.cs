@@ -1,4 +1,5 @@
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Workers;
 
 namespace ThreeDGod.Infrastructure;
@@ -111,17 +112,20 @@ public sealed class LicenseGate
 
 public static class ExportPreflight
 {
-    public static IReadOnlyList<string> FbxSanity(string? path)
+    public static IReadOnlyList<string> FbxSanity(string? path, IDiagnosticService? diagnostics = null)
     {
-        var issues = new List<string>();
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-            issues.Add("FBX missing – real UE5 import is not claimed.");
-        else
+        return PipelineTrace.Run(diagnostics, "Export", "Export.Preflight", () =>
         {
-            var len = new FileInfo(path).Length;
-            if (len < 64)
-                issues.Add("FBX too small to be a valid scene.");
-        }
-        return issues;
+            var issues = new List<string>();
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                issues.Add("FBX missing – real UE5 import is not claimed.");
+            else
+            {
+                var len = new FileInfo(path).Length;
+                if (len < 64)
+                    issues.Add("FBX too small to be a valid scene.");
+            }
+            return (IReadOnlyList<string>)issues;
+        }, provider: "ue5-preflight");
     }
 }

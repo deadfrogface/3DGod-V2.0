@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 
 namespace ThreeDGod.Workers;
 
@@ -57,10 +58,12 @@ public sealed class GarmentCodeJacketRequest
 public sealed class GarmentCodeService : IGarmentCodeService, IDisposable, IAsyncDisposable
 {
     private readonly SemaphoreSlim _sessionLock = new(1, 1);
+    private readonly IDiagnosticService? _diagnostics;
     private WorkerSession? _session;
 
-    public GarmentCodeService(IWorkerHost _)
+    public GarmentCodeService(IWorkerHost _, IDiagnosticService? diagnostics = null)
     {
+        _diagnostics = diagnostics;
     }
 
     public FeatureAvailability Probe() => GarmentCodeRuntime.Probe().Availability;
@@ -75,38 +78,41 @@ public sealed class GarmentCodeService : IGarmentCodeService, IDisposable, IAsyn
         GarmentCodeJacketRequest request,
         CancellationToken cancellationToken = default)
     {
-        var status = GarmentCodeRuntime.Probe();
-        if (status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
-            throw new InvalidOperationException(status.Message);
-
-        var objPath = Path.ChangeExtension(destinationGlb, ".obj");
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationGlb))!);
-        var payload = JsonSerializer.Serialize(new
+        return await PipelineTrace.RunAsync(_diagnostics, "Garment", "Garment.Generate", async () =>
         {
-            objPath,
-            sleeveLengthCm = request.SleeveLengthCm,
-            lengthCm = request.LengthCm,
-            widthCm = request.WidthCm
-        });
+            var status = GarmentCodeRuntime.Probe();
+            if (status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
+                throw new InvalidOperationException(status.Message);
 
-        var result = await SendAsync("garment.jacket", payload, cancellationToken);
-        if (!File.Exists(objPath))
-            throw new InvalidOperationException("GarmentCode worker did not write an OBJ. No mesh will be faked.");
+            var objPath = Path.ChangeExtension(destinationGlb, ".obj");
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationGlb))!);
+            var payload = JsonSerializer.Serialize(new
+            {
+                objPath,
+                sleeveLengthCm = request.SleeveLengthCm,
+                lengthCm = request.LengthCm,
+                widthCm = request.WidthCm
+            });
 
-        using var doc = JsonDocument.Parse(result.JsonPayload ?? "{}");
-        if (!doc.RootElement.TryGetProperty("data", out var data) ||
-            !data.TryGetProperty("panelCount", out var panels) ||
-            panels.GetInt32() < 4)
-            throw new InvalidOperationException("GarmentCode jacket must contain at least 4 pygarment panels.");
+            var result = await SendAsync("garment.jacket", payload, cancellationToken);
+            if (!File.Exists(objPath))
+                throw new InvalidOperationException("GarmentCode worker did not write an OBJ. No mesh will be faked.");
 
-        var patternPath = data.TryGetProperty("patternPath", out var pp) ? pp.GetString() : Path.ChangeExtension(objPath, ".json");
-        if (string.IsNullOrWhiteSpace(patternPath) || !File.Exists(patternPath))
-            throw new InvalidOperationException("GarmentCode worker did not write a pattern JSON.");
+            using var doc = JsonDocument.Parse(result.JsonPayload ?? "{}");
+            if (!doc.RootElement.TryGetProperty("data", out var data) ||
+                !data.TryGetProperty("panelCount", out var panels) ||
+                panels.GetInt32() < 4)
+                throw new InvalidOperationException("GarmentCode jacket must contain at least 4 pygarment panels.");
 
-        Mesh.TriangleMeshExport.ObjToGlb(objPath, destinationGlb);
-        if (!File.Exists(destinationGlb) || new FileInfo(destinationGlb).Length < 64)
-            throw new InvalidOperationException("GLB export from GarmentCode OBJ failed.");
-        return destinationGlb;
+            var patternPath = data.TryGetProperty("patternPath", out var pp) ? pp.GetString() : Path.ChangeExtension(objPath, ".json");
+            if (string.IsNullOrWhiteSpace(patternPath) || !File.Exists(patternPath))
+                throw new InvalidOperationException("GarmentCode worker did not write a pattern JSON.");
+
+            Mesh.TriangleMeshExport.ObjToGlb(objPath, destinationGlb);
+            if (!File.Exists(destinationGlb) || new FileInfo(destinationGlb).Length < 64)
+                throw new InvalidOperationException("GLB export from GarmentCode OBJ failed.");
+            return destinationGlb;
+        }, provider: "garmentcode").ConfigureAwait(false);
     }
 
     public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();

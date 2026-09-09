@@ -1,4 +1,5 @@
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 
 namespace ThreeDGod.Infrastructure;
@@ -36,16 +37,25 @@ public static class ImageTo3DRuntime
 
 public sealed class ImageTo3DService : IImageTo3DService
 {
+    private readonly IDiagnosticService? _diagnostics;
+
+    public ImageTo3DService(IDiagnosticService? diagnostics = null) => _diagnostics = diagnostics;
+
     public FeatureAvailability Probe(string backendId = "triposr") => ImageTo3DRuntime.Probe(backendId).Availability;
     public string ProbeMessage(string backendId = "triposr") => ImageTo3DRuntime.Probe(backendId).Message;
 
     public Task<string> GenerateGlbAsync(string imagePath, string destinationGlb, string backendId = "triposr", CancellationToken cancellationToken = default)
     {
         var status = ImageTo3DRuntime.Probe(backendId);
-        if (status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
-            throw new InvalidOperationException(status.Message);
-        throw new InvalidOperationException(
-            $"NotInstalled – {backendId} checkpoint/runtime is not verified. No mesh will be generated.");
+        return PipelineTrace.RunAsync<string>(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+        {
+            var message = status.Availability is FeatureAvailability.NotInstalled
+                or FeatureAvailability.UnsupportedHardware
+                or FeatureAvailability.Disabled
+                ? status.Message
+                : $"NotInstalled – {backendId} checkpoint/runtime is not verified. No mesh will be generated.";
+            return Task.FromException<string>(new InvalidOperationException(message));
+        }, provider: backendId);
     }
 
     public MeshAsset AttachExistingGlb(string glbPath, ProjectBundle bundle, string backendId = "import")

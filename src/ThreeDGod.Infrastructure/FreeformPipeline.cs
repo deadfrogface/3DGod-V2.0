@@ -1,5 +1,6 @@
 using System.Numerics;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Mesh;
 using ThreeDGod.Rigging;
@@ -10,11 +11,16 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
 {
     private readonly IReferenceImageGenerationService _images;
     private readonly IImageTo3DService _to3d;
+    private readonly IDiagnosticService? _diagnostics;
 
-    public FreeformPipeline(IReferenceImageGenerationService images, IImageTo3DService to3d)
+    public FreeformPipeline(
+        IReferenceImageGenerationService images,
+        IImageTo3DService to3d,
+        IDiagnosticService? diagnostics = null)
     {
         _images = images;
         _to3d = to3d;
+        _diagnostics = diagnostics;
     }
 
     public async Task<CharacterDocument> RunAsync(string prompt, ProjectBundle bundle, string workRoot, CancellationToken cancellationToken = default)
@@ -22,85 +28,105 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
         Directory.CreateDirectory(workRoot);
         try
         {
-            await _images.GenerateAsync(prompt, seed: 1, bundle, cancellationToken);
+            await PipelineTrace.RunAsync(_diagnostics, "AI", "ReferenceImage.Generate",
+                () => _images.GenerateAsync(prompt, seed: 1, bundle, cancellationToken),
+                provider: "flux/qwen").ConfigureAwait(false);
         }
         catch (InvalidOperationException)
         {
-            // FLUX/Qwen remain NotInstalled.
+            PipelineTrace.Fallback(_diagnostics, "AI", "ReferenceImage.Generate", "flux/qwen");
         }
 
         if (!IsCatalogFreeform(prompt))
         {
-            var status = _to3d.ProbeMessage();
-            throw new InvalidOperationException(
-                "NotInstalled – no ImageTo3D backend and prompt is not a catalog freeform. " + status);
+            await PipelineTrace.RunAsync(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+            {
+                var status = _to3d.ProbeMessage();
+                return Task.FromException(new InvalidOperationException(
+                    "NotInstalled – no ImageTo3D backend and prompt is not a catalog freeform. " + status));
+            }).ConfigureAwait(false);
         }
 
-        var high = BuildDragon();
-        var sourceGlb = Path.Combine(workRoot, "source.glb");
-        TriangleMeshExport.WriteGlb(sourceGlb, high.Positions, high.Indices);
-        var sourceTris = high.Indices.Count / 3;
+        PipelineTrace.Fallback(_diagnostics, "AI", "ImageTo3D.Generate", "procedural-catalog");
 
-        var remeshed = RemeshPipeline.Run(high.Positions, high.Indices, RemeshProfile.Preview);
-        var cleanedGlb = Path.Combine(workRoot, "cleaned.glb");
-        TriangleMeshExport.WriteGlb(cleanedGlb, remeshed.Positions, remeshed.Indices, remeshed.Uvs);
-
-        var riggedGlb = Path.Combine(workRoot, "rigged.glb");
-        FreeformCreatureRig.WriteSkinned(riggedGlb, remeshed.Positions, remeshed.Indices);
-        var report = RigValidator.ValidateGlb(riggedGlb, requireHumanoid: false);
-        if (!report.Passed)
-            throw new InvalidOperationException("Freeform rig failed validation: " + string.Join("; ", report.Failures.Select(f => f.Code)));
-
-        var mapped = SemanticBoneMap.MapAll(report.JointNames);
-        var doc = CanonicalGltfPipeline.Load(riggedGlb);
-        var mesh = new MeshAsset
+        return PipelineTrace.Run(_diagnostics, "Freeform", "Freeform.Build", () =>
         {
-            Name = "freeform-dragon",
-            CanonicalGlbPath = riggedGlb,
-            VertexCount = doc.VertexCount,
-            TriangleCount = doc.TriangleCount,
-            HasSkin = doc.SkinCount > 0,
-            UvSetCount = doc.HasUv ? 1 : 0,
-            ValidationState = "freeform-pipeline",
-            GeneratedMetadata = new GeneratedAssetMetadata
+            var high = BuildDragon();
+            var sourceGlb = Path.Combine(workRoot, "source.glb");
+            TriangleMeshExport.WriteGlb(sourceGlb, high.Positions, high.Indices);
+            var sourceTris = high.Indices.Count / 3;
+
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.Cleanup", "Started", "remesh");
+            var remeshed = RemeshPipeline.Run(high.Positions, high.Indices, RemeshProfile.Preview);
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.Cleanup", "Completed", "remesh");
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.UV", "Completed", "spherical");
+            var cleanedGlb = Path.Combine(workRoot, "cleaned.glb");
+            TriangleMeshExport.WriteGlb(cleanedGlb, remeshed.Positions, remeshed.Indices, remeshed.Uvs);
+
+            var riggedGlb = Path.Combine(workRoot, "rigged.glb");
+            PipelineTrace.Stage(_diagnostics, "Rigging", "Rig.Skeleton", "Started", "authored-freeform");
+            FreeformCreatureRig.WriteSkinned(riggedGlb, remeshed.Positions, remeshed.Indices);
+            var report = RigValidator.ValidateGlb(riggedGlb, requireHumanoid: false);
+            if (!report.Passed)
             {
-                BackendId = "procedural-catalog",
-                Prompt = prompt,
-                LicenseProfileId = "cc0",
-                Parameters =
-                {
-                    ["sourceTriangles"] = sourceTris.ToString(),
-                    ["cleanedTriangles"] = remeshed.Indices.Count.ToString(),
-                    ["rig"] = "authored-freeform",
-                    ["imageTo3d"] = "NotInstalled"
-                }
+                PipelineTrace.Stage(_diagnostics, "Rigging", "Rig.Skeleton", "Failed", "authored-freeform");
+                throw new InvalidOperationException("Freeform rig failed validation: " + string.Join("; ", report.Failures.Select(f => f.Code)));
             }
-        };
-        bundle.Meshes.Add(mesh);
-        var character = new CharacterDocument
-        {
-            Name = "Kleiner Drache",
-            CharacterKind = CharacterKind.FreeformCreature,
-            SourceRepresentation = SourceRepresentation.GeneratedMesh,
-            CreatureState = new CreatureState
+            PipelineTrace.Stage(_diagnostics, "Rigging", "Rig.Skeleton", "Completed", "authored-freeform");
+
+            var mapped = SemanticBoneMap.MapAll(report.JointNames);
+            var doc = CanonicalGltfPipeline.Load(riggedGlb);
+            var mesh = new MeshAsset
             {
-                BaseFamily = "dragon",
-                SkeletonProfileId = "freeform",
-                RigStrategy = "authored-freeform",
-                BodyPlan = new BodyPlan
+                Name = "freeform-dragon",
+                CanonicalGlbPath = riggedGlb,
+                VertexCount = doc.VertexCount,
+                TriangleCount = doc.TriangleCount,
+                HasSkin = doc.SkinCount > 0,
+                UvSetCount = doc.HasUv ? 1 : 0,
+                ValidationState = "freeform-pipeline",
+                GeneratedMetadata = new GeneratedAssetMetadata
                 {
-                    IsBiped = false,
-                    TailCount = 1,
-                    SemanticLimbDescriptors = ["freeform", "tail", "head"],
-                    CustomTags = mapped.Values.Distinct().ToList()
+                    BackendId = "procedural-catalog",
+                    Prompt = prompt,
+                    LicenseProfileId = "cc0",
+                    Parameters =
+                    {
+                        ["sourceTriangles"] = sourceTris.ToString(),
+                        ["cleanedTriangles"] = remeshed.Indices.Count.ToString(),
+                        ["rig"] = "authored-freeform",
+                        ["imageTo3d"] = "NotInstalled",
+                        ["semanticBones"] = mapped.Count.ToString()
+                    }
                 }
-            },
-            GeneratedAssetMetadata = mesh.GeneratedMetadata
-        };
-        character.MeshSet.MeshAssetIds.Add(mesh.MeshAssetId);
-        bundle.Characters.Add(character);
-        bundle.Project.CharacterIds.Add(character.CharacterId);
-        return character;
+            };
+            bundle.Meshes.Add(mesh);
+
+            var character = new CharacterDocument
+            {
+                Name = "Kleiner Drache",
+                CharacterKind = CharacterKind.FreeformCreature,
+                SourceRepresentation = SourceRepresentation.GeneratedMesh,
+                CreatureState = new CreatureState
+                {
+                    BaseFamily = "dragon",
+                    SkeletonProfileId = "freeform",
+                    RigStrategy = "authored-freeform",
+                    BodyPlan = new BodyPlan
+                    {
+                        IsBiped = false,
+                        TailCount = 1,
+                        SemanticLimbDescriptors = ["freeform", "tail", "head"],
+                        CustomTags = mapped.Values.Distinct().ToList()
+                    }
+                },
+                GeneratedAssetMetadata = mesh.GeneratedMetadata
+            };
+            character.MeshSet.MeshAssetIds.Add(mesh.MeshAssetId);
+            bundle.Characters.Add(character);
+            bundle.Project.CharacterIds.Add(character.CharacterId);
+            return character;
+        }, provider: "procedural-catalog");
     }
 
     public static bool IsCatalogFreeform(string prompt)

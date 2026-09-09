@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 
 namespace ThreeDGod.Infrastructure;
@@ -64,13 +65,19 @@ public static class ReferenceImageRuntime
 
 public sealed class ReferenceImageService : IReferenceImageGenerationService
 {
+    private readonly IDiagnosticService? _diagnostics;
+
+    public ReferenceImageService(IDiagnosticService? diagnostics = null) => _diagnostics = diagnostics;
+
     public FeatureAvailability Probe() => ReferenceImageRuntime.Probe().Availability;
     public string ProbeMessage() => ReferenceImageRuntime.Probe().Message;
 
     public Task<ReferenceImage> GenerateAsync(string prompt, long? seed, ProjectBundle bundle, CancellationToken cancellationToken = default)
     {
         var status = ReferenceImageRuntime.Probe();
-        throw new InvalidOperationException(status.Message);
+        return PipelineTrace.RunAsync<ReferenceImage>(_diagnostics, "AI", "ReferenceImage.Generate", () =>
+            Task.FromException<ReferenceImage>(new InvalidOperationException(status.Message)),
+            provider: status.BackendId ?? "flux/qwen");
     }
 
     public ReferenceImage AttachExistingPng(string pngPath, string prompt, long? seed, ProjectBundle bundle)

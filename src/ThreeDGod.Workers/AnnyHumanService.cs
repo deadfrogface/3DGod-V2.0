@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 
 namespace ThreeDGod.Workers;
@@ -94,10 +95,12 @@ public sealed class AnnyGenerateRequest
 public sealed class AnnyHumanService : IDisposable, IAsyncDisposable
 {
     private readonly SemaphoreSlim _sessionLock = new(1, 1);
+    private readonly IDiagnosticService? _diagnostics;
     private WorkerSession? _session;
 
-    public AnnyHumanService(IWorkerHost _)
+    public AnnyHumanService(IWorkerHost _, IDiagnosticService? diagnostics = null)
     {
+        _diagnostics = diagnostics;
     }
 
     public AnnyRuntimeStatus Probe() => AnnyRuntime.Probe();
@@ -123,28 +126,31 @@ public sealed class AnnyHumanService : IDisposable, IAsyncDisposable
 
     public async Task<string> GenerateGlbAsync(string destinationGlb, AnnyGenerateRequest request, CancellationToken cancellationToken = default)
     {
-        var status = AnnyRuntime.Probe();
-        if (status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
-            throw new InvalidOperationException(status.Message);
-
-        var objPath = Path.ChangeExtension(destinationGlb, ".obj");
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationGlb))!);
-        var payload = JsonSerializer.Serialize(new
+        return await PipelineTrace.RunAsync(_diagnostics, "Human", "Human.Generate", async () =>
         {
-            objPath,
-            phenotypes = request.Phenotypes,
-            localChanges = request.LocalChanges,
-            facialActions = request.FacialActions
-        });
+            var status = AnnyRuntime.Probe();
+            if (status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled)
+                throw new InvalidOperationException(status.Message);
 
-        var result = await SendAsync("human.generate", payload, cancellationToken);
-        if (!File.Exists(objPath))
-            throw new InvalidOperationException("Anny worker did not write an OBJ. No mesh will be faked.");
+            var objPath = Path.ChangeExtension(destinationGlb, ".obj");
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationGlb))!);
+            var payload = JsonSerializer.Serialize(new
+            {
+                objPath,
+                phenotypes = request.Phenotypes,
+                localChanges = request.LocalChanges,
+                facialActions = request.FacialActions
+            });
 
-        Mesh.TriangleMeshExport.ObjToGlb(objPath, destinationGlb);
-        if (!File.Exists(destinationGlb) || new FileInfo(destinationGlb).Length < 64)
-            throw new InvalidOperationException("GLB export from Anny OBJ failed.");
-        return destinationGlb;
+            var result = await SendAsync("human.generate", payload, cancellationToken);
+            if (!File.Exists(objPath))
+                throw new InvalidOperationException("Anny worker did not write an OBJ. No mesh will be faked.");
+
+            Mesh.TriangleMeshExport.ObjToGlb(objPath, destinationGlb);
+            if (!File.Exists(destinationGlb) || new FileInfo(destinationGlb).Length < 64)
+                throw new InvalidOperationException("GLB export from Anny OBJ failed.");
+            return destinationGlb;
+        }, provider: "anny").ConfigureAwait(false);
     }
 
     public static AnnyGenerateRequest FromState(ParametricHumanState state) =>

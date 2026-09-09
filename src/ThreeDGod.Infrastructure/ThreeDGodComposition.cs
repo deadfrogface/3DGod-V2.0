@@ -18,14 +18,16 @@ public static class ThreeDGodComposition
     /// </summary>
     public static IServiceCollection AddThreeDGodCoreServices(this IServiceCollection services)
     {
+        services.AddSingleton<IDiagnosticService, DiagnosticService>();
         services.AddSingleton<ConfigService>();
         services.AddSingleton<PresetService>();
         services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
         services.AddSingleton<IFeatureAvailabilityService, DynamicFeatureAvailabilityService>();
+        services.AddSingleton<IWorkerHost>(sp => new WorkerProcessHost(sp.GetRequiredService<IDiagnosticService>()));
         services.AddSingleton<AnnyHumanService>();
         services.AddSingleton<GarmentCodeService>();
         services.AddSingleton<IGarmentCodeService>(sp => sp.GetRequiredService<GarmentCodeService>());
-        services.AddSingleton<IProjectService, GodProjectArchive>();
+        services.AddSingleton<IProjectService>(sp => new GodProjectArchive(sp.GetRequiredService<IDiagnosticService>()));
         services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton<IReferenceImageGenerationService, ReferenceImageService>();
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
@@ -49,7 +51,6 @@ public static class ThreeDGodComposition
                 "Recovery");
             return new AutosaveService(root);
         });
-        services.AddSingleton<IWorkerHost, WorkerProcessHost>();
         services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
         [
             new BackendManifest
@@ -77,7 +78,6 @@ public static class ThreeDGodComposition
             ImageTo3DManifest("trellis", 20, "trellis", accepted: false, minVram: 12288, cuda: true)
         ]));
         services.AddSingleton<IGpuJobScheduler, GpuJobScheduler>();
-        services.AddSingleton<IDiagnosticService, DiagnosticService>();
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();

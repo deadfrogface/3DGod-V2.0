@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Mesh;
 using ThreeDGod.Persistence;
@@ -11,32 +12,47 @@ public sealed class AiAssetPipeline : IAssetGenerationService
     private readonly IReferenceImageGenerationService _images;
     private readonly IImageTo3DService _to3d;
     private readonly AssetLibrary _library;
+    private readonly IDiagnosticService? _diagnostics;
 
-    public AiAssetPipeline(IReferenceImageGenerationService images, IImageTo3DService to3d, AssetLibrary library)
+    public AiAssetPipeline(
+        IReferenceImageGenerationService images,
+        IImageTo3DService to3d,
+        AssetLibrary library,
+        IDiagnosticService? diagnostics = null)
     {
         _images = images;
         _to3d = to3d;
         _library = library;
+        _diagnostics = diagnostics;
     }
 
     public async Task<LibraryAsset> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
     {
         try
         {
-            var bundle = new ProjectBundle();
-            await _images.GenerateAsync(prompt, seed: 1, bundle, cancellationToken);
+            await PipelineTrace.RunAsync(_diagnostics, "AI", "ReferenceImage.Generate", async () =>
+            {
+                var bundle = new ProjectBundle();
+                await _images.GenerateAsync(prompt, seed: 1, bundle, cancellationToken);
+            }, provider: "flux/qwen").ConfigureAwait(false);
         }
         catch (InvalidOperationException)
         {
-            // FLUX/Qwen remain NotInstalled. Catalog path may still produce a real mesh.
+            PipelineTrace.Fallback(_diagnostics, "AI", "ReferenceImage.Generate", "flux/qwen");
         }
 
         if (IsFrogNecklace(prompt))
-            return BuildFrogNecklace(prompt);
+        {
+            PipelineTrace.Fallback(_diagnostics, "AI", "ImageTo3D.Generate", "procedural-catalog");
+            return PipelineTrace.Run(_diagnostics, "AI", "Asset.Catalog", () => BuildFrogNecklace(prompt), "procedural-catalog");
+        }
 
-        var status = _to3d.ProbeMessage();
-        throw new InvalidOperationException(
-            "NotInstalled – no ImageTo3D backend and prompt is not in the procedural catalog. " + status);
+        return await PipelineTrace.RunAsync<LibraryAsset>(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+        {
+            var status = _to3d.ProbeMessage();
+            return Task.FromException<LibraryAsset>(new InvalidOperationException(
+                "NotInstalled – no ImageTo3D backend and prompt is not in the procedural catalog. " + status));
+        }).ConfigureAwait(false);
     }
 
     public static bool IsFrogNecklace(string prompt)
@@ -50,6 +66,7 @@ public sealed class AiAssetPipeline : IAssetGenerationService
     {
         var (positions, indices) = ProceduralJewelry.SilverFrogNecklace();
         var report = MeshValidator.Validate(positions, indices, uvCount: 0);
+        PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.Validate", report.Rejected ? "Failed" : "Completed", "catalog");
         if (report.Rejected)
             throw new InvalidOperationException("Catalog mesh failed validation.");
 

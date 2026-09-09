@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 
 namespace ThreeDGod.Persistence;
@@ -12,68 +13,79 @@ public sealed class GodProjectArchive : IProjectService
 
     private readonly ArchiveLimits _limits;
     private readonly IReadOnlyList<IProjectMigration> _migrations;
+    private readonly IDiagnosticService? _diagnostics;
 
     public GodProjectArchive()
-        : this(new ArchiveLimits(), [])
+        : this(new ArchiveLimits(), null, null)
     {
     }
 
-    public GodProjectArchive(ArchiveLimits limits, IEnumerable<IProjectMigration>? migrations = null)
+    public GodProjectArchive(IDiagnosticService diagnostics)
+        : this(new ArchiveLimits(), null, diagnostics)
+    {
+    }
+
+    public GodProjectArchive(ArchiveLimits limits, IEnumerable<IProjectMigration>? migrations = null, IDiagnosticService? diagnostics = null)
     {
         _limits = limits;
         _migrations = migrations?.ToArray() ?? [];
+        _diagnostics = diagnostics;
     }
 
     public async Task SaveAsync(ProjectBundle bundle, string destinationPath, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(bundle);
-        if (string.IsNullOrWhiteSpace(destinationPath))
-            throw new ProjectArchiveException("InvalidPath", "Destination path is empty.");
-
-        var fullPath = Path.GetFullPath(destinationPath);
-        var directory = Path.GetDirectoryName(fullPath)
-            ?? throw new ProjectArchiveException("InvalidPath", "Destination has no directory.");
-        Directory.CreateDirectory(directory);
-
-        var tempPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
+        await PipelineTrace.RunAsync(_diagnostics, "Project", "Project.Save", async () =>
         {
-            await using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 64 * 1024, FileOptions.Asynchronous))
-            {
-                WriteBundle(stream, bundle);
-                await stream.FlushAsync(cancellationToken);
-            }
+            ArgumentNullException.ThrowIfNull(bundle);
+            if (string.IsNullOrWhiteSpace(destinationPath))
+                throw new ProjectArchiveException("InvalidPath", "Destination path is empty.");
 
-            ValidateFile(tempPath);
+            var fullPath = Path.GetFullPath(destinationPath);
+            var directory = Path.GetDirectoryName(fullPath)
+                ?? throw new ProjectArchiveException("InvalidPath", "Destination has no directory.");
+            Directory.CreateDirectory(directory);
 
-            if (File.Exists(fullPath))
+            var tempPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+            try
             {
-                var backup = fullPath + ".bak";
-                File.Copy(fullPath, backup, overwrite: true);
-                File.Replace(tempPath, fullPath, destinationBackupFileName: null);
+                await using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 64 * 1024, FileOptions.Asynchronous))
+                {
+                    WriteBundle(stream, bundle);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                ValidateFile(tempPath);
+
+                if (File.Exists(fullPath))
+                {
+                    var backup = fullPath + ".bak";
+                    File.Copy(fullPath, backup, overwrite: true);
+                    File.Replace(tempPath, fullPath, destinationBackupFileName: null);
+                }
+                else
+                {
+                    File.Move(tempPath, fullPath);
+                }
             }
-            else
+            finally
             {
-                File.Move(tempPath, fullPath);
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
             }
-        }
-        finally
-        {
-            if (File.Exists(tempPath))
-                File.Delete(tempPath);
-        }
+        }).ConfigureAwait(false);
     }
 
-    public Task<ProjectBundle> LoadAsync(string sourcePath, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-            throw new ProjectArchiveException("MissingFile", $"Project file not found: {sourcePath}");
+    public Task<ProjectBundle> LoadAsync(string sourcePath, CancellationToken cancellationToken = default) =>
+        PipelineTrace.RunAsync(_diagnostics, "Project", "Project.Load", () =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+                throw new ProjectArchiveException("MissingFile", $"Project file not found: {sourcePath}");
 
-        using var stream = File.OpenRead(sourcePath);
-        var bundle = ReadBundle(stream);
-        return Task.FromResult(ApplyMigrations(bundle));
-    }
+            using var stream = File.OpenRead(sourcePath);
+            var bundle = ReadBundle(stream);
+            return Task.FromResult(ApplyMigrations(bundle));
+        });
 
     public void WriteBundle(Stream stream, ProjectBundle bundle)
     {
