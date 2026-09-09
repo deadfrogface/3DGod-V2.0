@@ -4,6 +4,7 @@ using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Workers;
 using ThreeDGod.Persistence;
+using ThreeDGod.Physics;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -39,6 +40,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IGarmentService, GarmentService>();
         services.AddSingleton<IGarmentFitService, GarmentFitService>();
         services.AddSingleton<IGarmentSkinService, GarmentSkinService>();
+        services.AddSingleton<IAccessoryPhysicsService, AccessoryPhysicsService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

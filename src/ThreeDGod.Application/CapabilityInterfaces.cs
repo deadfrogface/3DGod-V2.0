@@ -124,3 +124,32 @@ public interface ICharacterModelService
     void SavePreset(string name = "default");
     void LoadPreset(string name = "default");
 }
+
+public sealed class PhysicsBodySample
+{
+    public string Name { get; init; } = "";
+    public float X { get; init; }
+    public float Y { get; init; }
+    public float Z { get; init; }
+    public float Speed { get; init; }
+}
+
+public sealed class PhysicsSnapshot
+{
+    public IReadOnlyList<PhysicsBodySample> Bodies { get; init; } = [];
+    public float KineticEnergy { get; init; }
+}
+
+public interface IAccessoryPhysicsPreview : IDisposable
+{
+    string Kind { get; }
+    void Step(float dt);
+    void Reset();
+    PhysicsSnapshot Capture();
+}
+
+public interface IAccessoryPhysicsService
+{
+    IAccessoryPhysicsPreview CreateHangingChain();
+    IAccessoryPhysicsPreview CreateEarringAgainstHead();
+}

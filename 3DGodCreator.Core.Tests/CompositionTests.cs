@@ -59,6 +59,8 @@ public class CompositionTests
         Assert.IsType<GarmentFitService>(provider.GetRequiredService<IGarmentFitService>());
         Assert.NotNull(provider.GetRequiredService<IGarmentSkinService>());
         Assert.IsType<GarmentSkinService>(provider.GetRequiredService<IGarmentSkinService>());
+        Assert.NotNull(provider.GetRequiredService<IAccessoryPhysicsService>());
+        Assert.IsType<ThreeDGod.Physics.AccessoryPhysicsService>(provider.GetRequiredService<IAccessoryPhysicsService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

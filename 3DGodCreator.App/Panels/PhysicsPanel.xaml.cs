@@ -12,14 +12,14 @@ public partial class PhysicsPanel : UserControl
         InitializeComponent();
         _ = cs;
         AvailabilityLabel.Text = features.GetStatusMessage(FeatureIds.PhysicsSimulate);
-        var ok = features.IsInvocable(FeatureIds.PhysicsSimulate);
-        ChkBreasts.IsEnabled = ok;
-        ChkCloth.IsEnabled = ok;
-        ChkPiercing.IsEnabled = ok;
+        _ = features.IsInvocable(FeatureIds.PhysicsSimulate);
+        ChkBreasts.IsEnabled = false;
+        ChkCloth.IsEnabled = false;
+        ChkPiercing.IsEnabled = false;
     }
 
     private void OnChanged(object sender, RoutedEventArgs e)
     {
-        // Intentionally no-op while physics is NotImplemented.
+        // No live WPF preview. Chain/earring exist via IAccessoryPhysicsService. Not cloth.
     }
 }

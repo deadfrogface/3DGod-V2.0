@@ -33,6 +33,15 @@ public static class GatedWorkerCatalog
             var probe = GarmentCodeRuntime.Probe();
             return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
         }
+        if (string.Equals(workerId, "beputhysics", StringComparison.OrdinalIgnoreCase))
+        {
+            return new GatedWorkerStatus
+            {
+                WorkerId = workerId,
+                Availability = FeatureAvailability.Experimental,
+                Message = "Experimental – in-process BepuPhysics accessory preview. Not cloth."
+            };
+        }
         if (string.Equals(workerId, "flux", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(workerId, "qwen", StringComparison.OrdinalIgnoreCase))
         {

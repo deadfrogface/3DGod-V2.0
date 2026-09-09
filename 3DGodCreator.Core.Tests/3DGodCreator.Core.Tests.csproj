@@ -35,6 +35,7 @@
     <ProjectReference Include="..\src\ThreeDGod.Export\ThreeDGod.Export.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.AI\ThreeDGod.AI.csproj" />
     <ProjectReference Include="..\src\ThreeDGod.Rigging\ThreeDGod.Rigging.csproj" />
+    <ProjectReference Include="..\src\ThreeDGod.Physics\ThreeDGod.Physics.csproj" />
   </ItemGroup>
 
 </Project>
