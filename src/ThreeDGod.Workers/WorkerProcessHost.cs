@@ -13,6 +13,11 @@ public static class WorkerProtocol
 
 public sealed class WorkerProcessHost : IWorkerHost
 {
+    private static readonly HashSet<string> BlockedShellHosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "cmd.exe", "powershell.exe", "pwsh.exe", "bash", "sh.exe", "wscript.exe", "cscript.exe"
+    };
+
     public int MaxLineBytes { get; }
     public IDiagnosticService? Diagnostics { get; }
 
@@ -37,6 +42,9 @@ public sealed class WorkerProcessHost : IWorkerHost
         TimeSpan timeout,
         CancellationToken cancellationToken = default)
     {
+        ValidateExecutable(executable);
+        ValidateArguments(arguments);
+
         var jobId = request.JobId ?? Guid.NewGuid().ToString("N");
         var requestId = Guid.NewGuid().ToString("N");
         Diagnostics?.AddBreadcrumb(new DiagnosticBreadcrumb
@@ -187,6 +195,28 @@ public sealed class WorkerProcessHost : IWorkerHost
                 TryKill(process);
                 return new WorkerRunResult(false, null, "HostError", ex.Message, process.HasExited ? process.ExitCode : null, process.HasExited, false, false);
             }
+        }
+    }
+
+    public static void ValidateExecutable(string executable)
+    {
+        if (string.IsNullOrWhiteSpace(executable))
+            throw new ArgumentException("Executable is empty.", nameof(executable));
+
+        if (executable.IndexOfAny(['&', '|', ';', '`', '$', '\n', '\r', '\0']) >= 0)
+            throw new ArgumentException("Executable contains shell metacharacters.", nameof(executable));
+
+        var name = Path.GetFileName(executable);
+        if (BlockedShellHosts.Contains(name))
+            throw new ArgumentException($"Shell host blocked: {executable}", nameof(executable));
+    }
+
+    public static void ValidateArguments(IReadOnlyList<string> arguments)
+    {
+        foreach (var arg in arguments)
+        {
+            if (arg.IndexOfAny(['\0']) >= 0)
+                throw new ArgumentException("Argument contains null byte.");
         }
     }
 

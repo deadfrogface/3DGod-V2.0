@@ -23,10 +23,28 @@ public sealed class CanonicalGltfDocument
 
 public static class CanonicalGltfPipeline
 {
-    public static CanonicalGltfDocument Load(string path)
+    public static CanonicalGltfDocument Load(string path, GlbLoadLimits? limits = null)
     {
-        var model = ModelRoot.Load(path);
-        return Inspect(model);
+        limits ??= GlbLoadLimits.Default;
+        var info = new FileInfo(path);
+        if (!info.Exists)
+            throw new FileNotFoundException("GLB file not found.", path);
+        if (info.Length > limits.MaxFileBytes)
+            throw new GlbLoadException("GlbTooLarge", $"GLB exceeds max size ({limits.MaxFileBytes} bytes).");
+
+        try
+        {
+            var model = ModelRoot.Load(path);
+            return Inspect(model);
+        }
+        catch (GlbLoadException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new GlbLoadException("GlbMalformed", $"GLB load failed: {ex.Message}");
+        }
     }
 
     public static CanonicalGltfDocument Roundtrip(string sourcePath, string destinationPath)

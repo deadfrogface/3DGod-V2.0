@@ -6,6 +6,9 @@ public static class DeterministicAiParser
 {
     public static AiEditPlan Parse(string prompt)
     {
+        if (PromptSafety.ContainsShellMetacharacters(prompt))
+            return new AiEditPlan { Status = "Unsupported", Provider = "deterministic", Reason = "Prompt contains disallowed shell metacharacters." };
+
         var p = prompt.Trim().ToLowerInvariant().TrimEnd('.', '!', '?');
         var plan = p switch
         {

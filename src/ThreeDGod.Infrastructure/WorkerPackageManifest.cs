@@ -106,6 +106,17 @@ public static class WorkerPackageManifestReader
         if (manifest.PythonPackage?.UvLock is { Length: > 0 } lockRel &&
             !File.Exists(Path.Combine(repoRoot, lockRel.Replace('/', Path.DirectorySeparatorChar))))
             errors.Add($"uvLock missing: {lockRel}");
+        if (manifest.ReleasePackage?.DownloadUrl is { Length: > 0 } url &&
+            (url.Contains("file://", StringComparison.OrdinalIgnoreCase) ||
+             url.Contains("..", StringComparison.Ordinal) ||
+             url.Contains('|') ||
+             url.Contains(';') ||
+             url.Contains('&')))
+            errors.Add("releasePackage.downloadUrl contains disallowed path or shell metacharacters");
+        if (manifest.WorkerId.Contains("..", StringComparison.Ordinal) ||
+            manifest.WorkerId.Contains('/') ||
+            manifest.WorkerId.Contains('\\'))
+            errors.Add("workerId must not contain path separators");
         return new WorkerManifestValidationResult { Ok = errors.Count == 0, Errors = errors };
     }
 

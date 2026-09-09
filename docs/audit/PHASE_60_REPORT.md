@@ -1,46 +1,70 @@
-﻿# PHASE 60 Report
+﻿# PHASE_60 Report
 
 - Phase: 60 – Release Quality Gate
-- Status: **PASS** (ehrlicher Produktstatus, keine Fake-Fertig-Meldung)
+- Status: **PARTIAL** (honest product gate — foundation PASS, heavy features GATED)
 
-## Foundation
+## Checklist
 
-- [x] .NET 10 LTS
-- [x] no fake production features (`IFeatureAvailabilityService` + `GatedWorkerCatalog`)
-- [x] save/load `.3dgod`
-- [x] recovery
-- [x] undo/redo
-- [x] logs (Serilog)
-- [x] backend/model manager (echo demo package)
+### Foundation
 
-## Human / AI / Creature / Clothing
+| Item | Gate |
+|------|------|
+| .NET 10 LTS | **PASS** |
+| No fake production features (`IFeatureAvailabilityService`, `GatedWorkerCatalog`) | **PASS** |
+| Save/load `.3dgod` | **PASS** |
+| Recovery / autosave | **PASS** |
+| Undo/redo (`CommandStack`) | **PASS** |
+| Logs (Serilog) | **PASS** |
+| Backend/model manager (echo demo package) | **PASS** |
+| Security hardening (PHASE 58) | **PASS** |
+| Performance benchmarks (PHASE 59) | **PASS** (headless; viewport FPS GATED) |
 
-- Anny, TripoSR, SF3D, SPAR3D, TRELLIS, SkinTokens, FLUX, Qwen: **NotInstalled** – kein Fake-Mesh
-- Height: **NotImplemented** (kein uniform scale als Morph)
-- Preset JSON: **Available**
-- Deterministic AI parser: **Available** fuer den Testkorpus; ohne Backend kein Mesh
-- Ork/Ratte/Garment fitting: Domain vorhanden, Generierung **NotInstalled/NotImplemented**
+### Human / AI / Creature / Clothing
 
-## Export / Product
+| Item | Gate |
+|------|------|
+| Anny live generation | **GATED** — `NotInstalled` unless worker venv present |
+| TripoSR / SF3D / SPAR3D / TRELLIS / FLUX / Qwen | **GATED** — `NotInstalled`; no fake mesh |
+| CUDA / VRAM-heavy inference | **GATED** — requires GPU + installed checkpoints |
+| Height morph (“taller, keep head size”) | **PARTIAL** — parser accepts; uniform height morph **NotImplemented** |
+| Preset JSON | **PASS** |
+| Deterministic AI parser | **PASS** for test corpus; no mesh without backend |
+| Ork/Rat/Garment fitting domain | **PARTIAL** — code paths exist; generation **GATED** |
 
-- [x] GLB export/roundtrip der vorhandenen Base-Meshes
-- [x] UE5 preflight sagt die Wahrheit (kein echter UE-Import)
-- [x] FBX path experimental / Unreal copy NotImplemented
-- [x] DE/EN catalog
-- [x] Dark/Light themes
-- [x] resize/scroll
-- [ ] native installer (portable Build, kein Fake-Update-Server)
-- [x] license gate
-- [x] recovery
-- [x] security (ZipSlip, hash, redaction)
+### Export / Product
 
-## Manual quality gates (nicht automatisch bestanden)
+| Item | Gate |
+|------|------|
+| GLB export/roundtrip (SharpGLTF rewrite) | **PASS** |
+| UE5 preflight (honest, no real import) | **PASS** |
+| FBX / Unreal copy | **PARTIAL** — experimental / NotImplemented |
+| DE/EN catalog | **PASS** |
+| Dark/Light themes | **PASS** |
+| Resize/scroll | **PASS** |
+| Native Clean-VM installer | **GATED** — portable build only; no verified clean-VM install |
+| License gate | **PASS** |
+| Recovery | **PASS** |
 
-- AI-Optik, Creature-Deformation, Clothing-Movement, echter UE5-Import: offen, nicht vorgetaeuscht
+### Manual quality gates (not automated)
+
+| Item | Gate |
+|------|------|
+| AI visual quality | **GATED** |
+| Creature deformation quality | **GATED** |
+| Clothing movement | **GATED** |
+| Real UE5 import | **GATED** |
 
 ## Build / Tests / Git
 
-- `dotnet build -c Release`: 0 Fehler, 0 Warnungen
-- `dotnet test -c Release`: 112 bestanden
-- Branch: `v3-rearchitecture`
-- Baseline-Tag: `pre-v3-rearchitecture`
+- `dotnet build -c Release`: **0 Fehler, 0 Warnungen**
+- `dotnet test -c Release`: **279 bestanden, 0 fehlgeschlagen, 0 übersprungen**
+- Branch: `main`
+- Changes from PHASE 58–60: **uncommitted** (for parent agent)
+
+## Remaining GATED items (release blockers for “full product”)
+
+1. Clean-VM native installer + update channel smoke on fresh OS
+2. Live Anny worker + CUDA backends with real checkpoints (ModelManager release ZIPs)
+3. Viewport FPS benchmark on target GPU hardware
+4. Height morph implementation (not uniform scale stub)
+5. Manual visual/UE5 quality gates

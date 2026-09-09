@@ -49,6 +49,8 @@ public static class AiEditPlanValidator
             return plan;
         if (string.IsNullOrWhiteSpace(plan.Operation) || !AiEditPlanSchema.AllowedOperations.Contains(plan.Operation))
             return Reject("Operation is not in the allow-list.");
+        if (!PromptSafety.ArgsAreSafe(plan.Args))
+            return Reject("Plan args contain disallowed shell metacharacters.");
         var json = JsonSerializer.Serialize(plan);
         if (json.Contains("eval", StringComparison.OrdinalIgnoreCase) ||
             json.Contains("<script", StringComparison.OrdinalIgnoreCase) ||
