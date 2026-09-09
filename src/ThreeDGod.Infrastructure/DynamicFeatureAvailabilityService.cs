@@ -27,6 +27,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.CreatureParts)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.CreatureTextEdit)
+            return FeatureAvailability.Available;
         return _inner.GetStatus(featureId);
     }
 
@@ -58,6 +60,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – hierarchy/weight/bind validator and linear-blend test poses.";
         if (featureId == FeatureIds.CreatureParts)
             return "Available – modular extra parts (tail/horns) persist in .3dgod.";
+        if (featureId == FeatureIds.CreatureTextEdit)
+            return "Available – catalog ReplaceBodyPart / AddCreaturePart from text. Generated AI parts remain NotInstalled.";
         return _inner.GetStatusMessage(featureId);
     }
 }

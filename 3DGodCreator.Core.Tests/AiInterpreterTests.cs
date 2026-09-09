@@ -12,6 +12,9 @@ public class AiInterpreterTests
     [InlineData("taller, keep head size")]
     [InlineData("gold chain")]
     [InlineData("rat head")]
+    [InlineData("Rattenkopf.")]
+    [InlineData("Hörner.")]
+    [InlineData("rechte Hand mechanisch.")]
     public void DeterministicCorpus_IsValidAllowListedPlan(string prompt)
     {
         var plan = new AiCommandInterpreter().Interpret(prompt);

@@ -29,6 +29,8 @@ public static class AiEditPlanSchema
         "attachment.add",
         "attachment.remove",
         "creature.swapPart",
+        "creature.replacePart",
+        "creature.addPart",
         "parameter.set",
         "parameter.delta"
     };

@@ -32,6 +32,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<ISkinTokensRigService, SkinTokensRigService>();
         services.AddSingleton<IRigValidator, RigValidationService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();
+        services.AddSingleton<ICreatureTextEditService, CreatureTextEditService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

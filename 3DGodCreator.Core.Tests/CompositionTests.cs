@@ -47,6 +47,8 @@ public class CompositionTests
         Assert.IsType<RigValidationService>(provider.GetRequiredService<IRigValidator>());
         Assert.NotNull(provider.GetRequiredService<ICreatureAssembly>());
         Assert.IsType<CreatureAssembly>(provider.GetRequiredService<ICreatureAssembly>());
+        Assert.NotNull(provider.GetRequiredService<ICreatureTextEditService>());
+        Assert.IsType<CreatureTextEditService>(provider.GetRequiredService<ICreatureTextEditService>());
         Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
         Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }

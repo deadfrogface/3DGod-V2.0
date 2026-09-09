@@ -175,7 +175,49 @@ public sealed class CreatureAssembly : ICreatureAssembly
         return character;
     }
 
-    private static (BodyPartSlot Slot, MeshAsset Asset) WritePart(
+    public CharacterDocument CreateEditableHumanoid(ProjectBundle bundle, string meshRoot)
+    {
+        Directory.CreateDirectory(meshRoot);
+        var head = WritePart(bundle, meshRoot, "human-head", SemanticBodyPartType.Head, "head", "boundary:head.base",
+            builder => builder.AddSphere(new Vector3(0, 1.7f, 0), 0.11f, 14, 10));
+        var handL = WritePart(bundle, meshRoot, "hand.L", SemanticBodyPartType.LeftHand, "hand.L", "boundary:wrist.L",
+            builder => builder.AddSphere(new Vector3(-0.7f, 1.4f, 0), 0.05f, 10, 8));
+        var handR = WritePart(bundle, meshRoot, "hand.R", SemanticBodyPartType.RightHand, "hand.R", "boundary:wrist.R",
+            builder => builder.AddSphere(new Vector3(0.7f, 1.4f, 0), 0.05f, 10, 8));
+        var bodyGlb = Path.Combine(meshRoot, "humanoid-body.glb");
+        ThreeDGod.Rigging.HumanoidTestRig.WriteGood(bodyGlb);
+        var bodyDoc = CanonicalGltfPipeline.Load(bodyGlb);
+        var body = new MeshAsset
+        {
+            Name = "humanoid-body",
+            CanonicalGlbPath = bodyGlb,
+            VertexCount = bodyDoc.VertexCount,
+            TriangleCount = bodyDoc.TriangleCount,
+            HasSkin = bodyDoc.SkinCount > 0,
+            ValidationState = "editable-humanoid"
+        };
+        bundle.Meshes.Add(body);
+        var character = new CharacterDocument
+        {
+            Name = "Editable Humanoid",
+            CharacterKind = CharacterKind.HumanoidCreature,
+            SourceRepresentation = SourceRepresentation.ModularCreature,
+            CreatureState = new CreatureState
+            {
+                BaseFamily = "human",
+                SkeletonProfileId = "humanoid",
+                BodyPlan = new BodyPlan { IsBiped = true, SemanticLimbDescriptors = ["biped"] },
+                ExtraBodyParts = [head.Slot, handL.Slot, handR.Slot]
+            }
+        };
+        character.MeshSet.MeshAssetIds.AddRange(
+            [body.MeshAssetId, head.Asset.MeshAssetId, handL.Asset.MeshAssetId, handR.Asset.MeshAssetId]);
+        bundle.Characters.Add(character);
+        bundle.Project.CharacterIds.Add(character.CharacterId);
+        return character;
+    }
+
+    internal static (BodyPartSlot Slot, MeshAsset Asset) WritePart(
         ProjectBundle bundle,
         string meshRoot,
         string name,

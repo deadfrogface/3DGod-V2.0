@@ -1,4 +1,5 @@
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Core.Editing;
 
 namespace ThreeDGod.Application;
 
@@ -68,6 +69,12 @@ public interface ICreatureAssembly
     CharacterDocument AttachHumanTailAndHorns(ProjectBundle bundle, string meshRoot);
     CharacterDocument CreateOrc(ProjectBundle bundle, string meshRoot);
     CharacterDocument CreateRat(ProjectBundle bundle, string meshRoot);
+    CharacterDocument CreateEditableHumanoid(ProjectBundle bundle, string meshRoot);
+}
+
+public interface ICreatureTextEditService
+{
+    Task ApplyAsync(string prompt, ProjectBundle bundle, CharacterDocument character, string meshRoot, CommandStack stack, CancellationToken cancellationToken = default);
 }
 
 public interface IReferenceImageGenerationService
