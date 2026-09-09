@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 1,
+  "workerId": "anny",
+  "displayName": "Anny Human Generator",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseRef": "docs/licenses/ANNY.md",
+  "includedInBaseInstaller": false,
+  "pythonPackage": {
+    "name": "3dgod-anny",
+    "pinnedVersion": "0.1.0",
+    "pyproject": "workers/anny/pyproject.toml",
+    "uvLock": "workers/anny/uv.lock"
+  },
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": true,
+    "requiresBlender": false,
+    "notes": "Dev: uv sync in workers/anny. User must not install Python/Conda manually; runtime ships via ModelManager when release ZIP exists."
+  }
+}

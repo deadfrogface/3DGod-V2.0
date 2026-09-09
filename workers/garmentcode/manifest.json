@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 1,
+  "workerId": "garmentcode",
+  "displayName": "GarmentCode / pygarment Pattern Worker",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
+  "licenseId": "mit",
+  "licenseRef": "docs/licenses/GARMENTCODE.md",
+  "includedInBaseInstaller": false,
+  "pythonPackage": {
+    "name": "3dgod-garmentcode",
+    "pinnedVersion": "0.1.0",
+    "pyproject": "workers/garmentcode/pyproject.toml",
+    "uvLock": "workers/garmentcode/uv.lock"
+  },
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": true,
+    "requiresBlender": false,
+    "notes": "MIT pygarment core only. CGAL/libigl/Warp sim licenses not cleared for bundling."
+  }
+}

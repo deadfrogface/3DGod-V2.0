@@ -159,10 +159,10 @@ public class LegacyBlenderBackend : IBlenderOperations
             return false;
         }
 
-        var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "export_fbx.py"));
-        if (!File.Exists(scriptPath))
+        var scriptPath = ResolveBlenderScript("export_fbx.py");
+        if (scriptPath is null)
         {
-            error = "export_fbx.py not found: " + scriptPath;
+            error = "export_fbx.py not found under blender_embed/scripts (BaseDirectory or repo root).";
             return false;
         }
 
@@ -364,6 +364,25 @@ public class LegacyBlenderBackend : IBlenderOperations
     }
 
     public bool IsBlenderProcessRunning => _lastBlenderProcess != null && !_lastBlenderProcess.HasExited;
+
+    private string? ResolveBlenderScript(string fileName)
+    {
+        var candidates = new List<string>
+        {
+            Path.Combine(_basePath, "blender_embed", "scripts", fileName),
+            Path.Combine(_basePath, "blender_embed", fileName)
+        };
+
+        for (var dir = new DirectoryInfo(_basePath); dir is not null; dir = dir.Parent)
+        {
+            candidates.Add(Path.Combine(dir.FullName, "blender_embed", "scripts", fileName));
+            candidates.Add(Path.Combine(dir.FullName, "blender_embed", fileName));
+            if (File.Exists(Path.Combine(dir.FullName, "3DGodCreator.sln")))
+                break;
+        }
+
+        return candidates.Select(Path.GetFullPath).FirstOrDefault(File.Exists);
+    }
 
     private void Log(string msg) => OnLog?.Invoke(msg);
 }

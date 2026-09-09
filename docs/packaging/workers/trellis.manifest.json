@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "trellis",
+  "displayName": "TRELLIS Image-to-3D (optional)",
+  "status": "NotInstalled",
+  "packageVersion": "0.0.0",
+  "licenseId": "trellis",
+  "licenseRef": "docs/audit/PHASE_29_REPORT.md",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 12288,
+    "requiresCuda": true,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Optional backend. License not accepted in product registry."
+  }
+}

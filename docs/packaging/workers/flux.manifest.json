@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "flux",
+  "displayName": "FLUX Reference Image Backend",
+  "status": "NotInstalled",
+  "packageVersion": "0.0.0",
+  "licenseId": "flux-dev-non-commercial",
+  "licenseRef": "docs/research/LOCAL_AI_EDIT_DECISION.md",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 8192,
+    "requiresCuda": true,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Checkpoint installed via ModelManager to %LocalAppData%/3DGod/Models/flux. Not bundled."
+  }
+}

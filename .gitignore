@@ -10,6 +10,9 @@ obj/
 # User config (local paths, etc.)
 config.json
 
+# Packaging publish output
+artifacts/
+
 # Python / Anny worker
 .venv/
 __pycache__/

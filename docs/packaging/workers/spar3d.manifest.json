@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "spar3d",
+  "displayName": "SPAR3D",
+  "status": "NotInstalled",
+  "packageVersion": "0.0.0",
+  "licenseId": "stability-community",
+  "licenseRef": "docs/audit/PHASE_28_REPORT.md",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 6144,
+    "requiresCuda": true,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Requires accepted Stability Community License. LicenseBlocked until user accepts."
+  }
+}

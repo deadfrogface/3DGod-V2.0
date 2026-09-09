@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "llama",
+  "displayName": "LLamaSharp GGUF Local LLM",
+  "status": "NotInstalled",
+  "packageVersion": "0.0.0",
+  "licenseId": "llama-model",
+  "licenseRef": "src/ThreeDGod.AI/LlamaSharpProvider.cs",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 4096,
+    "requiresCuda": false,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "GGUF + license.json required under %LocalAppData%/3DGod/Models/llama."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "echo",
+  "displayName": "Echo Demo Worker",
+  "status": "Available",
+  "packageVersion": "1.0.0",
+  "licenseId": "mit",
+  "licenseRef": "workers/echo/echo_worker.py",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": true
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Test/demo worker for ModelManager install path only."
+  }
+}

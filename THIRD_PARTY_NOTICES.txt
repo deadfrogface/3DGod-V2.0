@@ -1,0 +1,37 @@
+3D God Creator – Third Party Notices
+====================================
+Generated for PHASE 57 release license gate. See MODEL_LICENSES.json for component records.
+
+NuGet dependencies (runtime)
+----------------------------
+- BepuPhysics 2.5.0-beta.29 — Apache-2.0 (docs/licenses/BEPU.md)
+- CliWrap 3.9.0 — MIT
+- CommunityToolkit.Mvvm 8.4.2 — MIT
+- geometry3Sharp 1.0.324 — Boost Software License 1.0 (docs/licenses/GEOMETRY3SHARP.md)
+- HelixToolkit.Wpf 3.1.2 — MIT
+- LLamaSharp 0.25.0 — MIT (model weights require separate license)
+- Microsoft.Extensions.DependencyInjection 10.0.x — MIT
+- Microsoft.Extensions.DependencyInjection.Abstractions 10.0.x — MIT
+- Serilog 4.3.0 — Apache-2.0
+- Serilog.Sinks.File 7.0.0 — Apache-2.0
+- SharpGLTF.Toolkit 1.0.6 — MIT
+- Velopack 0.0.1298 — MIT
+
+Python worker dependencies (not bundled in base installer)
+-----------------------------------------------------------
+- anny — Apache-2.0 (workers/anny, docs/licenses/ANNY.md)
+- pygarment — MIT core (workers/garmentcode, docs/licenses/GARMENTCODE.md)
+  Transitive CGAL/libigl/Warp licenses are NOT cleared for product bundling.
+
+Optional model backends (ModelManager only, never in base installer)
+--------------------------------------------------------------------
+- Stability SF3D/SPAR3D — Stability Community License (user accept required)
+- FLUX / Qwen / TRELLIS / TripoSR / LLama GGUF — see MODEL_LICENSES.json
+
+Explicitly blocked from production release
+------------------------------------------
+- SMPL-X without commercial license
+- Hunyuan EU-restricted checkpoints
+- AniGen / S-Lab non-commercial models
+- Unverified checkpoints (skintokens until license record verified)
+- Incompatible GPL linkage in shipped binaries

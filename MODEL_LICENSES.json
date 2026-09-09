@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-09-10",
+  "components": [
+    {
+      "id": "3dgod-app",
+      "kind": "application",
+      "licenseId": "proprietary",
+      "licenseRef": "README.md",
+      "shippingStatus": "production",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "anny",
+      "kind": "worker",
+      "licenseId": "apache-2.0",
+      "licenseRef": "docs/licenses/ANNY.md",
+      "shippingStatus": "experimental",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "garmentcode",
+      "kind": "worker",
+      "licenseId": "mit",
+      "licenseRef": "docs/licenses/GARMENTCODE.md",
+      "shippingStatus": "experimental",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "echo",
+      "kind": "worker",
+      "licenseId": "mit",
+      "licenseRef": "workers/echo/echo_worker.py",
+      "shippingStatus": "demo",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "bepuphysics",
+      "kind": "library",
+      "licenseId": "apache-2.0",
+      "licenseRef": "docs/licenses/BEPU.md",
+      "shippingStatus": "production",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "geometry3sharp",
+      "kind": "library",
+      "licenseId": "boost-1.0",
+      "licenseRef": "docs/licenses/GEOMETRY3SHARP.md",
+      "shippingStatus": "production",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "flux",
+      "kind": "model-backend",
+      "licenseId": "flux-dev-non-commercial",
+      "licenseRef": "docs/research/LOCAL_AI_EDIT_DECISION.md",
+      "shippingStatus": "not-shipping",
+      "commercialUse": false,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "qwen",
+      "kind": "model-backend",
+      "licenseId": "qwen",
+      "licenseRef": "docs/research/LOCAL_AI_EDIT_DECISION.md",
+      "shippingStatus": "not-shipping",
+      "commercialUse": false,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "sf3d",
+      "kind": "model-backend",
+      "licenseId": "stability-community",
+      "licenseRef": "docs/audit/PHASE_27_REPORT.md",
+      "shippingStatus": "optional",
+      "commercialUse": true,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "spar3d",
+      "kind": "model-backend",
+      "licenseId": "stability-community",
+      "licenseRef": "docs/audit/PHASE_28_REPORT.md",
+      "shippingStatus": "optional",
+      "commercialUse": true,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "trellis",
+      "kind": "model-backend",
+      "licenseId": "trellis",
+      "licenseRef": "docs/audit/PHASE_29_REPORT.md",
+      "shippingStatus": "not-shipping",
+      "commercialUse": false,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "triposr",
+      "kind": "model-backend",
+      "licenseId": "mit",
+      "licenseRef": "docs/audit/PHASE_26_REPORT.md",
+      "shippingStatus": "not-shipping",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": false
+    },
+    {
+      "id": "llama",
+      "kind": "model-backend",
+      "licenseId": "llama-model",
+      "licenseRef": "src/ThreeDGod.AI/LlamaSharpProvider.cs",
+      "shippingStatus": "optional",
+      "commercialUse": false,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "skintokens",
+      "kind": "model-backend",
+      "licenseId": "pending-review",
+      "licenseRef": "docs/audit/V2_FEATURE_AUDIT.md",
+      "shippingStatus": "not-shipping",
+      "commercialUse": false,
+      "requiresUserAccept": true,
+      "verified": false
+    },
+    {
+      "id": "male_base.glb",
+      "kind": "asset",
+      "licenseId": "project-asset",
+      "licenseRef": "docs/BASE_MODELS.md",
+      "shippingStatus": "production",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    },
+    {
+      "id": "female_base.glb",
+      "kind": "asset",
+      "licenseId": "project-asset",
+      "licenseRef": "docs/BASE_MODELS.md",
+      "shippingStatus": "production",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true
+    }
+  ],
+  "blocklist": {
+    "modelIds": [
+      "smpl-x",
+      "smplx",
+      "hunyuan-eu",
+      "hunyuan3d-eu",
+      "hunyuan3d",
+      "anigen",
+      "anigen-restricted"
+    ],
+    "licenseIds": [
+      "unknown",
+      "unverified",
+      "s-lab-nc",
+      "cc-by-nc-4.0",
+      "gpl-3.0-linked",
+      "smpl-x-noncommercial",
+      "hunyuan-eu-restricted"
+    ]
+  }
+}

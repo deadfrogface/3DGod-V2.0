@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://3dgod.local/schemas/worker-package-manifest.schema.json",
+  "title": "3D God worker package manifest",
+  "type": "object",
+  "required": [
+    "manifestVersion",
+    "workerId",
+    "displayName",
+    "status",
+    "packageVersion",
+    "licenseId",
+    "includedInBaseInstaller",
+    "requirements"
+  ],
+  "properties": {
+    "manifestVersion": { "type": "integer", "const": 1 },
+    "workerId": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["Available", "Experimental", "NotInstalled", "LicenseBlocked", "UnsupportedHardware"]
+    },
+    "packageVersion": { "type": "string", "minLength": 1 },
+    "licenseId": { "type": "string", "minLength": 1 },
+    "licenseRef": { "type": "string" },
+    "includedInBaseInstaller": { "type": "boolean" },
+    "pythonPackage": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "pinnedVersion": { "type": "string" },
+        "uvLock": { "type": "string" },
+        "pyproject": { "type": "string" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "checkpointHash": { "type": ["string", "null"] },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "verified": { "type": "boolean" }
+      }
+    },
+    "releasePackage": {
+      "type": "object",
+      "properties": {
+        "format": { "type": "string" },
+        "downloadUrl": { "type": ["string", "null"] },
+        "sha256": { "type": ["string", "null"] }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "required": ["minVramMb", "requiresCuda", "requiresUv", "requiresBlender"],
+      "properties": {
+        "minVramMb": { "type": "integer", "minimum": 0 },
+        "requiresCuda": { "type": "boolean" },
+        "requiresUv": { "type": "boolean" },
+        "requiresBlender": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "skintokens",
+  "displayName": "SkinTokens Rig Backend",
+  "status": "NotInstalled",
+  "packageVersion": "0.0.0",
+  "licenseId": "pending-review",
+  "licenseRef": "docs/audit/V2_FEATURE_AUDIT.md",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": null,
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "zip",
+    "downloadUrl": null,
+    "sha256": null
+  },
+  "requirements": {
+    "minVramMb": 8192,
+    "requiresCuda": true,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Unverified checkpoint – blocked from production release until license record added."
+  }
+}

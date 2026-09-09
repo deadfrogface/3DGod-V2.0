@@ -106,8 +106,9 @@ public class ProductPhaseTests
     public void LicenseGate_RequiresExplicitAccept()
     {
         var gate = new LicenseGate();
-        Assert.False(gate.TryAccept("apache", false));
-        Assert.True(gate.TryAccept("apache", true));
+        Assert.False(gate.TryAccept("apache-2.0", false));
+        Assert.True(gate.TryAccept("apache-2.0", true));
+        Assert.False(gate.TryAccept("unknown", true));
     }
 
     [Fact]

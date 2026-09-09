@@ -103,7 +103,12 @@ public static class LocalizationCatalog
 public sealed class LicenseGate
 {
     public bool TryAccept(string profileId, bool userAccepted) =>
-        userAccepted && !string.IsNullOrWhiteSpace(profileId);
+        userAccepted &&
+        !string.IsNullOrWhiteSpace(profileId) &&
+        !ReleaseLicenseGate.IsBlockedLicenseId(profileId);
+
+    public bool TryAcceptModel(string modelId, string licenseId, bool userAccepted) =>
+        TryAccept(licenseId, userAccepted) && !ReleaseLicenseGate.IsBlockedModelId(modelId);
 }
 
 public static class ExportPreflight
