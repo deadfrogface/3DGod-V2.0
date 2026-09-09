@@ -57,6 +57,16 @@ public static class GeometryQueryService
         positions.Count == 0 ? Vector3.Zero : positions.Aggregate(Vector3.Zero, (a, b) => a + b) / positions.Count;
 }
 
+public sealed class LodBuildOptions
+{
+    /// <summary>0 = keep, higher = more aggressive.</summary>
+    public int Level { get; init; }
+    /// <summary>Optional explicit ratio (0–1]. Overrides Level when set.</summary>
+    public float? TargetRatio { get; init; }
+    /// <summary>Optional screen-space style error hint mapped to remesh aggressiveness (0 = none, 1 = preview).</summary>
+    public float? ErrorHint { get; init; }
+}
+
 public static class LodService
 {
     /// <summary>
@@ -70,29 +80,64 @@ public static class LodService
     public static int TriangleCountForLod(int sourceTriangles, int level) =>
         EstimateTriangleBudget(sourceTriangles, level);
 
-    /// <summary>
-    /// Builds a real reduced mesh for the given LOD level using vertex-cluster remesh (not integer division).
-    /// </summary>
-    public static RemeshMesh BuildLodMesh(
-        IReadOnlyList<Vector3> positions,
-        IReadOnlyList<int> indices,
-        int level)
+    public static RemeshProfile ProfileForOptions(LodBuildOptions options)
     {
-        var profile = level switch
+        if (options.TargetRatio is float ratio)
+        {
+            if (ratio >= 0.99f) return RemeshProfile.KeepOriginal;
+            if (ratio >= 0.5f) return RemeshProfile.CharacterCandidate;
+            if (ratio >= 0.25f) return RemeshProfile.StaticGameAsset;
+            return RemeshProfile.Preview;
+        }
+
+        if (options.ErrorHint is float err)
+        {
+            if (err <= 0.05f) return RemeshProfile.KeepOriginal;
+            if (err <= 0.25f) return RemeshProfile.CharacterCandidate;
+            if (err <= 0.55f) return RemeshProfile.StaticGameAsset;
+            return RemeshProfile.Preview;
+        }
+
+        return options.Level switch
         {
             <= 0 => RemeshProfile.KeepOriginal,
             1 => RemeshProfile.CharacterCandidate,
             2 => RemeshProfile.StaticGameAsset,
             _ => RemeshProfile.Preview
         };
+    }
+
+    /// <summary>
+    /// Builds a real reduced mesh. Skin/Morph strategy: this path is geometry-only (positions/indices/UV).
+    /// Skinned/morph LODs must be authored or regenerated with joint weights separately — not invented here.
+    /// </summary>
+    public static RemeshMesh BuildLodMesh(
+        IReadOnlyList<Vector3> positions,
+        IReadOnlyList<int> indices,
+        int level) =>
+        BuildLodMesh(positions, indices, new LodBuildOptions { Level = level });
+
+    public static RemeshMesh BuildLodMesh(
+        IReadOnlyList<Vector3> positions,
+        IReadOnlyList<int> indices,
+        LodBuildOptions options)
+    {
+        var profile = ProfileForOptions(options);
         var mesh = RemeshPipeline.Run(positions, indices, profile);
+        var report = MeshValidator.Validate(mesh.Positions, mesh.Indices, uvCount: mesh.Uvs.Count);
+        if (report.Rejected)
+            throw new InvalidOperationException(
+                "LOD mesh failed validation: " + string.Join("; ", report.Issues.Select(i => i.Code)));
+
         return new RemeshMesh
         {
             Positions = mesh.Positions,
             Indices = mesh.Indices,
             Uvs = mesh.Uvs,
             Profile = mesh.Profile,
-            BackendId = "lod-vertex-cluster"
+            BackendId = options.TargetRatio is not null ? "lod-ratio"
+                : options.ErrorHint is not null ? "lod-error"
+                : "lod-vertex-cluster"
         };
     }
 }

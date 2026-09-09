@@ -160,7 +160,17 @@ public class ProductPhaseTests
         var sourceTris = b.Indices.Count / 3;
         var lod = LodService.BuildLodMesh(b.Positions, b.Indices, level: 2);
         Assert.True(lod.Indices.Count / 3 < sourceTris);
+        Assert.True(lod.Indices.Count % 3 == 0);
+        Assert.All(lod.Indices, i => Assert.InRange(i, 0, lod.Positions.Count - 1));
         Assert.Equal("lod-vertex-cluster", lod.BackendId);
+
+        var byRatio = LodService.BuildLodMesh(b.Positions, b.Indices, new LodBuildOptions { TargetRatio = 0.2f });
+        Assert.True(byRatio.Indices.Count / 3 < sourceTris);
+        Assert.Equal("lod-ratio", byRatio.BackendId);
+
+        var byError = LodService.BuildLodMesh(b.Positions, b.Indices, new LodBuildOptions { ErrorHint = 0.8f });
+        Assert.True(byError.Indices.Count / 3 < sourceTris);
+        Assert.Equal("lod-error", byError.BackendId);
     }
 
     [Fact]
