@@ -39,6 +39,6 @@ public class CompositionRootTests
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());
         Assert.Null(provider.GetService<IRiggingService>());
-        Assert.Null(provider.GetService<IImageTo3DService>());
+        Assert.NotNull(provider.GetService<IImageTo3DService>());
     }
 }

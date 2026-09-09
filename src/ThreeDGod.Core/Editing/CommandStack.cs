@@ -147,6 +147,50 @@ public sealed class CollectionChangeCommand<T> : IEditCommand
     public bool TryMerge(IEditCommand next) => false;
 }
 
+public sealed class SnapshotListCommand<T> : IEditCommand
+{
+    private readonly IList<T> _target;
+    private readonly List<T> _before;
+    private readonly List<T> _after;
+
+    public SnapshotListCommand(Guid ownerId, IList<T> target, IReadOnlyList<T> after, string descriptionResourceKey)
+    {
+        CommandId = Guid.NewGuid();
+        Timestamp = DateTime.UtcNow;
+        AffectedObjectIds = [ownerId];
+        DescriptionResourceKey = descriptionResourceKey;
+        _target = target;
+        _before = target.ToList();
+        _after = after.ToList();
+    }
+
+    public Guid CommandId { get; }
+    public string DescriptionResourceKey { get; }
+    public DateTime Timestamp { get; }
+    public IReadOnlyList<Guid> AffectedObjectIds { get; }
+
+    public Task ExecuteAsync(CancellationToken cancellationToken = default)
+    {
+        Apply(_after);
+        return Task.CompletedTask;
+    }
+
+    public Task UndoAsync(CancellationToken cancellationToken = default)
+    {
+        Apply(_before);
+        return Task.CompletedTask;
+    }
+
+    public bool TryMerge(IEditCommand next) => false;
+
+    private void Apply(List<T> items)
+    {
+        _target.Clear();
+        foreach (var item in items)
+            _target.Add(item);
+    }
+}
+
 public sealed class CommandStack
 {
     private readonly List<IEditCommand> _undo = [];
@@ -165,6 +209,16 @@ public sealed class CommandStack
         if (_transactionOpen)
             throw new InvalidOperationException("A transaction is already open.");
         _transactionOpen = true;
+        _openTransaction.Clear();
+    }
+
+    public async Task AbortTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_transactionOpen)
+            return;
+        _transactionOpen = false;
+        for (var i = _openTransaction.Count - 1; i >= 0; i--)
+            await _openTransaction[i].UndoAsync(cancellationToken);
         _openTransaction.Clear();
     }
 

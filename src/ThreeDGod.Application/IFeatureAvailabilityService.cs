@@ -25,6 +25,17 @@ public static class FeatureIds
     public const string ViewportGlb = "viewport.glb";
     public const string HeightMorph = "character.height.morph";
     public const string ConfigSave = "config.save";
+    public const string AnnyHuman = "human.anny";
+    public const string ExportGlb = "export.glb";
+    public const string ProjectSave = "project.save";
+    public const string ReferenceImageGenerate = "image.reference.generate";
+    public const string ImageTo3D = "image.to3d";
+    public const string Remesh = "mesh.remesh";
+    public const string SkinTokens = "rig.skintokens";
+    public const string RigValidate = "rig.validate";
+    public const string CreatureParts = "creature.parts";
+    public const string CreatureTextEdit = "creature.edit.text";
+    public const string FreeformPipeline = "character.freeform";
 }
 
 public interface IFeatureAvailabilityService

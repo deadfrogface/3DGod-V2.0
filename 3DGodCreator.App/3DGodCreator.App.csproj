@@ -35,9 +35,11 @@
   <Target Name="CopyAssets" AfterTargets="Build">
     <ItemGroup>
       <_Assets Include="..\assets\**\*" />
+      <_Presets Include="..\presets\**\*" />
       <_Blender Include="..\blender_embed\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_Assets)" DestinationFolder="$(OutputPath)assets\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\assets')" />
+    <Copy SourceFiles="@(_Presets)" DestinationFolder="$(OutputPath)presets\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\presets')" />
     <Copy SourceFiles="@(_Blender)" DestinationFolder="$(OutputPath)blender_embed\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\blender_embed')" />
   </Target>
 

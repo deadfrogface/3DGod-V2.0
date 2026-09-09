@@ -23,17 +23,36 @@ public class CompositionTests
         Assert.NotNull(provider.GetRequiredService<CharacterSystem>());
         Assert.NotNull(provider.GetRequiredService<ICharacterModelService>());
         Assert.NotNull(provider.GetRequiredService<IFeatureAvailabilityService>());
-        Assert.IsType<FeatureAvailabilityService>(provider.GetRequiredService<IFeatureAvailabilityService>());
+        Assert.IsType<DynamicFeatureAvailabilityService>(provider.GetRequiredService<IFeatureAvailabilityService>());
 
         Assert.NotNull(provider.GetRequiredService<IProjectService>());
         Assert.IsType<GodProjectArchive>(provider.GetRequiredService<IProjectService>());
         Assert.NotNull(provider.GetRequiredService<IWorkerHost>());
         Assert.IsType<ThreeDGod.Workers.WorkerProcessHost>(provider.GetRequiredService<IWorkerHost>());
+        Assert.NotNull(provider.GetRequiredService<ThreeDGod.Workers.AnnyHumanService>());
+        Assert.NotNull(provider.GetRequiredService<AnnyPresetStore>());
         Assert.NotNull(provider.GetService<IBackendRegistry>());
         Assert.Null(provider.GetService<IImportService>());
         Assert.Null(provider.GetService<IExportService>());
         Assert.Null(provider.GetService<IRiggingService>());
-        Assert.Null(provider.GetService<IImageTo3DService>());
+        Assert.NotNull(provider.GetService<IImageTo3DService>());
+        Assert.IsType<ImageTo3DService>(provider.GetRequiredService<IImageTo3DService>());
+        Assert.NotNull(provider.GetRequiredService<IAssetGenerationService>());
+        Assert.IsType<AiAssetPipeline>(provider.GetRequiredService<IAssetGenerationService>());
+        Assert.NotNull(provider.GetRequiredService<IRemeshService>());
+        Assert.IsType<RemeshService>(provider.GetRequiredService<IRemeshService>());
+        Assert.NotNull(provider.GetRequiredService<ISkinTokensRigService>());
+        Assert.IsType<SkinTokensRigService>(provider.GetRequiredService<ISkinTokensRigService>());
+        Assert.NotNull(provider.GetRequiredService<IRigValidator>());
+        Assert.IsType<RigValidationService>(provider.GetRequiredService<IRigValidator>());
+        Assert.NotNull(provider.GetRequiredService<ICreatureAssembly>());
+        Assert.IsType<CreatureAssembly>(provider.GetRequiredService<ICreatureAssembly>());
+        Assert.NotNull(provider.GetRequiredService<ICreatureTextEditService>());
+        Assert.IsType<CreatureTextEditService>(provider.GetRequiredService<ICreatureTextEditService>());
+        Assert.NotNull(provider.GetRequiredService<IFreeformCharacterPipeline>());
+        Assert.IsType<FreeformPipeline>(provider.GetRequiredService<IFreeformCharacterPipeline>());
+        Assert.NotNull(provider.GetRequiredService<IReferenceImageGenerationService>());
+        Assert.IsType<ReferenceImageService>(provider.GetRequiredService<IReferenceImageGenerationService>());
     }
 
     [Fact]

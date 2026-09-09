@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ThreeDGod.Application\ThreeDGod.Application.csproj" />
     <ProjectReference Include="..\ThreeDGod.Core\ThreeDGod.Core.csproj" />
+    <ProjectReference Include="..\ThreeDGod.Mesh\ThreeDGod.Mesh.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.9.0" />

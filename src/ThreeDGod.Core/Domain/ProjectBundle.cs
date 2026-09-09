@@ -10,6 +10,9 @@ public sealed class ProjectBundle
     public List<GarmentDefinition> GarmentDefinitions { get; set; } = [];
     public List<GarmentInstance> GarmentInstances { get; set; } = [];
     public List<AttachmentInstance> Attachments { get; set; } = [];
+    public List<ReferenceSet> ReferenceSets { get; set; } = [];
+    public List<ReferenceImage> ReferenceImages { get; set; } = [];
+    public Dictionary<Guid, byte[]> ReferenceImageBytes { get; set; } = [];
 }
 
 public interface IProjectMigration

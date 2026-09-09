@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "tall-slim",
+  "backend": "anny",
+  "phenotypes": {
+    "gender": 0.4,
+    "age": 0.35,
+    "muscle": 0.25,
+    "weight": 0.2,
+    "height": 0.85,
+    "proportions": 0.7
+  },
+  "localChanges": {},
+  "facialActions": {},
+  "tags": ["builtin", "body"]
+}

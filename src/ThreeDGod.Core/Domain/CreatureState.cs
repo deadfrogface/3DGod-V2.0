@@ -33,6 +33,8 @@ public enum SemanticBodyPartType
     RightFoot,
     Tail,
     Horn,
+    Ear,
+    Tusk,
     Wing,
     Prosthetic,
     Custom

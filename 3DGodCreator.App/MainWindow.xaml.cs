@@ -3,10 +3,14 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using Microsoft.Win32;
 using HelixToolkit.Wpf;
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
+using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
+using ThreeDGod.Export;
+using ThreeDGod.Workers;
 using ThreeDGodCreator.App.Panels;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Models;
@@ -32,6 +36,10 @@ public partial class MainWindow : Window
     private readonly IFeatureAvailabilityService _features;
     private readonly CommandStack _commandStack;
     private readonly IDiagnosticService _diagnostics;
+    private readonly IProjectService _projects;
+    private readonly AnnyHumanService _anny;
+    private readonly IAssetGenerationService _assets;
+    private AnnyInspectorPanel? _annyInspector;
 
     public MainWindow(
         ConfigService configService,
@@ -40,7 +48,10 @@ public partial class MainWindow : Window
         CharacterSystem characterSystem,
         IFeatureAvailabilityService features,
         CommandStack commandStack,
-        IDiagnosticService diagnostics)
+        IDiagnosticService diagnostics,
+        IProjectService projects,
+        AnnyHumanService anny,
+        IAssetGenerationService assets)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -52,6 +63,9 @@ public partial class MainWindow : Window
         _features = features;
         _commandStack = commandStack;
         _diagnostics = diagnostics;
+        _projects = projects;
+        _anny = anny;
+        _assets = assets;
 
         _characterSystem.Viewport = new ViewportAdapter(this);
         _characterSystem.SliderSyncCallback = RefreshSliders;
@@ -90,6 +104,8 @@ public partial class MainWindow : Window
     private void LoadPanels()
     {
         DebugConsoleHost.Content = new DebugConsole();
+        _annyInspector = new AnnyInspectorPanel(_anny, _features, _commandStack, LoadPreview);
+        AnnyPanel.Content = _annyInspector;
         FormPanel.Content = new FormPanel(_characterSystem);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
@@ -98,9 +114,9 @@ public partial class MainWindow : Window
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
-        ExportPanel.Content = new ExportPanel(_characterSystem, _features);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features, () => _currentPreviewPath);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
-        AiPanel.Content = new AiPanel(_characterSystem, _features);
+        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
         ProblemsPanel.Content = new ProblemsPanel(_diagnostics);
     }
 
@@ -399,6 +415,108 @@ public partial class MainWindow : Window
             System.Windows.Input.ApplicationCommands.Undo, System.Windows.Input.Key.Z, System.Windows.Input.ModifierKeys.Control));
         InputBindings.Add(new System.Windows.Input.KeyBinding(
             System.Windows.Input.ApplicationCommands.Redo, System.Windows.Input.Key.Y, System.Windows.Input.ModifierKeys.Control));
+    }
+
+    private async void MenuNewProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (_annyInspector is not null)
+            await _annyInspector.ApplyStateAsync(new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" }, generate: false);
+        DebugLog.Write("[Project] Neues leeres Domain-Projekt im Speicher.");
+    }
+
+    private async void MenuOpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog { Filter = "3D God Projekt|*.3dgod", Title = "Projekt öffnen" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var bundle = await _projects.LoadAsync(dlg.FileName);
+            var state = bundle.Characters.FirstOrDefault()?.ParametricHumanState;
+            if (state is not null && _annyInspector is not null)
+                await _annyInspector.ApplyStateAsync(state, generate: _features.IsInvocable(FeatureIds.AnnyHuman));
+            DebugLog.Write($"[Project] Geladen: {bundle.Project.Name} ({bundle.Project.ProjectId})");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Projekt öffnen", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void MenuSaveProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SaveFileDialog { Filter = "3D God Projekt|*.3dgod", Title = "Projekt speichern", FileName = "project.3dgod" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var state = _annyInspector is null ? new ParametricHumanState() : AnnyInspectorPanel.Clone(_annyInspector.State);
+            var character = new CharacterDocument
+            {
+                Name = Path.GetFileNameWithoutExtension(dlg.FileName),
+                CharacterKind = CharacterKind.ParametricHuman,
+                SourceRepresentation = SourceRepresentation.AnnyParameters,
+                ParametricHumanState = state
+            };
+            var bundle = new ProjectBundle
+            {
+                Project = new ProjectDocument
+                {
+                    Name = character.Name,
+                    CharacterIds = [character.CharacterId]
+                },
+                Characters = [character]
+            };
+            await _projects.SaveAsync(bundle, dlg.FileName);
+            DebugLog.Write($"[Project] Gespeichert: {dlg.FileName}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Projekt speichern", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void MenuAnnyGenerate_Click(object sender, RoutedEventArgs e)
+    {
+        var probe = _anny.Probe();
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            MessageBox.Show(probe.Message, "Anny", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        try
+        {
+            var dest = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", $"anny-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+            DebugLog.Write("[Anny] Erzeuge Human…");
+            var glb = await _anny.GenerateGlbAsync(dest);
+            LoadPreview(glb);
+            DebugLog.Write($"[Anny] GLB geladen: {glb}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Anny] {ex.Message}");
+            MessageBox.Show(ex.Message, "Anny", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void MenuExportGlb_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_currentPreviewPath) || !File.Exists(_currentPreviewPath))
+        {
+            MessageBox.Show("Kein verifiziertes Viewport-GLB zum Export.", "Export GLB", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dlg = new SaveFileDialog { Filter = "GLB|*.glb", FileName = "character.glb" };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            GlbExportService.Export(_currentPreviewPath, dlg.FileName);
+            DebugLog.Write($"[Export] GLB geschrieben: {dlg.FileName}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Export GLB", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private class ViewportAdapter : IViewport

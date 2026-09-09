@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "adult-average",
+  "backend": "anny",
+  "phenotypes": {
+    "gender": 0.5,
+    "age": 0.45,
+    "muscle": 0.45,
+    "weight": 0.45,
+    "height": 0.5,
+    "proportions": 0.5
+  },
+  "localChanges": {},
+  "facialActions": {},
+  "tags": ["builtin", "body"]
+}

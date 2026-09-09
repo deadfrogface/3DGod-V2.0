@@ -102,6 +102,18 @@ public sealed class GodProjectArchive : IProjectService
             Add($"garments/instances/{inst.GarmentInstanceId:D}/instance.json", inst);
         foreach (var att in bundle.Attachments)
             Add($"attachments/{att.AttachmentId:D}.json", att);
+        foreach (var set in bundle.ReferenceSets)
+            Add($"references/sets/{set.ReferenceSetId:D}.json", set);
+        foreach (var image in bundle.ReferenceImages)
+            Add($"references/{image.ReferenceImageId:D}/ref.json", image);
+        foreach (var (id, bytes) in bundle.ReferenceImageBytes)
+        {
+            var image = bundle.ReferenceImages.FirstOrDefault(i => i.ReferenceImageId == id);
+            var rel = image?.RelativePath;
+            if (string.IsNullOrWhiteSpace(rel) || bytes.Length == 0)
+                continue;
+            files.Add((ArchivePathRules.NormalizeRelativePath(rel), bytes));
+        }
 
         var manifest = new GodProjectManifest
         {
@@ -196,6 +208,16 @@ public sealed class GodProjectArchive : IProjectService
                 bundle.GarmentInstances.Add(ParseJson<GarmentInstance>(bytes, path));
             else if (path.StartsWith("attachments/", StringComparison.OrdinalIgnoreCase))
                 bundle.Attachments.Add(ParseJson<AttachmentInstance>(bytes, path));
+            else if (path.StartsWith("references/sets/", StringComparison.OrdinalIgnoreCase))
+                bundle.ReferenceSets.Add(ParseJson<ReferenceSet>(bytes, path));
+            else if (path.StartsWith("references/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/ref.json", StringComparison.OrdinalIgnoreCase))
+                bundle.ReferenceImages.Add(ParseJson<ReferenceImage>(bytes, path));
+            else if (path.StartsWith("references/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/image.png", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = Path.GetFileName(Path.GetDirectoryName(path.Replace('\\', '/')) ?? "");
+                if (Guid.TryParse(name, out var id))
+                    bundle.ReferenceImageBytes[id] = bytes;
+            }
         }
 
         return bundle;

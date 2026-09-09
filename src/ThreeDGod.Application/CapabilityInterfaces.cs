@@ -1,4 +1,5 @@
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Core.Editing;
 
 namespace ThreeDGod.Application;
 
@@ -34,7 +35,60 @@ public interface IExportService;
 
 public interface IRiggingService;
 
-public interface IImageTo3DService;
+public interface IImageTo3DService
+{
+    FeatureAvailability Probe(string backendId = "triposr");
+    string ProbeMessage(string backendId = "triposr");
+    Task<string> GenerateGlbAsync(string imagePath, string destinationGlb, string backendId = "triposr", CancellationToken cancellationToken = default);
+}
+
+public interface IAssetGenerationService
+{
+    Task<LibraryAsset> GenerateAsync(string prompt, CancellationToken cancellationToken = default);
+}
+
+public interface IRemeshService
+{
+    string RemeshGlb(string sourceGlb, string destinationGlb, RemeshProfile profile);
+}
+
+public interface ISkinTokensRigService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+    Task<string> RigGlbAsync(string sourceGlb, string destinationGlb, CancellationToken cancellationToken = default);
+}
+
+public interface IRigValidator
+{
+    bool ValidateGlb(string glbPath, out IReadOnlyList<string> failures, bool requireHumanoid = true);
+}
+
+public interface ICreatureAssembly
+{
+    CharacterDocument AttachHumanTailAndHorns(ProjectBundle bundle, string meshRoot);
+    CharacterDocument CreateOrc(ProjectBundle bundle, string meshRoot);
+    CharacterDocument CreateRat(ProjectBundle bundle, string meshRoot);
+    CharacterDocument CreateEditableHumanoid(ProjectBundle bundle, string meshRoot);
+}
+
+public interface ICreatureTextEditService
+{
+    Task ApplyAsync(string prompt, ProjectBundle bundle, CharacterDocument character, string meshRoot, CommandStack stack, CancellationToken cancellationToken = default);
+}
+
+public interface IFreeformCharacterPipeline
+{
+    Task<CharacterDocument> RunAsync(string prompt, ProjectBundle bundle, string workRoot, CancellationToken cancellationToken = default);
+}
+
+public interface IReferenceImageGenerationService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+    Task<ReferenceImage> GenerateAsync(string prompt, long? seed, ProjectBundle bundle, CancellationToken cancellationToken = default);
+    ReferenceImage AttachExistingPng(string pngPath, string prompt, long? seed, ProjectBundle bundle);
+}
 
 public interface ICharacterModelService
 {

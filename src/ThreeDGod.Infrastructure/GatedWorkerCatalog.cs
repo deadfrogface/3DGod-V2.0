@@ -1,4 +1,5 @@
 using ThreeDGod.Application;
+using ThreeDGod.Workers;
 
 namespace ThreeDGod.Infrastructure;
 
@@ -21,6 +22,18 @@ public static class GatedWorkerCatalog
             return new GatedWorkerStatus { WorkerId = workerId, Availability = FeatureAvailability.UnsupportedHardware, Message = "UnsupportedHardware" };
         if (string.Equals(envOverride, "LicenseBlocked", StringComparison.OrdinalIgnoreCase))
             return new GatedWorkerStatus { WorkerId = workerId, Availability = FeatureAvailability.Disabled, Message = "LicenseBlocked" };
+
+        if (string.Equals(workerId, "anny", StringComparison.OrdinalIgnoreCase))
+        {
+            var probe = AnnyRuntime.Probe();
+            return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
+        }
+        if (string.Equals(workerId, "flux", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(workerId, "qwen", StringComparison.OrdinalIgnoreCase))
+        {
+            var probe = ReferenceImageRuntime.Probe(workerId);
+            return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
+        }
 
         var installDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

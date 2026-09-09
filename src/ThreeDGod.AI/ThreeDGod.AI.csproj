@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThreeDGod.Application\ThreeDGod.Application.csproj" />
+    <ProjectReference Include="..\ThreeDGod.Core\ThreeDGod.Core.csproj" />
+    <PackageReference Include="LLamaSharp" Version="0.25.0" />
   </ItemGroup>
 
   <PropertyGroup>
