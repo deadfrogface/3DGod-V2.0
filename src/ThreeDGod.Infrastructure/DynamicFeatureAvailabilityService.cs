@@ -46,6 +46,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Experimental;
         if (featureId == FeatureIds.GenerativeGarment)
             return FeatureAvailability.NotImplemented;
+        if (featureId == FeatureIds.LocalAiMeshEdit)
+            return FeatureAvailability.NotImplemented;
         if (featureId == FeatureIds.PhysicsSimulate)
             return FeatureAvailability.Experimental;
         return _inner.GetStatus(featureId);
@@ -98,6 +100,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Experimental – nearest-vertex weight transfer onto the body skeleton. Not SkinTokens.";
         if (featureId == FeatureIds.GenerativeGarment)
             return "NotImplemented – DressCode/GarmentDiffusion/Garment3DGen not product-cleared. See docs/research/GENERATIVE_GARMENT_DECISION.md. No button.";
+        if (featureId == FeatureIds.LocalAiMeshEdit)
+            return "NotImplemented – BlendedPC/StructLDM/GaussCtrl/TrAME have no Anny mesh PoC. Parameter + catalog replace only. See docs/research/LOCAL_AI_EDIT_DECISION.md. No button.";
         if (featureId == FeatureIds.PhysicsSimulate)
             return "Experimental – Bepu rigid accessory chain/earring preview. Not cloth, not softbody, not ragdoll.";
         return _inner.GetStatusMessage(featureId);

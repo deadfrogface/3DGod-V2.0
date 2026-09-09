@@ -40,6 +40,7 @@ public static class FeatureIds
     public const string GarmentCode = "garment.garmentcode";
     public const string GarmentSkin = "garment.skin";
     public const string GenerativeGarment = "garment.generate.ai";
+    public const string LocalAiMeshEdit = "mesh.edit.ai";
 }
 
 public interface IFeatureAvailabilityService
