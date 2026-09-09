@@ -38,6 +38,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IFreeformCharacterPipeline, FreeformPipeline>();
         services.AddSingleton<IGarmentService, GarmentService>();
         services.AddSingleton<IGarmentFitService, GarmentFitService>();
+        services.AddSingleton<IGarmentSkinService, GarmentSkinService>();
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

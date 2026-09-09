@@ -38,6 +38,7 @@ public static class FeatureIds
     public const string FreeformPipeline = "character.freeform";
     public const string GarmentTemplates = "garment.templates";
     public const string GarmentCode = "garment.garmentcode";
+    public const string GarmentSkin = "garment.skin";
 }
 
 public interface IFeatureAvailabilityService

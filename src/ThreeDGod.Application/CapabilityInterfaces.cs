@@ -103,6 +103,11 @@ public interface IGarmentFitService
     Task<GarmentFitResult> FitJacketToPresetAsync(string presetName, string workRoot, CancellationToken cancellationToken = default);
 }
 
+public interface IGarmentSkinService
+{
+    string BindToBody(string skinnedBodyGlb, string garmentGlb, string destinationGlb);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

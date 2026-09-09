@@ -42,6 +42,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
                 ? FeatureAvailability.Experimental
                 : gc;
         }
+        if (featureId == FeatureIds.GarmentSkin)
+            return FeatureAvailability.Experimental;
         return _inner.GetStatus(featureId);
     }
 
@@ -88,6 +90,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
                 return gc.Message;
             return "Experimental – geometry3Sharp proximity fit + inflate. Not cloth simulation.";
         }
+        if (featureId == FeatureIds.GarmentSkin)
+            return "Experimental – nearest-vertex weight transfer onto the body skeleton. Not SkinTokens.";
         return _inner.GetStatusMessage(featureId);
     }
 }
