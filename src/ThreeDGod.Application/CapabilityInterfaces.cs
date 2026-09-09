@@ -175,3 +175,9 @@ public interface IGlbExportService
     string Export(string sourceGlb, string destinationGlb);
     GlbSceneCounts Inspect(string glbPath);
 }
+
+public interface IFbxExportService
+{
+    /// <summary>Viewport GLB → FBX via headless Blender. Does not claim UE5 editor import.</summary>
+    string Export(string sourceGlb, string destinationFbx, string? assetName = null, bool runUe5Preflight = true);
+}

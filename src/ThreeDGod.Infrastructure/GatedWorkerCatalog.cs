@@ -113,24 +113,9 @@ public sealed class LicenseGate
 
 public static class ExportPreflight
 {
-    public static IReadOnlyList<string> FbxSanity(string? path, IDiagnosticService? diagnostics = null)
-    {
-        return PipelineTrace.Run(diagnostics, "Export", "Export.Preflight", () =>
-        {
-            var issues = new List<string>();
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-                issues.Add("FBX missing – real UE5 import is not claimed.");
-            else
-            {
-                var len = new FileInfo(path).Length;
-                if (len < 64)
-                    issues.Add("FBX too small to be a valid scene.");
-                else
-                    issues.Add("FBX present – prefer UnrealEngine5ExportProfile on GLB; UE5 editor import not claimed.");
-            }
-            return (IReadOnlyList<string>)issues;
-        }, provider: "ue5-preflight");
-    }
+    public static IReadOnlyList<string> FbxSanity(string? path, IDiagnosticService? diagnostics = null) =>
+        PipelineTrace.Run(diagnostics, "Export", "Export.Preflight", () =>
+            (IReadOnlyList<string>)ThreeDGod.Export.FbxSanity.Check(path).Issues, provider: "ue5-preflight");
 
     public static Ue5PreflightReport EvaluateGlbForUe5(string glbPath, string? assetName = null, bool requireSkin = true, IDiagnosticService? diagnostics = null) =>
         UnrealEngine5ExportProfile.EvaluateGlb(glbPath, assetName, requireSkin, diagnostics);

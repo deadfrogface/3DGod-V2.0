@@ -14,14 +14,20 @@ public partial class ExportPanel : UserControl
     private readonly CharacterSystem _cs;
     private readonly string _basePath;
     private readonly Func<string> _currentPreview;
+    private readonly IFbxExportService _fbxExport;
 
     private readonly IFeatureAvailabilityService _features;
 
-    public ExportPanel(CharacterSystem cs, IFeatureAvailabilityService features, Func<string> currentPreview)
+    public ExportPanel(
+        CharacterSystem cs,
+        IFeatureAvailabilityService features,
+        IFbxExportService fbxExport,
+        Func<string> currentPreview)
     {
         InitializeComponent();
         _cs = cs;
         _features = features;
+        _fbxExport = fbxExport;
         _currentPreview = currentPreview;
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
         BtnSavePreset.IsEnabled = _features.IsInvocable(FeatureIds.PresetSave);
@@ -55,17 +61,34 @@ public partial class ExportPanel : UserControl
     {
         var name = TxtFilename.Text.Trim();
         if (string.IsNullOrEmpty(name)) name = "my_character";
-        WriteLog("FBX-Export ist Experimental und wird nicht als Erfolg gemeldet, bevor eine Datei existiert.", "INFO");
+        WriteLog("FBX-Export ist Experimental – kein UE5-Editor-Import wird behauptet.", "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
+
+        var src = _currentPreview();
+        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
+            src = _cs.ResolveExportGlbSource() ?? "";
+
+        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
+        {
+            WriteLog("Kein Viewport-/Character-GLB für FBX-Export gefunden.", "ERROR");
+            return;
+        }
+
+        var fbx = Path.Combine(_basePath, "exports", $"{name}.fbx");
         try
         {
             _cs.SavePreset(name);
-            _cs.ExportFbx(name);
-            var fbx = Path.Combine(_basePath, "exports", $"{name}.fbx");
-            if (File.Exists(fbx))
-                WriteLog($"FBX-Datei vorhanden: {fbx}", "INFO");
+            WriteLog($"GLB → FBX (headless Blender): {src} → {fbx}", "INFO");
+            _fbxExport.Export(src, fbx, name, runUe5Preflight: true);
+
+            var sanity = FbxSanity.Check(fbx);
+            foreach (var issue in sanity.Issues)
+                WriteLog(issue, sanity.Passed ? "INFO" : "WARN");
+
+            if (sanity.Passed)
+                WriteLog($"FBX geschrieben und sanity-geprüft: {fbx}", "INFO");
             else
-                WriteLog($"Kein FBX verifiziert unter {fbx}. Job wurde nur angestoßen.", "WARN");
+                WriteLog($"FBX sanity-check fehlgeschlagen: {fbx}", "ERROR");
         }
         catch (Exception ex)
         {

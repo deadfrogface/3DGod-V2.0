@@ -143,7 +143,72 @@ public class LegacyBlenderBackend : IBlenderOperations
         LaunchHeadlessProcess(path, $"--background --python \"{scriptPath}\" -- {filename}", "FBX Export");
     }
 
-    public bool TryRunHeadlessJob(string pythonScriptPath, out string output, out string? error)
+    public bool TryExportGlbToFbx(string sourceGlb, string destinationFbx, out string? error)
+    {
+        error = null;
+        var blenderPath = GetBlenderPath();
+        if (string.IsNullOrEmpty(blenderPath) || blenderPath == "blender" || !File.Exists(blenderPath))
+        {
+            error = "GATED_NOT_INSTALLED – Blender runtime missing; FBX export not executed.";
+            return false;
+        }
+
+        if (!File.Exists(sourceGlb))
+        {
+            error = "GLB source missing: " + sourceGlb;
+            return false;
+        }
+
+        var scriptPath = Path.GetFullPath(Path.Combine(_basePath, "blender_embed", "scripts", "export_fbx.py"));
+        if (!File.Exists(scriptPath))
+        {
+            error = "export_fbx.py not found: " + scriptPath;
+            return false;
+        }
+
+        var src = Path.GetFullPath(sourceGlb);
+        var dst = Path.GetFullPath(destinationFbx);
+        var ok = TryRunHeadlessJob(
+            scriptPath,
+            [src, dst],
+            out var output,
+            out error,
+            timeoutMs: 120_000);
+        if (!ok)
+            return false;
+
+        if (!output.Contains("FBX_EXPORT_OK", StringComparison.Ordinal))
+        {
+            error = string.IsNullOrWhiteSpace(error)
+                ? "Blender FBX job finished without FBX_EXPORT_OK marker."
+                : error;
+            return false;
+        }
+
+        if (!File.Exists(dst))
+        {
+            error = "FBX not written: " + dst;
+            return false;
+        }
+
+        if (new FileInfo(dst).Length < ThreeDGod.Export.FbxSanity.MinimumBytes)
+        {
+            error = "FBX too small after export.";
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool TryRunHeadlessJob(string pythonScriptPath, out string output, out string? error) =>
+        TryRunHeadlessJob(pythonScriptPath, null, out output, out error);
+
+    public bool TryRunHeadlessJob(
+        string pythonScriptPath,
+        IReadOnlyList<string>? scriptArgs,
+        out string output,
+        out string? error,
+        int timeoutMs = 20000)
     {
         output = "";
         error = null;
@@ -162,10 +227,13 @@ public class LegacyBlenderBackend : IBlenderOperations
 
         try
         {
+            var argTail = scriptArgs is { Count: > 0 }
+                ? " -- " + string.Join(" ", scriptArgs.Select(a => $"\"{a}\""))
+                : "";
             var psi = new ProcessStartInfo
             {
                 FileName = blenderPath,
-                Arguments = $"--background --python \"{pythonScriptPath}\"",
+                Arguments = $"--background --python \"{pythonScriptPath}\"{argTail}",
                 WorkingDirectory = _basePath,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -181,7 +249,7 @@ public class LegacyBlenderBackend : IBlenderOperations
 
             output = proc.StandardOutput.ReadToEnd();
             var stderr = proc.StandardError.ReadToEnd();
-            if (!proc.WaitForExit(20000))
+            if (!proc.WaitForExit(timeoutMs))
             {
                 try { proc.Kill(entireProcessTree: true); } catch { /* best-effort */ }
                 error = "Headless job timed out.";

@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     private readonly AnnyHumanService _anny;
     private readonly IAssetGenerationService _assets;
     private readonly ViewportSelectionService _viewportSelection;
+    private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
     private AnnyInspectorPanel? _annyInspector;
     private ProblemsPanel? _problemsPanel;
@@ -58,7 +59,8 @@ public partial class MainWindow : Window
         IProjectService projects,
         AnnyHumanService anny,
         IAssetGenerationService assets,
-        ViewportSelectionService viewportSelection)
+        ViewportSelectionService viewportSelection,
+        IFbxExportService fbxExport)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -74,6 +76,7 @@ public partial class MainWindow : Window
         _anny = anny;
         _assets = assets;
         _viewportSelection = viewportSelection;
+        _fbxExport = fbxExport;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
 
@@ -124,7 +127,7 @@ public partial class MainWindow : Window
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
-        ExportPanel.Content = new ExportPanel(_characterSystem, _features, () => _currentPreviewPath);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, () => _currentPreviewPath);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
         AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
         _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);

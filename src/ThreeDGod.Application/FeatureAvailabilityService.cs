@@ -37,7 +37,7 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
             FeatureIds.PresetSave => "Available – Preset-JSON wird auf die Platte geschrieben.",
             FeatureIds.ViewportGlb => "Available – vorhandene Base-GLBs werden im Viewport geladen.",
             FeatureIds.ExportFbx =>
-                "Experimental – headless Blender-Job, falls Runtime da ist. Exportiert die Blender-Szene, nicht zwingend das Viewport-GLB. Datei wird nicht als fertiges Produkt bestätigt.",
+                "Experimental – headless Blender GLB→FBX, falls Runtime da ist. Bevorzugt Viewport-GLB; FBX-Sanity ≠ UE5-Editor-Import.",
             FeatureIds.ExportUnreal =>
                 "NotImplemented – kein UE5-Pipeline-Export, nur Dateikopie wäre möglich. Button bleibt deaktiviert.",
             FeatureIds.ClothingFit =>

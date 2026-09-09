@@ -153,6 +153,22 @@ public class CharacterSystem
         _blenderService.ExportFbx(filename);
     }
 
+    /// <summary>Headless GLB → FBX (synchronous). Throws when Blender missing or export fails.</summary>
+    public void ExportFbxFromGlb(string sourceGlb, string destinationFbx)
+    {
+        SavePreset(Path.GetFileNameWithoutExtension(destinationFbx));
+        if (!_blenderService.TryExportGlbToFbx(sourceGlb, destinationFbx, out var error))
+            throw new InvalidOperationException(error ?? "FBX export failed.");
+    }
+
+    public string? ResolveExportGlbSource()
+    {
+        if (!string.IsNullOrWhiteSpace(PreviewGlbPath) && File.Exists(PreviewGlbPath))
+            return PreviewGlbPath;
+        var basePath = Path.GetFullPath(Path.Combine(_basePath, GetCurrentModelPath()));
+        return File.Exists(basePath) ? basePath : null;
+    }
+
     public void UpdateAnatomyLayer(string layerName, bool state)
     {
         AnatomyState[layerName] = state;

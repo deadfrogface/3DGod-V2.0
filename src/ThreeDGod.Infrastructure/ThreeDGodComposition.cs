@@ -46,6 +46,14 @@ public static class ThreeDGodComposition
         services.AddSingleton<ThreeDGod.Rendering.ViewportSelectionService>();
         services.AddSingleton<IGlbExportService>(sp =>
             new ThreeDGod.Export.GlbExportService(sp.GetRequiredService<IDiagnosticService>()));
+        services.AddSingleton<IFbxExportService>(sp =>
+        {
+            var blender = sp.GetRequiredService<IBlenderOperations>();
+            return new ThreeDGod.Export.FbxExportService(
+                () => blender.IsBlenderConfigured(),
+                (src, dst) => blender.TryExportGlbToFbx(src, dst, out var err) ? null : err,
+                sp.GetRequiredService<IDiagnosticService>());
+        });
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(
