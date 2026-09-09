@@ -14,5 +14,6 @@ config.json
 .venv/
 __pycache__/
 workers/anny/.venv/
+workers/garmentcode/.venv/
 *.pyc
 

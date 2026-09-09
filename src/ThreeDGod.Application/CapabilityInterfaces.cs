@@ -90,6 +90,13 @@ public interface IGarmentService
     Task ApplyTextAsync(GarmentDefinition definition, GarmentInstance instance, string prompt, CommandStack stack, CancellationToken cancellationToken = default);
 }
 
+public interface IGarmentCodeService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+    Task<string> GenerateJacketGlbAsync(string destinationGlb, CancellationToken cancellationToken = default);
+}
+
 public interface IReferenceImageGenerationService
 {
     FeatureAvailability Probe();

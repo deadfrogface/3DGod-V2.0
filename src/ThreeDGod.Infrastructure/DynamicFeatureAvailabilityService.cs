@@ -33,6 +33,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Experimental;
         if (featureId == FeatureIds.GarmentTemplates)
             return FeatureAvailability.Available;
+        if (featureId == FeatureIds.GarmentCode)
+            return GarmentCodeRuntime.Probe().Availability;
         return _inner.GetStatus(featureId);
     }
 
@@ -70,6 +72,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Experimental – catalog freeform (dragon) + remesh + authored rig. FLUX/TripoSR/SkinTokens remain NotInstalled.";
         if (featureId == FeatureIds.GarmentTemplates)
             return "Available – parametric T-Shirt/Jacket/Pants/Coat templates. Fitting remains NotImplemented.";
+        if (featureId == FeatureIds.GarmentCode)
+            return GarmentCodeRuntime.Probe().Message;
         return _inner.GetStatusMessage(featureId);
     }
 }

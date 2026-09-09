@@ -22,6 +22,8 @@ public static class ThreeDGodComposition
         services.AddSingleton<IBlenderOperations, LegacyBlenderBackend>();
         services.AddSingleton<IFeatureAvailabilityService, DynamicFeatureAvailabilityService>();
         services.AddSingleton<AnnyHumanService>();
+        services.AddSingleton<GarmentCodeService>();
+        services.AddSingleton<IGarmentCodeService>(sp => sp.GetRequiredService<GarmentCodeService>());
         services.AddSingleton<IProjectService, GodProjectArchive>();
         services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton<IReferenceImageGenerationService, ReferenceImageService>();

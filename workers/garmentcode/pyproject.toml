@@ -1,0 +1,11 @@
+[project]
+name = "3dgod-garmentcode"
+version = "0.1.0"
+description = "Isolated 3D God GarmentCode/PyGarment worker. MIT pygarment. CGAL/libigl/Warp sim not bundled."
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    "pygarment>=2.0.0",
+]
+
+[tool.uv]
+package = false
