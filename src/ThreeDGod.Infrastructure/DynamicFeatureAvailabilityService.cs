@@ -44,6 +44,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
         }
         if (featureId == FeatureIds.GarmentSkin)
             return FeatureAvailability.Experimental;
+        if (featureId == FeatureIds.GenerativeGarment)
+            return FeatureAvailability.NotImplemented;
         return _inner.GetStatus(featureId);
     }
 
@@ -92,6 +94,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
         }
         if (featureId == FeatureIds.GarmentSkin)
             return "Experimental – nearest-vertex weight transfer onto the body skeleton. Not SkinTokens.";
+        if (featureId == FeatureIds.GenerativeGarment)
+            return "NotImplemented – DressCode/GarmentDiffusion/Garment3DGen not product-cleared. See docs/research/GENERATIVE_GARMENT_DECISION.md. No button.";
         return _inner.GetStatusMessage(featureId);
     }
 }

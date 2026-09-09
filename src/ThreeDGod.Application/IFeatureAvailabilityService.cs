@@ -39,6 +39,7 @@ public static class FeatureIds
     public const string GarmentTemplates = "garment.templates";
     public const string GarmentCode = "garment.garmentcode";
     public const string GarmentSkin = "garment.skin";
+    public const string GenerativeGarment = "garment.generate.ai";
 }
 
 public interface IFeatureAvailabilityService
