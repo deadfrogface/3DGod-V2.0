@@ -78,8 +78,8 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
     {
         if (featureId == FeatureIds.AnnyHuman)
             return AnnyRuntime.Probe().Message;
-        if (featureId == FeatureIds.ExportGlb)
-            return "Available – GLB export copies a verified source mesh.";
+            if (featureId == FeatureIds.ExportGlb)
+            return "Available – SharpGLTF GLB export rewrites scene (mesh/material/texture/skin/morph/nodes) with count roundtrip.";
         if (featureId == FeatureIds.ProjectSave)
             return "Available – .3dgod ZIP save/load.";
         if (featureId == FeatureIds.ReferenceImageGenerate)

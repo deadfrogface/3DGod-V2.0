@@ -10,11 +10,15 @@ public sealed class CanonicalGltfDocument
     public int MaterialCount { get; init; }
     public int SkinCount { get; init; }
     public int MorphTargetCount { get; init; }
+    public int NodeCount { get; init; }
+    public int TextureCount { get; init; }
+    public int ImageCount { get; init; }
     public int VertexCount { get; init; }
     public int TriangleCount { get; init; }
     public bool HasNormals { get; init; }
     public bool HasTangents { get; init; }
     public bool HasUv { get; init; }
+    public bool HasJoints { get; init; }
 }
 
 public static class CanonicalGltfPipeline
@@ -42,6 +46,7 @@ public static class CanonicalGltfPipeline
         var hasN = false;
         var hasT = false;
         var hasUv = false;
+        var hasJoints = false;
         foreach (var p in primitives)
         {
             var pos = p.GetVertexAccessor("POSITION");
@@ -54,6 +59,7 @@ public static class CanonicalGltfPipeline
             hasN |= p.GetVertexAccessor("NORMAL") != null;
             hasT |= p.GetVertexAccessor("TANGENT") != null;
             hasUv |= p.GetVertexAccessor("TEXCOORD_0") != null;
+            hasJoints |= p.GetVertexAccessor("JOINTS_0") != null;
         }
 
         return new CanonicalGltfDocument
@@ -63,11 +69,15 @@ public static class CanonicalGltfPipeline
             MaterialCount = model.LogicalMaterials.Count,
             SkinCount = model.LogicalSkins.Count,
             MorphTargetCount = morphs,
+            NodeCount = model.LogicalNodes.Count,
+            TextureCount = model.LogicalTextures.Count,
+            ImageCount = model.LogicalImages.Count,
             VertexCount = vertices,
             TriangleCount = tris,
             HasNormals = hasN,
             HasTangents = hasT,
-            HasUv = hasUv
+            HasUv = hasUv,
+            HasJoints = hasJoints
         };
     }
 

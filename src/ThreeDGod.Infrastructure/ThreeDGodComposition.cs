@@ -44,6 +44,8 @@ public static class ThreeDGodComposition
         services.AddSingleton<IGarmentSkinService, GarmentSkinService>();
         services.AddSingleton<IAccessoryPhysicsService, AccessoryPhysicsService>();
         services.AddSingleton<ThreeDGod.Rendering.ViewportSelectionService>();
+        services.AddSingleton<IGlbExportService>(sp =>
+            new ThreeDGod.Export.GlbExportService(sp.GetRequiredService<IDiagnosticService>()));
         services.AddSingleton(sp =>
         {
             var root = Path.Combine(

@@ -153,3 +153,25 @@ public interface IAccessoryPhysicsService
     IAccessoryPhysicsPreview CreateHangingChain();
     IAccessoryPhysicsPreview CreateEarringAgainstHead();
 }
+
+public sealed class GlbSceneCounts
+{
+    public int MeshCount { get; init; }
+    public int MaterialCount { get; init; }
+    public int TextureCount { get; init; }
+    public int ImageCount { get; init; }
+    public int SkinCount { get; init; }
+    public int MorphTargetCount { get; init; }
+    public int NodeCount { get; init; }
+    public int VertexCount { get; init; }
+    public int TriangleCount { get; init; }
+    public bool HasUv { get; init; }
+    public bool HasJoints { get; init; }
+}
+
+public interface IGlbExportService
+{
+    string WriteCompleteScene(string destinationGlb);
+    string Export(string sourceGlb, string destinationGlb);
+    GlbSceneCounts Inspect(string glbPath);
+}
