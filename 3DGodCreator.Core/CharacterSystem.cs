@@ -231,6 +231,7 @@ public class CharacterSystem
 
     public void CreateAutoRig()
     {
+        // Do not start legacy Sculpt under an Auto-Rig label.
         _blenderService.LaunchAutoRig();
     }
 }

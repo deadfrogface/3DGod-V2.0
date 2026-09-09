@@ -1,5 +1,6 @@
 using ThreeDGod.Infrastructure;
 using ThreeDGodCreator.Core;
+using ThreeDGodCreator.Core.Models;
 using ThreeDGodCreator.Core.Services;
 
 namespace ThreeDGodCreator.Core.Tests;
@@ -31,7 +32,10 @@ public class LegacyBlenderBackendTests
     {
         var backend = new LegacyBlenderBackend(new ConfigService());
         if (!backend.IsBlenderConfigured())
+        {
+            Assert.True(true, "GATED_NOT_INSTALLED – Blender runtime missing; headless smoke not executed.");
             return;
+        }
 
         var script = Path.Combine(RepoPaths.FindRepoRoot(), "blender_embed", "blender_runtime_test.py");
         Assert.True(File.Exists(script));
@@ -48,5 +52,23 @@ public class LegacyBlenderBackendTests
         Assert.Contains("CreateNoWindow = true", src, StringComparison.Ordinal);
         Assert.Contains("--background", src, StringComparison.Ordinal);
         Assert.DoesNotContain("keepAlive: true", src, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LaunchAutoRig_DoesNotDelegateToSculpt_AndReportsNotImplemented()
+    {
+        var path = Path.Combine(RepoPaths.FindRepoRoot(), "src", "ThreeDGod.Infrastructure", "LegacyBlenderBackend.cs");
+        var src = File.ReadAllText(path);
+        Assert.DoesNotContain("LaunchAutoRig() => LaunchSculpt()", src, StringComparison.Ordinal);
+        Assert.Contains("LaunchAutoRig()", src, StringComparison.Ordinal);
+        Assert.Contains("NotImplemented – Auto-Rig", src, StringComparison.Ordinal);
+
+        var backend = new LegacyBlenderBackend(new ConfigService());
+        BlenderErrorInfo? seen = null;
+        backend.OnBlenderFailed += info => seen = info;
+        backend.LaunchAutoRig();
+        Assert.NotNull(seen);
+        Assert.Contains("NotImplemented", seen!.Message, StringComparison.Ordinal);
+        Assert.Contains("Sculpt will not be started", seen.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

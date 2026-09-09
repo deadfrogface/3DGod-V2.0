@@ -106,7 +106,17 @@ public class LegacyBlenderBackend : IBlenderOperations
         LaunchHeadlessProcess(path, $"--background --python \"{scriptPath}\"", "Sculpt");
     }
 
-    public void LaunchAutoRig() => LaunchSculpt();
+    public void LaunchAutoRig()
+    {
+        // Honest gate: legacy Blender must not pretend Auto-Rig by opening Sculpt.
+        var err = new BlenderErrorInfo(
+            BlenderErrorCode.Unknown,
+            "NotImplemented – Auto-Rig is not available via the legacy Blender host. No skeleton will be generated and Sculpt will not be started.",
+            "Use SkinTokens/Anny rig paths when Available/Experimental; do not map AutoRig→Sculpt.",
+            "Leave Auto-Rig disabled until a real auto-rig backend is wired.");
+        ReportBlenderError(err);
+        Log("Auto-Rig: NotImplemented (will not launch Sculpt)");
+    }
 
     public void ExportFbx(string filename = "exported_character")
     {

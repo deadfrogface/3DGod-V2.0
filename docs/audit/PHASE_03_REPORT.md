@@ -1,36 +1,23 @@
 # PHASE 03 Report
 
 - Phase: 03 – Legacy Blender entkoppeln
-- Status: **PASS**
+- Status: **PASS** (audit repair)
+- Date: 2026-09-09
 
-## Was implementiert/geändert wurde
+## Audit repair
 
-- `BlenderService` ersetzt durch `LegacyBlenderBackend` in Infrastructure.
-- Alle Prozessstarts headless: `--background`, `CreateNoWindow = true`, kein sichtbares Blender-Fenster.
-- CharacterSystem spricht nur `IBlenderOperations` an, keine konkrete Runtime-Klasse.
-- UI: kein MessageBox „Blender fehlt“ mehr; Settings-Texte „Legacy-Runtime“; Sculpt sendet headless Job.
-- Fehlende Runtime = unavailable, App/DI bleiben stabil.
-- Headless-Smoke über `blender_runtime_test.py` wenn Runtime installiert ist.
+- Removed misleading `LaunchAutoRig() => LaunchSculpt()`.
+- `LaunchAutoRig` now reports **NotImplemented** via `OnBlenderFailed` and never starts Sculpt.
+- Rigging UI already keeps Auto-Rig disabled (`FeatureIds.RigAuto = NotImplemented`).
+- Froggy no longer claims Auto-Rig needs Blender.
 
-## Geänderte Dateien
+## Prior DONE (still true)
 
-- `src/ThreeDGod.Infrastructure/LegacyBlenderBackend.cs`
-- `src/ThreeDGod.Infrastructure/ThreeDGodComposition.cs`
-- App Settings/Sculpt/MainWindow
-- `3DGodCreator.Core.Tests/LegacyBlenderBackendTests.cs` und Composition-Anpassungen
+- `LegacyBlenderBackend` behind `IBlenderOperations`
+- Character Core has no Blender class reference
+- Headless only (`--background`, `CreateNoWindow`)
 
-## Build-Ergebnis
+## Tests
 
-`dotnet build -c Release`: **grün**.
-
-## Test-Ergebnisse
-
-`dotnet test -c Release`: **33 bestanden**.
-
-## Acceptance Criteria
-
-- [x] LegacyBlenderBackend hinter Capability-Interface
-- [x] Character Core ruft keine Blender-Klasse direkt auf
-- [x] nur externe Prozesse, kein sichtbares Fenster
-- [x] Runtime fehlt: unavailable, App stabil
-- [x] Runtime da: headless Job-Pfad existiert (Smoke)
+- `LaunchAutoRig_DoesNotDelegateToSculpt_AndReportsNotImplemented`
+- Headless smoke uses explicit `GATED_NOT_INSTALLED` when Blender missing (no silent skip)

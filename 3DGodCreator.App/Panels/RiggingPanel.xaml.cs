@@ -15,8 +15,12 @@ public partial class RiggingPanel : UserControl
         _ = cs;
         _features = features;
         AvailabilityLabel.Text = _features.GetStatusMessage(FeatureIds.RigAuto);
-        BtnAutoRig.IsEnabled = _features.IsInvocable(FeatureIds.RigAuto);
-        BtnMetahuman.IsEnabled = _features.IsInvocable(FeatureIds.ExportMetahuman);
+        BtnAutoRig.IsEnabled = false;
+        BtnAutoRig.Content = "Auto-Rig erstellen (Unavailable)";
+        BtnAutoRig.ToolTip = _features.GetStatusMessage(FeatureIds.RigAuto);
+        BtnMetahuman.IsEnabled = false;
+        BtnMetahuman.Content = "MetaHuman (Unavailable)";
+        BtnMetahuman.ToolTip = _features.GetStatusMessage(FeatureIds.ExportMetahuman);
     }
 
     private void BtnAutoRig_Click(object sender, RoutedEventArgs e)

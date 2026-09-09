@@ -88,7 +88,7 @@ public static class FroggyService
         if (lower.Contains("froggy") || lower.Contains("hilf"))
             return "Klick auf 'Froggy fragen' um die Logs analysieren zu lassen. Froggy erkennt z.B. fehlenden Blender-Pfad und gibt Hinweise.";
         if (lower.Contains("rigging") || lower.Contains("auto rig"))
-            return "Auto-Rigging und 3D-Generierung benötigen Blender. Setze den Blender-Pfad in den Einstellungen. Die Python-Skripte liegen in blender_embed/.";
+            return "Auto-Rig ist NotImplemented – die Legacy-Runtime startet dafür kein Sculpt und erzeugt kein Skeleton. Nutze Anny/SkinTokens nur wenn der Feature-Status Available/Experimental ist.";
         return "Froggy hat deine Frage gelesen. Versuch z.B.: 'Warum steht die 3D-Figur kopfüber?', 'Wie bediene ich die 3D-Vorschau?' oder nutze den Froggy-Button für eine Log-Analyse.";
     }
 }
