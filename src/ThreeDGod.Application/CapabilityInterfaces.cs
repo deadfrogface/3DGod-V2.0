@@ -29,11 +29,33 @@ public interface IWorkerHost
     Task<WorkerRunResult> RunAsync(string executable, IReadOnlyList<string> arguments, WorkerRequest request, TimeSpan timeout, CancellationToken cancellationToken = default);
 }
 
-public interface IImportService;
+/// <summary>FBX/Assimp import — registered only when a real backend is installed.</summary>
+public interface IImportService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+}
 
-public interface IExportService;
+/// <summary>Legacy catch-all export marker; prefer <see cref="IGlbExportService"/> / <see cref="IFbxExportService"/>.</summary>
+public interface IExportService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+}
 
-public interface IRiggingService;
+/// <summary>Auto-rig / SkinTokens style backends. Authored + freeform distance weights stay available separately.</summary>
+public interface IRiggingService
+{
+    FeatureAvailability Probe();
+    string ProbeMessage();
+}
+
+public interface IAutoRigBackend
+{
+    string BackendId { get; }
+    FeatureAvailability Probe();
+    string ProbeMessage();
+}
 
 public interface IImageTo3DService
 {

@@ -1,52 +1,43 @@
-# 3D God Creator V2.0 – C#/.NET
+# 3D God Creator V2.0
 
-Native C#-Migration des 3D God Creator (Python V1.2). Kein Python-Runtime, kein PyTorch.
+Local-first character & creature creator for game-ready assets. Native C# / .NET 10 / WPF.
 
-## Anforderungen
+**Authoritative capability status:** [`docs/audit/FINAL_RELEASE_AUDIT.md`](docs/audit/FINAL_RELEASE_AUDIT.md)  
+**Safe-reuse matrix:** [`docs/audit/SAFE_REUSE_SUBSYSTEM_MATRIX.md`](docs/audit/SAFE_REUSE_SUBSYSTEM_MATRIX.md)
 
-- .NET 10 SDK (LTS), Windows x64
-- Ziel-Framework: App `net10.0-windows`, Core/Tests `net10.0`
-- Blender (optional, für Legacy-Sculpt/Export)
+The historical feature table below is **not** the honesty source — many rows were migration aspirations. Prefer the audit.
 
-SDK-Pin: siehe `global.json`.
+## Requirements
 
-Der tatsächliche Funktionsstand (echt vs. Stub) steht in `docs/audit/V2_FEATURE_AUDIT.md`, nicht in der historischen Tabellenübersicht unten.
+- .NET 10 SDK (see `global.json`), Windows x64 for the WPF app
+- Optional: Blender (FBX path), Anny / GarmentCode workers, CUDA backends — all gated, never faked
 
-## Build & Start
+## Build & test
 
 ```powershell
-cd 3DGod-V2.0
 dotnet build
+dotnet test 3DGodCreator.Core.Tests -c Release
 dotnet run --project 3DGodCreator.App
 ```
 
-Beim ersten Build werden `assets/` und `blender_embed/` ins Ausgabeverzeichnis kopiert.
+## What works in the foundation release
 
-## Funktionen (vollständige Migration)
+- `.3dgod` project save/load with SHA-256 manifest + autosave recovery
+- Undo/redo command stack
+- Diagnostics with **Copy details** Cursor report
+- Feature gates + hardware probe (honest NotInstalled / UnsupportedHardware)
+- GLB export/import (SharpGLTF), remesh (vertex-cluster default; optional geometry3Sharp QEM backend)
+- Semantic bone map, UE5 profile preflight, LBS pose validation
+- Freeform creature distance skinning, procedural attachments (shared sockets)
+- Deterministic AI command allow-list (orchestration only)
 
-| Tab | Funktionen |
-|-----|------------|
-| **Form** | Körperform-Slider (body_parameters.json), männlich/weiblich |
-| **Sculpt** | Symmetrie, Blender-Sculpting starten |
-| **NSFW** | Anatomie-Layer (Haut, Fett, Muskeln, Knochen, Organe), NSFW-Layer |
-| **Kleidung** | Kleidung, Piercings, Tattoos laden |
-| **Physik** | Brustphysik, Stoffsimulation, Piercing-Schwingung |
-| **Material** | Material-Farben (skin, clothes, piercings, tattoos) |
-| **Presets** | Preset-Liste, laden, Screenshot speichern |
-| **Rigging** | Auto-Rig, Metahuman-Export |
-| **Export** | Preset speichern, FBX exportieren, Unreal-Export |
-| **Einstellungen** | Blender-Pfad, Theme (Dark/Light/Cyberpunk), NSFW, Controller |
-| **KI** | Text-/Bildbasierte Erzeugung (Phase 2: Stub) |
+## Explicitly gated / not claimed
 
-**F12** – Debug-Konsole ein-/ausblenden
+- Live Anny / GarmentCode / CUDA generative backends
+- Auto-rig neural workers (UniRig / SkinTokens) — NotInstalled stub behind `IAutoRigBackend`
+- Assimp FBX/DAE import, real UE5 editor import
+- Generative garment AI / local AI mesh edit (see `docs/research/`)
 
-## Blender-Pfad
+## License notices
 
-In **Einstellungen** setzen: `C:\Program Files\Blender Foundation\Blender 4.0\blender.exe`
-
-## Assets
-
-- `assets/characters/male_base.glb`, `female_base.glb` – Basis-Modelle (rigged GLB für Slider/Blender)
-- `assets/view_preview/` – Anatomie-Vorschau (HelixToolkit unterstützt kein GLB)
-
-Rigged Ersatzmodelle (für Slider-/Blender-Tests): siehe **docs/BASE_MODELS.md**
+See `THIRD_PARTY_NOTICES.txt` and `MODEL_LICENSES.json`.

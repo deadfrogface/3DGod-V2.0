@@ -21,6 +21,9 @@ public static class DeterministicAiParser
             "hörner" or "horner" or "horns" => Plan("valid", "creature.addPart", "deterministic", "slot", "horn", "family", "catalog", "op", "AddCreaturePart"),
             "rechte hand mechanisch" or "mechanical right hand" => Plan("valid", "creature.replacePart", "deterministic", "slot", "rightHand", "family", "prosthetic", "op", "ReplaceBodyPart"),
             "längere ärmel" or "laengere aermel" or "longer sleeves" => Plan("valid", "garment.parameter.delta", "deterministic", "key", "sleeveLength", "delta", "0.2"),
+            "longer tail" or "tail longer" or "längerer schwanz" or "laengerer schwanz" => Plan("valid", "parameter.delta", "deterministic", "key", "tailLength", "delta", "0.2"),
+            "gold less shiny" or "less shiny gold" or "gold weniger glänzend" or "gold weniger glaenzend" => Plan("valid", "material.pbr", "deterministic", "color", "gold", "metallic", "0.55", "roughness", "0.45"),
+            "add horns" or "hörner dazu" or "horner dazu" => Plan("valid", "creature.addPart", "deterministic", "slot", "horn", "family", "catalog", "op", "AddCreaturePart"),
             "make it nicer" or "improve" => new AiEditPlan { Status = "Ambiguous", Provider = "deterministic", Reason = "Prompt is too vague." },
             "größer und haut dunkler" or "groesser und haut dunkler" => Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.15"),
             _ => new AiEditPlan { Status = "Unsupported", Provider = "deterministic" }

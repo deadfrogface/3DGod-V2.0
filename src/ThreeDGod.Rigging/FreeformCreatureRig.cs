@@ -10,12 +10,22 @@ public static class FreeformCreatureRig
 {
     public static readonly string[] JointNames = ["hips", "spine", "head", "tail.base"];
 
+    public static readonly Vector3[] JointPositions =
+    [
+        new(0, 0.20f, 0),
+        new(0, 0.35f, 0.05f),
+        new(0, 0.47f, 0.23f),
+        new(0, 0.22f, -0.20f)
+    ];
+
     public static string WriteSkinned(
         string destinationPath,
         IReadOnlyList<Vector3> positions,
-        IReadOnlyList<int> indices)
+        IReadOnlyList<int> indices,
+        ISkinWeightSolver? weightSolver = null)
     {
-        var hips = new NodeBuilder("hips").WithLocalTranslation(new Vector3(0, 0.2f, 0));
+        var solver = weightSolver ?? new DistanceSkinWeightSolver();
+        var hips = new NodeBuilder("hips").WithLocalTranslation(JointPositions[0]);
         var spine = hips.CreateNode("spine").WithLocalTranslation(new Vector3(0, 0.15f, 0.05f));
         var head = spine.CreateNode("head").WithLocalTranslation(new Vector3(0, 0.12f, 0.18f));
         var tail = hips.CreateNode("tail.base").WithLocalTranslation(new Vector3(0, 0.02f, -0.2f));
@@ -31,7 +41,7 @@ public static class FreeformCreatureRig
             var a = indices[i];
             var b = indices[i + 1];
             var c = indices[i + 2];
-            primitive.AddTriangle(V(positions[a]), V(positions[b]), V(positions[c]));
+            primitive.AddTriangle(V(positions[a], solver), V(positions[b], solver), V(positions[c], solver));
         }
 
         var scene = new SceneBuilder();
@@ -41,15 +51,20 @@ public static class FreeformCreatureRig
         return destinationPath;
     }
 
-    private static VertexBuilder<VertexPosition, VertexEmpty, VertexJoints4> V(Vector3 p)
+    private static VertexBuilder<VertexPosition, VertexEmpty, VertexJoints4> V(Vector3 p, ISkinWeightSolver solver)
     {
-        var joint = 0;
-        if (p.Z < -0.12f)
-            joint = 3;
-        else if (p.Y > 0.38f || p.Z > 0.22f)
-            joint = 2;
-        else if (p.Y > 0.22f)
-            joint = 1;
-        return new(new VertexPosition(p), default, new VertexJoints4((joint, 1f)));
+        var weights = solver.Solve(p, JointPositions, maxInfluences: 4);
+        return new(new VertexPosition(p), default, ToVertexJoints(weights));
+    }
+
+    internal static VertexJoints4 ToVertexJoints(IReadOnlyList<BoneWeight> weights)
+    {
+        (int, float) a = (0, 0f), b = (0, 0f), c = (0, 0f), d = (0, 0f);
+        if (weights.Count > 0) a = (weights[0].BoneIndex, weights[0].Weight);
+        if (weights.Count > 1) b = (weights[1].BoneIndex, weights[1].Weight);
+        if (weights.Count > 2) c = (weights[2].BoneIndex, weights[2].Weight);
+        if (weights.Count > 3) d = (weights[3].BoneIndex, weights[3].Weight);
+        if (weights.Count == 0) a = (0, 1f);
+        return new VertexJoints4(a, b, c, d);
     }
 }

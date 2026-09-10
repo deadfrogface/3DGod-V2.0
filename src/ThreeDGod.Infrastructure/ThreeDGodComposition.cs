@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
+using ThreeDGod.Mesh;
+using ThreeDGod.Rigging;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Workers;
@@ -33,7 +35,14 @@ public static class ThreeDGodComposition
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
         services.AddSingleton<AssetLibrary>();
         services.AddSingleton<IAssetGenerationService, AiAssetPipeline>();
-        services.AddSingleton<IRemeshService, RemeshService>();
+        services.AddSingleton<IUvUnwrapper, SphericalUvUnwrapper>();
+        services.AddSingleton<IMeshProcessor>(sp => MeshProcessorSelector.Create(uv: sp.GetRequiredService<IUvUnwrapper>()));
+        services.AddSingleton<IRemeshService>(sp => new RemeshService(sp.GetRequiredService<IDiagnosticService>(), sp.GetRequiredService<IMeshProcessor>()));
+        services.AddSingleton<ISkinWeightSolver, DistanceSkinWeightSolver>();
+        services.AddSingleton<IImportService, NotInstalledImportService>();
+        services.AddSingleton<IExportService, PreferSpecificExportService>();
+        services.AddSingleton<IAutoRigBackend, NotInstalledAutoRigBackend>();
+        services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigBackend>());
         services.AddSingleton<ISkinTokensRigService, SkinTokensRigService>();
         services.AddSingleton<IRigValidator, RigValidationService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();

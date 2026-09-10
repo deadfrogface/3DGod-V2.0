@@ -49,6 +49,7 @@ public static class AiEditExecutor
                 }
             }, overwrite: false),
             "material.recolor" => Recolor(target.Material, plan),
+            "material.pbr" => AdjustPbr(target.Material, plan),
             "attachment.add" => new CollectionChangeCommand<string>(target.Human.CreatedUtc.Ticks == 0 ? Guid.NewGuid() : Guid.NewGuid(), target.Attachments, plan.Args.GetValueOrDefault("type", "attachment"), add: true, "ai.attachment.add"),
             "attachment.remove" => new CollectionChangeCommand<string>(Guid.NewGuid(), target.Attachments, plan.Args.GetValueOrDefault("type", "attachment"), add: false, "ai.attachment.remove"),
             _ => throw new InvalidOperationException("Unsupported – operation has no executor.")
@@ -84,5 +85,32 @@ public static class AiEditExecutor
         {
             material.BaseColorFactor = (ColorRgba)value!;
         }, "ai.material");
+    }
+
+    private static PropertyChangeCommand AdjustPbr(MaterialDefinition material, AiEditPlan plan)
+    {
+        var oldMetal = material.MetallicFactor;
+        var oldRough = material.RoughnessFactor;
+        var oldColor = material.BaseColorFactor;
+        var color = plan.Args.GetValueOrDefault("color", "");
+        var nextColor = color switch
+        {
+            "gold" => new ColorRgba { R = 0.83f, G = 0.69f, B = 0.22f, A = 1f },
+            "darker" => new ColorRgba { R = Math.Max(0f, oldColor.R * 0.6f), G = Math.Max(0f, oldColor.G * 0.6f), B = Math.Max(0f, oldColor.B * 0.6f), A = oldColor.A },
+            _ => oldColor
+        };
+        var nextMetal = float.Parse(plan.Args.GetValueOrDefault("metallic", oldMetal.ToString(System.Globalization.CultureInfo.InvariantCulture)), System.Globalization.CultureInfo.InvariantCulture);
+        var nextRough = float.Parse(plan.Args.GetValueOrDefault("roughness", oldRough.ToString(System.Globalization.CultureInfo.InvariantCulture)), System.Globalization.CultureInfo.InvariantCulture);
+        nextMetal = Math.Clamp(nextMetal, 0f, 1f);
+        nextRough = Math.Clamp(nextRough, 0f, 1f);
+        // Encode triple change via composite-friendly sequential property writes on metallic as primary undo unit,
+        // applying color+roughness in the same setter body.
+        return new PropertyChangeCommand(material.MaterialId, "material.pbr", (oldMetal, oldRough, oldColor), (nextMetal, nextRough, nextColor), value =>
+        {
+            var (m, r, c) = ((float, float, ColorRgba))value!;
+            material.MetallicFactor = m;
+            material.RoughnessFactor = r;
+            material.BaseColorFactor = c;
+        }, "ai.material.pbr");
     }
 }
