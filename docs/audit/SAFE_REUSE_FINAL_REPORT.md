@@ -2,6 +2,8 @@
 
 ## 1. Final commit
 
+**SHA:** `b7c40eebc4b8acef564ccf1370045f163945e70b` (`cursor/safe-reuse-verify-b322`).
+
 See tip of branch `cursor/safe-reuse-verify-b322` after this report is committed (base HEAD was `ee90b6050a9aea251f3554b84fafe308dd5dac85`).
 
 ## 2. Baseline (before)
