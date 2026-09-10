@@ -17,9 +17,9 @@ function Write-Section([string] $title) {
 function Get-GateReason([string] $message) {
     if ([string]::IsNullOrWhiteSpace($message)) { return $null }
     $clean = $message -replace '^\$XunitDynamicSkip\$', ''
-    if ($clean -match 'GATED_([A-Z_]+)') {
+    if ($clean -match '(GATED_[A-Z0-9_]+)') {
         return @{
-            Category = "GATED_" + $Matches[1]
+            Category = $Matches[1]
             Reason   = $clean.Trim()
         }
     }

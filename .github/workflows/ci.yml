@@ -3,16 +3,23 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   build-and-test:
     name: Build and Test (Windows / .NET 10)
     runs-on: windows-latest
     timeout-minutes: 45
+    outputs:
+      build_result: ${{ steps.classify.outputs.build_result }}
 
     steps:
       - name: Checkout
@@ -23,11 +30,16 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Show SDK
+      - name: Show SDK / GPU probe
         shell: pwsh
         run: |
           dotnet --info
           Get-Content global.json
+          Write-Host "GPU_PROBE:"
+          try {
+            $nvsmi = Get-Command nvidia-smi -ErrorAction SilentlyContinue
+            if ($nvsmi) { & nvidia-smi -L } else { Write-Host "nvidia-smi not found -> GATED_GPU for CUDA inference" }
+          } catch { Write-Host "GPU probe failed -> GATED_GPU" }
 
       - name: Restore
         shell: pwsh
@@ -67,10 +79,236 @@ jobs:
           & "scripts/ci/Summarize-TestResults.ps1" -TrxPath $trx -FailOnTestFailures
           if ($code -ne 0) { exit $code }
 
+      - name: Gate classification (unit job)
+        id: classify
+        if: always()
+        shell: pwsh
+        run: |
+          $build = if ("${{ steps.build.outcome }}" -eq "success") { "SUCCESS" } else { "FAILED" }
+          echo "build_result=$build" >> $env:GITHUB_OUTPUT
+          & "scripts/ci/Write-ReleaseGateClassification.ps1" `
+            -InstallerSmoke "skipped" `
+            -Anny "GATED_EXTERNAL_RUNTIME" `
+            -Garment "GATED_EXTERNAL_RUNTIME" `
+            -BuildResult $build
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: artifacts/test/
+          path: |
+            artifacts/test/
+            artifacts/gate/
+          if-no-files-found: warn
+
+  clean-install-smoke:
+    name: Clean Windows Installer Smoke
+    needs: build-and-test
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      startsWith(github.ref, 'refs/heads/release/') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
+    runs-on: windows-latest
+    timeout-minutes: 60
+    outputs:
+      installer_status: ${{ steps.smoke.outputs.installer_status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Clean install smoke (Velopack Setup.exe)
+        id: smoke
+        shell: pwsh
+        run: |
+          $ver = "2.0.0-ci.${{ github.run_number }}"
+          try {
+            & "scripts/ci/Invoke-CleanInstallSmoke.ps1" -Version $ver -Channel stable
+            if ($LASTEXITCODE -ne 0) { throw "smoke exit $LASTEXITCODE" }
+            echo "installer_status=success" >> $env:GITHUB_OUTPUT
+            Write-Host "INSTALLER_SMOKE_STATUS=SUCCESS"
+          } catch {
+            echo "installer_status=failure" >> $env:GITHUB_OUTPUT
+            Write-Host "::error::Clean install smoke failed: $_"
+            Write-Host "INSTALLER_SMOKE_STATUS=FAILED"
+            exit 1
+          }
+
+      - name: Upload installer artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-smoke
+          path: |
+            artifacts/publish/
+            artifacts/releases/
+          if-no-files-found: warn
+
+  runtime-integration:
+    name: Anny / Garment CPU Integration
+    needs: build-and-test
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      startsWith(github.ref, 'refs/heads/release/') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
+    runs-on: windows-latest
+    timeout-minutes: 90
+    outputs:
+      anny_status: ${{ steps.runtime.outputs.anny_status }}
+      garment_status: ${{ steps.runtime.outputs.garment_status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install uv
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -c "irm https://astral.sh/uv/install.ps1 | iex"
+          $uvBin = Join-Path $env:USERPROFILE ".local\bin"
+          echo $uvBin >> $env:GITHUB_PATH
+          & "$uvBin\uv.exe" --version
+
+      - name: Sync Anny + GarmentCode workers (CPU)
+        shell: pwsh
+        run: |
+          $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+          Write-Host "Syncing workers/anny (may download torch CPU wheels)..."
+          uv sync --project workers/anny --frozen
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Anny uv sync failed - exact blocker: uv sync --project workers/anny --frozen"
+            exit $LASTEXITCODE
+          }
+          Write-Host "Syncing workers/garmentcode..."
+          uv sync --project workers/garmentcode --frozen
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::GarmentCode uv sync failed - exact blocker: uv sync --project workers/garmentcode --frozen"
+            exit $LASTEXITCODE
+          }
+
+      - name: Build tests
+        shell: pwsh
+        run: |
+          dotnet build "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release -v minimal
+
+      - name: Run live CPU integration tests
+        id: runtime
+        shell: pwsh
+        env:
+          THREEDGOD_CI_RUNTIME_INTEGRATION: "1"
+        run: |
+          $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime" | Out-Null
+          $anny = "GATED_EXTERNAL_RUNTIME"
+          $garment = "GATED_EXTERNAL_RUNTIME"
+          $code = 0
+
+          Write-Host "=== Anny live generate ==="
+          dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
+            --filter "FullyQualifiedName~CiRuntimeIntegrationTests.Anny_CpuGenerate_WritesRealGlb" `
+            --logger "trx;LogFileName=anny.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime"
+          if ($LASTEXITCODE -eq 0) { $anny = "CI_VERIFIED" } else { $anny = "FAILED"; $code = 1 }
+
+          Write-Host "=== GarmentCode live jacket ==="
+          dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
+            --filter "FullyQualifiedName~CiRuntimeIntegrationTests.GarmentCode_CpuJacket_WritesRealGlb" `
+            --logger "trx;LogFileName=garment.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime"
+          if ($LASTEXITCODE -eq 0) { $garment = "CI_VERIFIED" } else { $garment = "FAILED"; $code = 1 }
+
+          echo "anny_status=$anny" >> $env:GITHUB_OUTPUT
+          echo "garment_status=$garment" >> $env:GITHUB_OUTPUT
+          Write-Host "ANNY_RUNTIME=$anny"
+          Write-Host "GARMENT_RUNTIME=$garment"
+          if ($code -ne 0) {
+            Write-Host "::error::Runtime integration failed (Anny=$anny Garment=$garment). No silent skip."
+            exit $code
+          }
+
+      - name: Upload runtime results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-integration
+          path: artifacts/runtime/
+          if-no-files-found: warn
+
+  release-gate-summary:
+    name: Release Gate Summary
+    needs: [build-and-test, clean-install-smoke, runtime-integration]
+    if: always()
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Summarize gates
+        shell: pwsh
+        run: |
+          $installer = "${{ needs.clean-install-smoke.outputs.installer_status }}"
+          if ([string]::IsNullOrWhiteSpace($installer)) {
+            if ("${{ needs.clean-install-smoke.result }}" -eq "skipped") { $installer = "skipped" }
+            elseif ("${{ needs.clean-install-smoke.result }}" -eq "failure") { $installer = "failure" }
+            else { $installer = "unknown" }
+          }
+          $anny = "${{ needs.runtime-integration.outputs.anny_status }}"
+          if ([string]::IsNullOrWhiteSpace($anny)) {
+            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $anny = "GATED_EXTERNAL_RUNTIME" }
+            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $anny = "FAILED" }
+            else { $anny = "unknown" }
+          }
+          $garment = "${{ needs.runtime-integration.outputs.garment_status }}"
+          if ([string]::IsNullOrWhiteSpace($garment)) {
+            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $garment = "GATED_EXTERNAL_RUNTIME" }
+            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $garment = "FAILED" }
+            else { $garment = "unknown" }
+          }
+          $build = "${{ needs.build-and-test.outputs.build_result }}"
+          if ([string]::IsNullOrWhiteSpace($build)) { $build = "${{ needs.build-and-test.result }}" }
+
+          & "scripts/ci/Write-ReleaseGateClassification.ps1" `
+            -InstallerSmoke $installer `
+            -Anny $anny `
+            -Garment $garment `
+            -BuildResult $build
+
+          Write-Host ""
+          Write-Host "JOB_RESULTS:"
+          Write-Host "  build-and-test: ${{ needs.build-and-test.result }}"
+          Write-Host "  clean-install-smoke: ${{ needs.clean-install-smoke.result }}"
+          Write-Host "  runtime-integration: ${{ needs.runtime-integration.result }}"
+
+          $fail = $false
+          if ("${{ needs.build-and-test.result }}" -ne "success") { $fail = $true }
+          if ("${{ needs.clean-install-smoke.result }}" -eq "failure") { $fail = $true }
+          if ("${{ needs.runtime-integration.result }}" -eq "failure") { $fail = $true }
+          if ($fail) {
+            Write-Host "::error::Release gate summary detected failing required jobs"
+            exit 1
+          }
+
+      - name: Upload gate classification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-classification
+          path: artifacts/gate/
           if-no-files-found: warn
