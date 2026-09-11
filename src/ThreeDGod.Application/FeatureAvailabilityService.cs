@@ -19,7 +19,7 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
         FeatureIds.AiGenerateAsset => FeatureAvailability.NotImplemented,
         FeatureIds.ControllerInput => FeatureAvailability.NotImplemented,
         FeatureIds.ExportUnreal => FeatureAvailability.NotImplemented,
-        FeatureIds.HeightMorph => FeatureAvailability.NotImplemented,
+        FeatureIds.HeightMorph => FeatureAvailability.Experimental,
         FeatureIds.ConfigSave => FeatureAvailability.Available,
         _ => FeatureAvailability.NotImplemented
     };
@@ -55,7 +55,7 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
             FeatureIds.ControllerInput =>
                 "NotImplemented – Checkbox steuert kein Gamepad.",
             FeatureIds.HeightMorph =>
-                "NotImplemented – Height is uniform scale, not anatomical morphing.",
+                "Experimental – Height maps to Anny phenotype/local keys (AnnyHeightMorph); mesh must be regenerated, not uniformly scaled.",
             FeatureIds.ConfigSave => "Available – Config-JSON wird gespeichert.",
             _ => GetStatus(featureId) switch
             {
