@@ -250,8 +250,6 @@ public partial class SettingsPanel : UserControl, ILocalizableView
             MessageBox.Show($"Log-Ordner konnte nicht geöffnet werden: {ex.Message}", "Logs", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
-}
-
 
     private void BtnComponents_Click(object sender, RoutedEventArgs e)
     {
@@ -263,3 +261,4 @@ public partial class SettingsPanel : UserControl, ILocalizableView
         var dlg = new SetupAssistantWindow(_components, _uvInstaller) { Owner = _mainWindow };
         dlg.ShowDialog();
     }
+}

@@ -140,7 +140,7 @@ public partial class MainWindow : Window, ILocalizableView
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, () => _currentPreviewPath);
-        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
+        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features, _components, _uvInstaller);
         AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
         _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);
         ProblemsPanel.Content = _problemsPanel;
