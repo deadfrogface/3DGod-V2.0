@@ -54,17 +54,17 @@ Proof tip live tests (runtime-integration job):
 | Anny product path | WRAP/ADAPT | naver/anny | existing worker + uv.lock | manifests + installer | **CI_VERIFIED** on `63de6cd` |
 | Anny height morph | ADAPT | — | Anny phenotype keys | no uniform scale; FeatureAvailability Experimental | PASS (unit); live mesh via Anny generate **CI_VERIFIED** path; dedicated taller-delta mesh assert still Experimental |
 | GarmentCode | WRAP/KEEP | maria-korosteleva/GarmentCode | pygarment worker | NiceGUI unused by headless | **CI_VERIFIED** on `63de6cd`; further prune **PARTIAL** |
-| TripoSR | WRAP candidate | VAST-AI TripoSR | provider stubs | no fake inference | GATED_MODEL / NotInstalled |
-| SF3D | REJECT for now | Stability SF3D | routing/license gates | — | GATED_LICENSE + GATED_HARDWARE |
-| SPAR3D | REJECT for now | Stability SPAR3D | routing/license gates | — | GATED_LICENSE + GATED_HARDWARE |
-| FLUX.1-schnell | OPTIONAL WRAP | BFL FLUX | ComponentManager gates | non-commercial variants forbidden | GATED_MODEL / GATED_HARDWARE |
-| LLamaSharp | KEEP parser + WRAP LLM | SciSharp LLamaSharp | deterministic parser | free-form only with schema | GATED_MODEL without GGUF |
-| SkinTokens | DO NOT INTEGRATE yet | VAST SkinTokens | stubs | — | GATED_LICENSE / GATED_HARDWARE |
-| meshoptimizer | KEEP current | zeux/meshoptimizer | optional QEM already evaluated | no mandatory replace | KEEP (prior safe-reuse) |
-| xatlas | REJECT | jpcy/xatlas | — | packaging cost | REJECTED (prior doc) |
+| TripoSR | WRAP candidate | VAST-AI TripoSR | provider stubs + packaging NotInstalled | no fake inference; Setup Assistant install only with URL/local source | **GATED_MODEL** / NotInstalled |
+| SF3D | **REJECT** this cycle | Stability SF3D | routing/license gates | Setup Assistant CanInstall=false | **REJECTED** (`STAGE13_SF3D_SPAR3D_DECISION.md`) |
+| SPAR3D | **REJECT** this cycle | Stability SPAR3D | routing/license gates | Setup Assistant CanInstall=false | **REJECTED** (`STAGE13_SF3D_SPAR3D_DECISION.md`) |
+| FLUX.1-schnell | OPTIONAL WRAP | BFL FLUX.1-schnell (Apache-2.0) | ComponentManager gates | non-commercial FLUX variants forbidden | **GATED_MODEL** / NotInstalled |
+| LLamaSharp | KEEP parser + WRAP LLM | SciSharp LLamaSharp | deterministic parser | free-form only with schema | **GATED_MODEL** without GGUF |
+| SkinTokens | **DO NOT INTEGRATE** | VAST SkinTokens | stubs | Setup Assistant CanInstall=false | **GATED_LICENSE** + **GATED_HARDWARE** (`STAGE16_SKINTOKENS_DECISION.md`) |
+| meshoptimizer | KEEP current | zeux/meshoptimizer | optional QEM already evaluated | no mandatory replace; no native PackageReference | **KEEP** (`STAGE17_MESHOPT_XATLAS_DECISION.md`) |
+| xatlas | REJECT | jpcy/xatlas | — | packaging cost; no PackageReference | **REJECTED** (`STAGE17_MESHOPT_XATLAS_DECISION.md`) |
 | Blender export | KEEP | — | headless FBX path | — | PASS (existing unit); live Blender **GATED_NOT_INSTALLED** on stock runners |
-| UE5 | KEEP preflight | Blender-For-UnrealEngine (GPL ref only) | no GPL copy-in | — | GATED_UE5 |
-| FlaUI | WRAP tests only | FlaUI | — | not in production | GATED_EXTERNAL_RUNNER; InstalledAppSmoke via installer job |
+| UE5 | KEEP preflight | Blender-For-UnrealEngine (GPL ref only) | no GPL copy-in | — | **GATED_UE5** |
+| FlaUI | DO NOT add to CI | FlaUI | — | not in production | **GATED_EXTERNAL_RUNNER** (`STAGE19_FLAUI_DECISION.md`); InstalledAppSmoke baseline |
 | build.ps1 | CUSTOM_BUILD | — | packaging scripts | CI build-and-test calls build.ps1 | PASS |
 
 ## Repositories REJECTED / deferred
@@ -80,11 +80,13 @@ Proof tip live tests (runtime-integration job):
 | xatlas | Native packaging burden outweighs UV gain |
 | Blender-For-UnrealEngine add-on | GPL-3.0 — reference only, not copied into Core |
 
-## Honest gaps (remaining)
+## Honest gaps (remaining — external only)
 
-1. Height morph is phenotype-parameter based with unit coverage; a dedicated taller-delta live mesh golden is still Experimental / not a separate CI filter beyond Anny generate.
-2. Stages 12–16/18–19 remain gated on models, licenses, UE5, GPU, or desktop automation (FlaUI).
-3. Product end-user ComponentManager uv install path is implemented and worker locks match CI; UI-driven install was not separately FlaUI-proven.
+1. **GATED_MODEL:** TripoSR / FLUX.1-schnell / LLamaSharp GGUF — no pinned verified checkpoints on CI runners.
+2. **GATED_LICENSE + GATED_HARDWARE:** SkinTokens (and rejected SF3D/SPAR3D) pending commercial/VRAM clearance.
+3. **GATED_UE5 / GATED_GPU / GATED_NOT_INSTALLED:** real Unreal import, CUDA models, live Blender on stock runners.
+4. **GATED_EXTERNAL_RUNNER:** FlaUI desktop automation; InstalledAppSmoke remains the installer baseline.
+5. Height morph dedicated taller-delta live mesh golden remains Experimental (Anny generate path is CI_VERIFIED).
 
 ## Migration commits (Stage 4+)
 
@@ -94,4 +96,6 @@ Proof tip live tests (runtime-integration job):
 4. `5e60258` SettingsPanel brace fix  
 5. `13f8a87` MainWindow usings fix  
 6. `63de6cd` enable `cursor/*` heavy CI gates + draft final report  
-7. *(this commit)* finalize FINAL REPORT with GHA proof URLs and CI_VERIFIED gates  
+7. `33eec12` finalize FINAL REPORT with GHA proof URLs and CI_VERIFIED gates  
+8. *(follow-up)* Stages 12–19 honesty: Setup Assistant install gates, REJECT/KEEP decision docs, packaging license retarget  
+
