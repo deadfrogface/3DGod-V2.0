@@ -1,7 +1,7 @@
 # FINAL AUDIT — Stages 4–19 (SAFE REUSE continuation)
 
 **Accepted baseline:** `ee90b6050a9aea251f3554b84fafe308dd5dac85`  
-**FINAL COMMIT SHA (full gate proof tip):** `63de6cd630095f52d72fe082c9d3e0aca0a1cbbb`  
+**FINAL COMMIT SHA (full gate proof tip):** `f6063e9e40a583c94706c1f5152fad8e3f632b79`  
 **PR:** https://github.com/deadfrogface/3DGod-V2.0/pull/4  
 **Base:** `cursor/safe-reuse-verify-b322`  
 **Branch:** `cursor/stage4-through-19-b322`
@@ -27,6 +27,7 @@ Stage 4–11 product wiring is **PASS** on Windows CI with honest gates retained
 | [34544734590](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34544734590) | `1af380c` Stage 4 | SUCCESS | Build+Test; heavy jobs skipped by prior path policy |
 | [34546839170](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34546839170) | `13f8a87` usings fix | SUCCESS | Build+Test + Release Gate; Installer/Anny/Garment still skipped |
 | **[34547315306](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34547315306)** | **`63de6cd`** | **SUCCESS** | **All four jobs success:** Build+Test, Clean Installer Smoke, Anny/Garment CPU, Release Gate |
+| **[34698366244](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34698366244)** | **`f6063e9`** Stage 12–19 honesty | **SUCCESS** | Build+Test, Clean Installer Smoke, Anny/Garment CPU, Release Gate all success; INSTALLER/ANNY/GARMENT=CI_VERIFIED |
 | [34547318896](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34547318896) | `63de6cd` (PR) | SUCCESS | Same four jobs success on pull_request event |
 
 Proof tip live tests (runtime-integration job):
@@ -97,5 +98,5 @@ Proof tip live tests (runtime-integration job):
 5. `13f8a87` MainWindow usings fix  
 6. `63de6cd` enable `cursor/*` heavy CI gates + draft final report  
 7. `33eec12` finalize FINAL REPORT with GHA proof URLs and CI_VERIFIED gates  
-8. *(follow-up)* Stages 12–19 honesty: Setup Assistant install gates, REJECT/KEEP decision docs, packaging license retarget  
+8. `9f14e69`…`f6063e9` Stages 12–19 honesty: Setup Assistant install gates, REJECT/KEEP docs, packaging retarget, honesty tests, final audit tip  
 
