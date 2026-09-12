@@ -34,6 +34,16 @@ public sealed class SetupFeatureStatus
 
 public static class SetupAssistantCatalog
 {
+    /// <summary>
+    /// Providers that must never offer Setup Assistant install until an explicit product decision reverses the reject/gate.
+    /// </summary>
+    private static readonly HashSet<string> InstallRejectedIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "sf3d",
+        "spar3d",
+        "skintokens"
+    };
+
     public static IReadOnlyList<SetupFeatureDescriptor> Features { get; } =
     [
         new()
@@ -85,9 +95,9 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.Advanced3DQuality,
             Title = "Advanced 3D Quality",
-            Description = "Optional higher-quality image→3D backends when licensed and hardware-ready.",
+            Description = "SF3D/SPAR3D rejected for this cycle — license/hardware/product win not cleared vs TripoSR.",
             PrimaryComponentId = "sf3d",
-            AdvancedBackendName = "SF3D / SPAR3D",
+            AdvancedBackendName = "SF3D / SPAR3D (REJECTED)",
             Optional = true
         },
         new()
@@ -116,8 +126,34 @@ public static class SetupAssistantCatalog
                 };
             }
 
-            if (!manifests.ContainsKey(feature.PrimaryComponentId) &&
-                feature.PrimaryComponentId is "triposr" or "flux" or "sf3d" or "skintokens" or "blender")
+            var id = feature.PrimaryComponentId;
+            if (InstallRejectedIds.Contains(id))
+            {
+                var rejectedState = manifests.TryGetValue(id, out _)
+                    ? components.GetState(id)
+                    : new ComponentRecord
+                    {
+                        ComponentId = id,
+                        State = ComponentState.DownloadUnavailable,
+                        Message = "Rejected for this cycle."
+                    };
+                return new SetupFeatureStatus
+                {
+                    Feature = feature,
+                    State = rejectedState.State is ComponentState.Ready
+                        ? ComponentState.DownloadUnavailable
+                        : rejectedState.State,
+                    Message = id is "skintokens"
+                        ? "GATED_LICENSE / GATED_HARDWARE – SkinTokens is not integrated until license + VRAM are cleared."
+                        : "REJECTED – SF3D/SPAR3D not selected for product install this cycle (see docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md).",
+                    CanInstall = false,
+                    CanRepair = false,
+                    CanRemove = rejectedState.State is ComponentState.Ready or ComponentState.Broken
+                };
+            }
+
+            if (!manifests.TryGetValue(id, out var manifest) &&
+                id is "triposr" or "flux" or "sf3d" or "skintokens" or "blender")
             {
                 return new SetupFeatureStatus
                 {
@@ -128,16 +164,43 @@ public static class SetupAssistantCatalog
                 };
             }
 
-            var state = components.GetState(feature.PrimaryComponentId);
+            var state = components.GetState(id);
             return new SetupFeatureStatus
             {
                 Feature = feature,
                 State = state.State,
                 Message = state.Message,
-                CanInstall = state.State is ComponentState.NotInstalled or ComponentState.Optional or ComponentState.Broken or ComponentState.DownloadUnavailable,
+                CanInstall = CanOfferInstall(manifest, state.State),
                 CanRepair = state.State is ComponentState.Ready or ComponentState.Broken or ComponentState.UpdateAvailable,
                 CanRemove = state.State is ComponentState.Ready or ComponentState.Broken or ComponentState.UpdateAvailable
             };
         }).ToList();
+    }
+
+    /// <summary>
+    /// Install is offered only when a real local source or download URL exists.
+    /// DownloadUnavailable / LicenseBlocked / HardwareUnsupported never claim installability.
+    /// </summary>
+    public static bool CanOfferInstall(ComponentManifest? manifest, ComponentState state)
+    {
+        if (state is ComponentState.DownloadUnavailable
+            or ComponentState.LicenseBlocked
+            or ComponentState.HardwareUnsupported
+            or ComponentState.Ready
+            or ComponentState.Installing
+            or ComponentState.Unknown)
+            return false;
+
+        if (state is not (ComponentState.NotInstalled or ComponentState.Optional or ComponentState.Broken or ComponentState.UpdateAvailable))
+            return false;
+
+        if (manifest is null)
+            return false;
+
+        if (InstallRejectedIds.Contains(manifest.ComponentId))
+            return false;
+
+        return !string.IsNullOrWhiteSpace(manifest.DownloadUrl)
+               || !string.IsNullOrWhiteSpace(manifest.LocalSourceHint);
     }
 }
