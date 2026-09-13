@@ -1,30 +1,32 @@
-# Stage 13 — SF3D / SPAR3D decision
+# Stage 13 — SF3D / SPAR3D re-evaluation (post TripoSR PASS_REAL)
 
-**Decision: REJECT for product install this cycle.**
+**Decision: KEEP REJECTED_WITH_EVIDENCE for product install this cycle.**
 
-## Comparison vs TripoSR (Stage 12)
+## Evidence after Stage 12 TripoSR PASS_REAL
 
-| Criterion | TripoSR | SF3D | SPAR3D |
-|-----------|---------|------|--------|
-| License clarity for commercial shipping | MIT (clear) | Stability Community (accept + attribution; product risk) | Stability Community |
-| Typical VRAM | CPU-capable path documented | ≥8 GB CUDA | ≥6–12 GB CUDA profiles |
-| Windows packaging cost | High (checkpoint + worker) | Higher (license UX + CUDA) | Higher |
-| Product win over TripoSR | Baseline WRAP candidate | Unclear quality/ops win | Unclear quality/ops win |
+Local TripoSR CPU path produced a real GLB (`chair.png` → ~97KB, 2454 verts, finite bounds).
+That establishes a working Image→3D baseline without Stability Community License UX.
 
-## Why reject now
+| Criterion | TripoSR (now PASS_REAL) | SF3D | SPAR3D |
+|-----------|-------------------------|------|--------|
+| Commercial license clarity | MIT | Stability Community (accept + attribution) | Stability Community |
+| Real product inference in-tree | Yes (CPU SUPPORTED_BUT_SLOW) | No worker | No worker |
+| Extra VRAM / CUDA requirement | Optional | Strongly preferred ≥8GB | ≥6–12GB profiles |
+| Setup / maintenance cost | One WRAP worker | Second stack + license gate UX | Second stack |
+| Measured quality win vs TripoSR | Baseline | Not measured on target HW | Not measured |
 
-1. No measured product win (quality / runtime / support cost) that justifies a second Image→3D stack.
-2. Stability Community License requires accept-flow + attribution; not cleared for default Setup Assistant install.
-3. CUDA/VRAM gates would hide the feature on most CI and many end-user machines.
+## Why still reject
 
-## What remains in tree
+1. No side-by-side quality/VRAM benchmark shows a product win worth a second Image→3D backend.
+2. Stability Community License is still not cleared for default Setup Assistant install.
+3. Adding SF3D/SPAR3D now would duplicate packaging/ops without replacing TripoSR.
 
-- Honest `NotInstalled` / license / hardware probes in `ImageTo3DService`
-- Packaging manifests under `docs/packaging/workers/{sf3d,spar3d}.manifest.json` with **no download URL**
-- Setup Assistant **CanInstall = false** for `sf3d` / `spar3d`
+## What remains
+
+- `CanInstall=false` for `sf3d` / `spar3d` in Setup Assistant (`InstallRejectedIds`)
+- Packaging manifests with null download URLs
+- Honest probes only — no fake meshes
 
 ## Revisit when
 
-- Commercial license path is signed off, **and**
-- Side-by-side quality/VRAM benchmarks beat TripoSR on target hardware, **and**
-- A pinned release ZIP + SHA exists for ComponentManager.
+Signed commercial clearance **and** pinned release ZIP+SHA **and** measured win over TripoSR on target hardware.

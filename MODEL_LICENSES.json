@@ -117,10 +117,12 @@
       "kind": "model-backend",
       "licenseId": "mit",
       "licenseRef": "docs/audit/PHASE_26_REPORT.md",
-      "shippingStatus": "not-shipping",
+      "shippingStatus": "optional-download",
       "commercialUse": true,
       "requiresUserAccept": false,
-      "verified": false
+      "verified": true,
+      "notes": "MIT checkpoint stabilityai/TripoSR model.ckpt; worker WRAP VAST-AI-Research/TripoSR@107cefdc. CPU PASS_REAL (SUPPORTED_BUT_SLOW).",
+      "checkpointSha256": "429e2c6b22a0923967459de24d67f05962b235f79cde6b032aa7ed2ffcd970ee"
     },
     {
       "id": "llama",
