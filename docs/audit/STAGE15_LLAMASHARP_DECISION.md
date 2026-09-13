@@ -26,6 +26,12 @@
 - `give him broader shoulders` → `status=valid`, `operation=morph.local`
 - Invalid JSON from model → rejected (honest)
 
+## Packaging note
+
+`LLamaSharp.Backend.Cpu` ships AVX variants under `runtimes/<rid>/native/{noavx,avx,avx2,avx512}/`.
+`Directory.Build.targets` rewrites publish `RelativePath` so Velopack/`dotnet publish` keeps that hierarchy
+(avoids `NETSDK1152` from flattened duplicate DLL names).
+
 ## Security
 
 No shell, URLs, filesystem, reflection, or plugin ops in allow-list.
