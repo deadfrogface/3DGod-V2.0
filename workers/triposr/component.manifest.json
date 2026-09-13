@@ -1,0 +1,22 @@
+{
+  "manifestVersion": 1,
+  "componentId": "triposr",
+  "displayName": "Image → 3D",
+  "packageVersion": "0.1.0",
+  "licenseId": "mit",
+  "licenseAcceptedRequired": false,
+  "optional": true,
+  "featureId": "image.to3d",
+  "localSourceHint": "workers/triposr",
+  "hardware": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "minDiskFreeBytes": 4000000000
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "triposr_worker.py" },
+    { "kind": "FileExists", "target": "uv.lock" },
+    { "kind": "WorkerPing", "target": "triposr_worker.py" }
+  ],
+  "notes": "WRAP VAST-AI-Research/TripoSR@107cefdc + stabilityai/TripoSR model.ckpt (MIT). CPU = SUPPORTED_BUT_SLOW."
+}

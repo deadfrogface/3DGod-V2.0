@@ -1,6 +1,7 @@
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Workers;
 
 namespace ThreeDGod.Infrastructure;
 
@@ -47,15 +48,27 @@ public sealed class ImageTo3DService : IImageTo3DService
     public Task<string> GenerateGlbAsync(string imagePath, string destinationGlb, string backendId = "triposr", CancellationToken cancellationToken = default)
     {
         var status = ImageTo3DRuntime.Probe(backendId);
-        return PipelineTrace.RunAsync<string>(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+        if (status.Availability is FeatureAvailability.NotInstalled
+            or FeatureAvailability.UnsupportedHardware
+            or FeatureAvailability.Disabled)
         {
-            var message = status.Availability is FeatureAvailability.NotInstalled
-                or FeatureAvailability.UnsupportedHardware
-                or FeatureAvailability.Disabled
-                ? status.Message
-                : $"NotInstalled – {backendId} checkpoint/runtime is not verified. No mesh will be generated.";
-            return Task.FromException<string>(new InvalidOperationException(message));
-        }, provider: backendId);
+            return PipelineTrace.RunAsync<string>(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+                Task.FromException<string>(new InvalidOperationException(status.Message)), provider: backendId);
+        }
+
+        if (string.Equals(backendId, "triposr", StringComparison.OrdinalIgnoreCase))
+        {
+            return PipelineTrace.RunAsync(_diagnostics, "AI", "ImageTo3D.Generate", async () =>
+            {
+                await using var triposr = new TripoSrService(new WorkerProcessHost(_diagnostics), _diagnostics);
+                return await triposr.GenerateGlbAsync(imagePath, destinationGlb, cancellationToken).ConfigureAwait(false);
+            }, provider: backendId);
+        }
+
+        return PipelineTrace.RunAsync<string>(_diagnostics, "AI", "ImageTo3D.Generate", () =>
+            Task.FromException<string>(new InvalidOperationException(
+                $"NotInstalled – {backendId} checkpoint/runtime is not verified. No mesh will be generated.")),
+            provider: backendId);
     }
 
     public MeshAsset AttachExistingGlb(string glbPath, ProjectBundle bundle, string backendId = "import")

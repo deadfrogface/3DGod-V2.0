@@ -17,8 +17,10 @@ public class Stage12Through19HonestyTests
             var snap = SetupAssistantCatalog.Snapshot(mgr);
 
             var image = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.ImageTo3D);
-            Assert.False(image.CanInstall);
             Assert.Equal("triposr", image.Feature.PrimaryComponentId);
+            var triposr = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "triposr");
+            Assert.False(string.IsNullOrWhiteSpace(triposr.LocalSourceHint));
+            Assert.True(image.CanInstall);
 
             var flux = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.TextToCharacter);
             Assert.False(flux.CanInstall);
@@ -54,7 +56,7 @@ public class Stage12Through19HonestyTests
             ComponentState.Optional));
 
         Assert.True(SetupAssistantCatalog.CanOfferInstall(
-            new ComponentManifest { ComponentId = "anny", LocalSourceHint = "workers/anny" },
+            new ComponentManifest { ComponentId = "triposr", LocalSourceHint = "workers/triposr" },
             ComponentState.Optional));
 
         Assert.False(SetupAssistantCatalog.CanOfferInstall(

@@ -2,7 +2,7 @@
 
 | Stage | Provider | Decision | State |
 |------|----------|----------|-------|
-| 12 | TripoSR | WRAP candidate (worker) | **GATED_MODEL** / NotInstalled until pinned package+worker land; Setup Assistant install only with download URL or local source |
+| 12 | TripoSR | WRAP worker (`workers/triposr`) | **PASS_REAL** – local CPU inference wrote real GLB (chair.png → ~97KB, 2454 verts). SUPPORTED_BUT_SLOW on CPU; CUDA recommended. |
 | 13 | SF3D / SPAR3D | **REJECT** this cycle | `STAGE13_SF3D_SPAR3D_DECISION.md`; Setup Assistant CanInstall=false |
 | 14 | FLUX.1-schnell | OPTIONAL WRAP (Apache-2.0 only) | **GATED_MODEL** / NotInstalled; non-commercial FLUX variants forbidden |
 | 15 | LLamaSharp | KEEP deterministic parser; LLM only for free-form | **GATED_MODEL** without verified GGUF mapping |
