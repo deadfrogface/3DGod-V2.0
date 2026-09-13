@@ -183,7 +183,7 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 | Field | Value |
 |-------|-------|
 | Branch | `cursor/online-runtime-validation-b322` |
-| Tip SHA | _(filled after commit)_ |
+| Tip SHA | `36e34d07671fc936d6f3a41212a3a939c5cc61f5` |
 | PR URL | _(filled after PR)_ |
 | CI run URL(s) | _(filled after Actions)_ |
 | Report path | `docs/audit/ONLINE_RUNTIME_VALIDATION_REPORT.md` |
