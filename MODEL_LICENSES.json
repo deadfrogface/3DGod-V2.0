@@ -65,11 +65,11 @@
     {
       "id": "flux",
       "kind": "model-backend",
-      "licenseId": "flux-dev-non-commercial",
+      "licenseId": "apache-2.0",
       "licenseRef": "docs/research/LOCAL_AI_EDIT_DECISION.md",
       "shippingStatus": "not-shipping",
-      "commercialUse": false,
-      "requiresUserAccept": true,
+      "commercialUse": true,
+      "requiresUserAccept": false,
       "verified": false
     },
     {
@@ -86,8 +86,8 @@
       "id": "sf3d",
       "kind": "model-backend",
       "licenseId": "stability-community",
-      "licenseRef": "docs/audit/PHASE_27_REPORT.md",
-      "shippingStatus": "optional",
+      "licenseRef": "docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md",
+      "shippingStatus": "rejected",
       "commercialUse": true,
       "requiresUserAccept": true,
       "verified": false
@@ -96,8 +96,8 @@
       "id": "spar3d",
       "kind": "model-backend",
       "licenseId": "stability-community",
-      "licenseRef": "docs/audit/PHASE_28_REPORT.md",
-      "shippingStatus": "optional",
+      "licenseRef": "docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md",
+      "shippingStatus": "rejected",
       "commercialUse": true,
       "requiresUserAccept": true,
       "verified": false

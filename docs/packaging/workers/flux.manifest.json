@@ -1,10 +1,10 @@
 {
   "manifestVersion": 1,
   "workerId": "flux",
-  "displayName": "FLUX Reference Image Backend",
+  "displayName": "FLUX.1-schnell Reference Image Backend",
   "status": "NotInstalled",
   "packageVersion": "0.0.0",
-  "licenseId": "flux-dev-non-commercial",
+  "licenseId": "apache-2.0",
   "licenseRef": "docs/research/LOCAL_AI_EDIT_DECISION.md",
   "includedInBaseInstaller": false,
   "model": {
@@ -22,6 +22,6 @@
     "requiresCuda": true,
     "requiresUv": false,
     "requiresBlender": false,
-    "notes": "Checkpoint installed via ModelManager to %LocalAppData%/3DGod/Models/flux. Not bundled."
+    "notes": "Only FLUX.1-schnell (Apache-2.0) is eligible. Non-commercial FLUX variants are forbidden. GATED_MODEL until pinned checkpoint ZIP+SHA exists."
   }
 }

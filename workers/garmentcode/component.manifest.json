@@ -1,0 +1,21 @@
+{
+  "manifestVersion": 1,
+  "componentId": "garmentcode",
+  "displayName": "Parametric Clothing",
+  "packageVersion": "0.1.0",
+  "licenseId": "mit",
+  "licenseAcceptedRequired": true,
+  "optional": true,
+  "featureId": "clothing.parametric",
+  "localSourceHint": "workers/garmentcode",
+  "hardware": {
+    "minVramMb": 0,
+    "requiresCuda": false
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "garmentcode_worker.py" },
+    { "kind": "FileExists", "target": "uv.lock" },
+    { "kind": "WorkerPing", "target": "garmentcode_worker.py" }
+  ],
+  "notes": "CI_VERIFIED via uv. Production deps stay pygarment-focused; NiceGUI not used by headless worker."
+}

@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "componentId": "echo",
+  "displayName": "Echo Demo Worker",
+  "packageVersion": "1.0.0",
+  "licenseId": "mit",
+  "licenseAcceptedRequired": true,
+  "optional": true,
+  "healthChecks": [
+    { "kind": "FileExists", "target": "echo_worker.py" },
+    { "kind": "WorkerPing", "target": "echo_worker.py" }
+  ],
+  "notes": "Demo component for ComponentManager / ModelManager install path."
+}

@@ -50,14 +50,35 @@ public static class AnnyRuntime
 
     public static string? FindUv()
     {
-        var local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "uv.exe");
-        if (File.Exists(local))
-            return local;
+        // Prefer app-managed pinned uv (ComponentManager / UvProvisioner), never require a global install.
+        var managedRoot = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "3DGod",
+            "runtime",
+            "uv");
+        if (Directory.Exists(managedRoot))
+        {
+            foreach (var candidate in Directory.EnumerateFiles(managedRoot, OperatingSystem.IsWindows() ? "uv.exe" : "uv", SearchOption.AllDirectories)
+                         .OrderByDescending(p => p))
+                return candidate;
+        }
+
+        var localUnix = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "uv");
+        if (File.Exists(localUnix))
+            return localUnix;
+        var localWin = localUnix + ".exe";
+        if (File.Exists(localWin))
+            return localWin;
+
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
-            var candidate = Path.Combine(dir, "uv.exe");
-            if (File.Exists(candidate))
-                return candidate;
+            if (string.IsNullOrWhiteSpace(dir)) continue;
+            var uv = Path.Combine(dir, OperatingSystem.IsWindows() ? "uv.exe" : "uv");
+            if (File.Exists(uv))
+                return uv;
+            var uvExe = Path.Combine(dir, "uv.exe");
+            if (File.Exists(uvExe))
+                return uvExe;
         }
         return null;
     }

@@ -59,7 +59,8 @@
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                 <Button x:Name="BtnTestBlender" Content="Test runtime" Padding="12,6" Margin="0,0,8,0" Click="BtnTestBlender_Click"/>
                 <Button x:Name="BtnDiagnostics" Content="System check" Padding="12,6" Margin="0,0,8,0" Click="BtnDiagnostics_Click"/>
-                <Button x:Name="BtnOpenLogs" Content="Open log folder" Padding="12,6" Click="BtnOpenLogs_Click"/>
+                <Button x:Name="BtnOpenLogs" Content="Open log folder" Padding="12,6" Margin="0,0,8,0" Click="BtnOpenLogs_Click"/>
+                <Button x:Name="BtnComponents" Content="Components…" Padding="12,6" Click="BtnComponents_Click"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

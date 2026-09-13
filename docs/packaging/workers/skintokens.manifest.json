@@ -5,7 +5,7 @@
   "status": "NotInstalled",
   "packageVersion": "0.0.0",
   "licenseId": "pending-review",
-  "licenseRef": "docs/audit/V2_FEATURE_AUDIT.md",
+  "licenseRef": "docs/audit/STAGE16_SKINTOKENS_DECISION.md",
   "includedInBaseInstaller": false,
   "model": {
     "checkpointHash": null,
@@ -22,6 +22,6 @@
     "requiresCuda": true,
     "requiresUv": false,
     "requiresBlender": false,
-    "notes": "Unverified checkpoint – blocked from production release until license record added."
+    "notes": "DO NOT INTEGRATE – license/provenance/VRAM not cleared (Stage 16)."
   }
 }

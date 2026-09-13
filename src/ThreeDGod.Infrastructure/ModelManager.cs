@@ -72,12 +72,35 @@ public sealed class ModelManager
         };
     }
 
-    public bool Verify(ModelPackageRecord record)
+    /// <summary>
+    /// Verifies an install directory. Prefer manifest-driven
+    /// <see cref="Components.ComponentHealthCheckRunner"/> for product components.
+    /// The optional <paramref name="requiredRelativePaths"/> replaces the old hard-coded
+    /// echo_worker.py assumption when provided.
+    /// </summary>
+    public bool Verify(ModelPackageRecord record, IReadOnlyList<string>? requiredRelativePaths = null)
     {
         if (!Directory.Exists(record.InstallPath))
             return false;
-        var marker = Path.Combine(record.InstallPath, "echo_worker.py");
-        return File.Exists(marker);
+
+        // Backward-compatible default for legacy demo packages/tests.
+        var required = requiredRelativePaths is { Count: > 0 }
+            ? requiredRelativePaths
+            : ["echo_worker.py"];
+
+        foreach (var relative in required)
+        {
+            var full = Path.GetFullPath(Path.Combine(record.InstallPath, relative));
+            var root = Path.GetFullPath(record.InstallPath);
+            if (!root.EndsWith(Path.DirectorySeparatorChar))
+                root += Path.DirectorySeparatorChar;
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (!File.Exists(full) && !Directory.Exists(full))
+                return false;
+        }
+
+        return true;
     }
 
     public Task<ModelPackageRecord> RepairAsync(string packageId, string sourceZip, string expectedSha256, CancellationToken cancellationToken = default) =>
