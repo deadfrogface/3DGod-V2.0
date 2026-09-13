@@ -1,6 +1,6 @@
 # Final remaining-work report (FLUX / SkinTokens / UE5 / FlaUI)
 
-**Branch tip:** `082f480a1c35bac742c762175f6ac97aac2a4ec7`  
+**Branch tip:** `fb35b06afd23ff9e09f13a053133c3256b95e362`  
 **Base (`main`):** `8eeaffff32a1e223d5c236e2230f959824514f5b`  
 **PR:** https://github.com/deadfrogface/3DGod-V2.0/pull/6
 
@@ -8,7 +8,8 @@
 
 1. `6f4b7c3` — SkinTokens MIT worker, UE5 import smoke, FlaUI skip gates  
 2. `0267bd0` — Wire FLUX/SkinTokens into services + Setup Assistant honesty labels  
-3. _(this)_ — FLUX live/E2E gated tests + final audit report
+3. `082f480` — FLUX live/E2E gated tests + final audit report  
+4. `fb35b06` — Record tip SHA in final report
 
 ## Local verification (this agent)
 
