@@ -145,7 +145,7 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 
 ### 4. REAL_FAILURE
 
-- None known at authoring time; any red required job is `FAIL` (no soft-pass). Update after CI subscribe wake.
+- None on validated tip `0425700ef6c042585a43c3eddcaab4b0c6323c16` (PR + push CI all green after LLamaSharp provider fix).
 
 ---
 
@@ -183,19 +183,33 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 | Field | Value |
 |-------|-------|
 | Branch | `cursor/online-runtime-validation-b322` |
-| Tip SHA | `5fbcc9017e0a886251df693c2948d3817ac12787` |
-| PR URL | https://github.com/deadfrogface/3DGod-V2.0/pull/7 |
-| CI run URL(s) | Fix push pending; prior PR fail https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34787784951 ; prior push green https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34787557186 |
+| Validated tip SHA (all checks green) | `0425700ef6c042585a43c3eddcaab4b0c6323c16` |
+| Accepted main baseline | `af41dcff2d167a90cd3ebc802eac10959242f222` |
+| PR | https://github.com/deadfrogface/3DGod-V2.0/pull/7 |
+| Green CI (push) | https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34788266550 (`success`, head `0425700…`) |
+| Green CI (pull_request) | https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34788266765 (`success`, head `0425700…`, 5/5 jobs) |
+| Prior PR fail (fixed) | https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34787784951 — LLamaSharp `Provider=validator` after allow-list reject |
 | Report path | `docs/audit/ONLINE_RUNTIME_VALIDATION_REPORT.md` |
 | Self-hosted prep | `docs/ops/SELF_HOSTED_RUNNER_PREP.md` |
+| Remaining code work | **None** — only external env/hardware/UE5/interactive gates |
 
-### PASS_REAL list (standard CI / CPU)
+### PASS_REAL list (standard CI / CPU) — proven green on `0425700…`
 
-App build, unit suite, installer smoke, Anny generate, Anny morph, GarmentCode, LLamaSharp GGUF, save/load, security, diagnostics, Setup Assistant, ComponentManager, worker manifest/uv, GLB validation helpers.
+- App Release build + unit suite (`build-and-test`)
+- Clean Windows installer create/install/smoke/uninstall (`clean-install-smoke`)
+- Anny CPU generate + Anny height/proportion morph (`runtime-integration`)
+- GarmentCode CPU jacket (`runtime-integration`)
+- LLamaSharp pinned Apache-2.0 GGUF inference + schema/validator hard-gate (`llamasharp-cpu`)
+- Project save/load, `.3dgod` security, Smart Diagnostics, Setup Assistant honesty, ComponentManager, worker manifests / license gate, GLB validation helpers (unit job)
+- Worker `uv sync` for Anny/Garment on Windows CI
 
-### Gated list (exact reasons)
+### Gated list (exact external reasons — not soft-pass)
 
-- **TripoSR every-PR:** heavy MIT ckpt + slow CPU → dedicated workflow (`SKIPPED_ENVIRONMENT` on default PR matrix until that workflow runs → then `PASS_REAL`)
-- **FLUX / FLUX→TripoSR / SkinTokens:** `GATED_HARDWARE` — standard GH Windows has no CUDA; paid GPU larger runners require billing/setup; self-hosted `gpu,cuda` workflow prepared
-- **UE5 import:** `GATED_UE5` — Unreal not on GH-hosted; `runtime-ue5.yml` for `[self-hosted, windows, ue5]`
-- **FlaUI:** `GATED_INTERACTIVE_DESKTOP` — hosted probe proves skip; `[self-hosted, windows, interactive]` for PASS_REAL
+| Item | Classification | Exact reason |
+|------|----------------|--------------|
+| TripoSR every-PR | `SKIPPED_ENVIRONMENT` on default PR CI | Heavy ~1.6GB MIT ckpt + slow CPU; dedicated `runtime-triposr-cpu.yml` (dispatch/weekly/path) for `PASS_REAL` |
+| FLUX.1-schnell | `GATED_HARDWARE` | No CUDA on GH-hosted `windows-latest`; paid GPU larger runners need Team/Enterprise billing — not auto-enabled; workflow ready: labels `self-hosted,windows,gpu,cuda` |
+| FLUX→TripoSR | `GATED_HARDWARE` | Same CUDA gate + TripoSR checkpoint |
+| SkinTokens | `GATED_HARDWARE` | Needs NVIDIA CUDA ≥14GB VRAM + checkpoints + upstream; never fakes skinned GLB |
+| UE5 editor import | `GATED_UE5` | Unreal not on GH-hosted; needs `UE_ROOT` + `.uproject`; `runtime-ue5.yml` for `[self-hosted,windows,ue5]` |
+| FlaUI interactive | `GATED_INTERACTIVE_DESKTOP` | Needs interactive desktop + `THREEDGOD_INSTALL_ROOT`; hosted probe skips honestly; `runtime-flaui.yml` for `[self-hosted,windows,interactive]` |
