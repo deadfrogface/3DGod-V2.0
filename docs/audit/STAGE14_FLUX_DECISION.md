@@ -1,27 +1,31 @@
 # Stage 14 — FLUX.1-schnell
 
-**Status: IMPLEMENTED_GATED_HARDWARE / GATED_MODEL (weights optional download)**
+**Status: IMPLEMENTED_GATED_HARDWARE** (not PASS_REAL on CPU-only agents)
 
-## License
+## License (re-checked)
 
-- Target weights: **FLUX.1-schnell** — Apache-2.0 (Black Forest Labs)
-- Non-schnell FLUX variants remain **forbidden** (non-commercial / unsuitable)
+- Weights: **FLUX.1-schnell** — Apache-2.0 (Black Forest Labs)
+- HF repo: `black-forest-labs/FLUX.1-schnell`
+- Pinned revision: `741f7c3ce8b383c54771c7003378a50191e9efe9`
+- HF `gated:auto` = one-time ToS accept; **not** a commercial-use block
+- Non-schnell FLUX variants remain **forbidden**
 
-## Implementation posture
+## Implementation
 
-- Packaging manifest `docs/packaging/workers/flux.manifest.json` (Apache-2.0, NotInstalled until checkpoint present)
-- `ReferenceImageService` / `ReferenceImageRuntime` probe LocalAppData checkpoints honestly
-- No fake PNG generation when checkpoint/CUDA missing
-- Optional local worker path may be added under `workers/flux` once a pinned safetensors + SHA is acquired
+- Isolated worker: `workers/flux/` (`flux_worker.py`, `uv.lock`, manifests)
+- ComponentManager install path via `localSourceHint: workers/flux`
+- Model acquire: `text.toimage.acquire` / HF snapshot at pinned revision
+- Disk preflight ≥40GB; VRAM preflight ≥8192MB CUDA
+- Progress + cancel flag; PNG size/dimension validation
+- Deterministic seed supported
+- C#: `FluxService` + `ReferenceImageService.GenerateAsync` calls real worker (never fakes PNG)
+- Optional E2E (gated): FLUX PNG → TripoSR GLB when both CUDA+weights present
 
-## Hardware
+## Classification
 
-FLUX.1-schnell realistically needs a CUDA GPU with substantial VRAM for interactive use.
-On CPU-only agents: **IMPLEMENTED_GATED_HARDWARE** (do not claim PASS_REAL without a generated image).
+| Environment | Status |
+|-------------|--------|
+| No CUDA / no weights | **IMPLEMENTED_GATED_HARDWARE** |
+| CUDA + weights + real PNG | **PASS_REAL** (required proof) |
 
-## Required for PASS_REAL
-
-1. Pinned Apache-2.0 schnell safetensors + SHA-256
-2. Disk + VRAM preflight
-3. Real prompt → PNG bytes validated
-4. Optional chain: FLUX image → TripoSR → GLB
+Do **not** use vague GATED_MODEL when only hardware/weights install is missing — code path is complete.

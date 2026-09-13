@@ -17,11 +17,10 @@ public class TripoSrLiveTests
                && File.Exists(Path.Combine(dir, "config.yaml"));
     }
 
-    [Fact]
+    [SkippableFact]
     public void Probe_WhenModelMissing_IsNotInstalled()
     {
-        if (ModelPresent())
-            return;
+        Skip.If(ModelPresent(), "TripoSR checkpoint present – missing-model NotInstalled path not exercised.");
         var status = TripoSrRuntime.Probe(RepoPaths.FindRepoRoot());
         Assert.Equal(FeatureAvailability.NotInstalled, status.Availability);
     }
