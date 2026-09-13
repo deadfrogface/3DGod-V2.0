@@ -1,7 +1,7 @@
 # FINAL AUDIT — Stages 4–19 (SAFE REUSE continuation)
 
 **Accepted baseline:** `ee90b6050a9aea251f3554b84fafe308dd5dac85`  
-**FINAL COMMIT SHA (full gate proof tip):** `f6063e9e40a583c94706c1f5152fad8e3f632b79`  
+**FINAL COMMIT SHA (full gate proof tip):** `462bdcc9b9713226fc4c1eb7db5a8a06c946dab8`  
 **PR:** https://github.com/deadfrogface/3DGod-V2.0/pull/4  
 **Base:** `cursor/safe-reuse-verify-b322`  
 **Branch:** `cursor/stage4-through-19-b322`
@@ -30,10 +30,13 @@ Stage 4–11 product wiring is **PASS** on Windows CI with honest gates retained
 | **[34698366244](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34698366244)** | **`f6063e9`** Stage 12–19 honesty | **SUCCESS** | Build+Test, Clean Installer Smoke, Anny/Garment CPU, Release Gate all success; INSTALLER/ANNY/GARMENT=CI_VERIFIED |
 | [34698863033](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34698863033) | `c4045da` docs tip after honesty | SUCCESS | Same four jobs success; INSTALLER/ANNY/GARMENT=CI_VERIFIED |
 | [34547318896](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34547318896) | `63de6cd` (PR) | SUCCESS | Same four jobs success on pull_request event |
+| **[34729412344](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34729412344)** | **`462bdcc`** taller-delta morph fix | **SUCCESS** | Build+Test, Clean Installer Smoke, Anny/Garment CPU (incl. taller-delta), Release Gate |
+| [34729415052](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34729415052) | `462bdcc` (PR) | SUCCESS | Same four jobs success on pull_request event |
 
-Proof tip live tests (runtime-integration job):
+Proof tip live tests (runtime-integration job on `462bdcc`):
 
-- `CiRuntimeIntegrationTests.Anny_CpuGenerate_WritesRealGlb` — Passed (~1m25s) → `ANNY_RUNTIME=CI_VERIFIED`
+- `CiRuntimeIntegrationTests.Anny_CpuGenerate_WritesRealGlb` — Passed → `ANNY_RUNTIME=CI_VERIFIED`
+- `CiRuntimeIntegrationTests.Anny_HeightTallerDelta_IsNonUniformMeshChange` — Passed (proportion-local taller morph; global height held fixed)
 - `CiRuntimeIntegrationTests.GarmentCode_CpuJacket_WritesRealGlb` — Passed → `GARMENT_RUNTIME=CI_VERIFIED`
 - `INSTALLER_SMOKE_STATUS=SUCCESS` → `CLEAN_WINDOWS_INSTALLER=CI_VERIFIED`
 
@@ -54,7 +57,7 @@ Proof tip live tests (runtime-integration job):
 | Setup Assistant | CUSTOM_BUILD | wizard frameworks | ComponentManager | thin WPF only | PASS (build+UI); FlaUI **GATED_EXTERNAL_RUNNER** |
 | uv provisioning | WRAP | astral-sh/uv | pinned 0.6.16 + SHA | no product `irm\|iex` | PASS (CI worker sync on Windows); product installer path coded |
 | Anny product path | WRAP/ADAPT | naver/anny | existing worker + uv.lock | manifests + installer | **CI_VERIFIED** on `63de6cd` |
-| Anny height morph | ADAPT | — | Anny phenotype keys | no uniform scale; FeatureAvailability Experimental | PASS (unit + CI live taller-delta assert on Anny job)|
+| Anny height morph | ADAPT | — | Anny phenotype keys; prefer proportion locals over global `height` | no uniform scale; FeatureAvailability Experimental | **CI_VERIFIED** taller-delta on `462bdcc` |
 | GarmentCode | WRAP/KEEP | maria-korosteleva/GarmentCode | pygarment worker | NiceGUI unused by headless | **CI_VERIFIED** on `63de6cd`; further prune **PARTIAL** |
 | TripoSR | WRAP candidate | VAST-AI TripoSR | provider stubs + packaging NotInstalled | no fake inference; Setup Assistant install only with URL/local source | **GATED_MODEL** / NotInstalled |
 | SF3D | **REJECT** this cycle | Stability SF3D | routing/license gates | Setup Assistant CanInstall=false | **REJECTED** (`STAGE13_SF3D_SPAR3D_DECISION.md`) |
@@ -88,7 +91,7 @@ Proof tip live tests (runtime-integration job):
 2. **GATED_LICENSE + GATED_HARDWARE:** SkinTokens (and rejected SF3D/SPAR3D) pending commercial/VRAM clearance.
 3. **GATED_UE5 / GATED_GPU / GATED_NOT_INSTALLED:** real Unreal import, CUDA models, live Blender on stock runners.
 4. **GATED_EXTERNAL_RUNNER:** FlaUI desktop automation; InstalledAppSmoke remains the installer baseline.
-5. Height morph taller-delta live mesh assert added as CiRuntimeIntegrationTests.Anny_HeightTallerDelta_IsNonUniformMeshChange (runs with Anny CI filter).
+5. Stage 10 taller-delta live assert closed on `462bdcc` via proportion-local keys (global Anny `height` alone is near-isotropic).
 
 ## Migration commits (Stage 4+)
 
@@ -100,4 +103,5 @@ Proof tip live tests (runtime-integration job):
 6. `63de6cd` enable `cursor/*` heavy CI gates + draft final report  
 7. `33eec12` finalize FINAL REPORT with GHA proof URLs and CI_VERIFIED gates  
 8. `9f14e69`…`f6063e9` Stages 12–19 honesty: Setup Assistant install gates, REJECT/KEEP docs, packaging retarget, honesty tests, final audit tip  
+9. `e1ad787`…`462bdcc` Stage 10 taller-delta live CI assert + proportion-local morph preference  
 
