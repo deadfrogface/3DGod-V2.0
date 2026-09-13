@@ -65,10 +65,10 @@ public class Stage12Through19HonestyTests
     }
 
     [Fact]
-    public void Stage17_NoNativeMeshoptimizerOrXatlasOrFlaUiPackageReferences()
+    public void Stage17_NoNativeMeshoptimizerOrXatlasOrFlaUiInProductionProjects()
     {
         var repo = RepoPaths.FindRepoRoot();
-        var forbidden = new[] { "meshoptimizer", "xatlas", "xatlas.NET", "FlaUI" };
+        var forbidden = new[] { "meshoptimizer", "xatlas", "xatlas.NET" };
         foreach (var csproj in Directory.EnumerateFiles(repo, "*.csproj", SearchOption.AllDirectories))
         {
             if (csproj.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
@@ -81,6 +81,13 @@ public class Stage12Through19HonestyTests
                 .ToList();
             foreach (var bad in forbidden)
                 Assert.DoesNotContain(packages, p => string.Equals(p, bad, StringComparison.OrdinalIgnoreCase));
+
+            // FlaUI is allowed only in the dedicated UI test project.
+            var isUiTests = csproj.Contains("3DGodCreator.UiTests", StringComparison.OrdinalIgnoreCase);
+            if (!isUiTests)
+                Assert.DoesNotContain(packages, p => string.Equals(p, "FlaUI.UIA3", StringComparison.OrdinalIgnoreCase)
+                                                     || string.Equals(p, "FlaUI.Core", StringComparison.OrdinalIgnoreCase)
+                                                     || string.Equals(p, "FlaUI", StringComparison.OrdinalIgnoreCase));
         }
     }
 
