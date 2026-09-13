@@ -6,9 +6,16 @@ namespace ThreeDGodCreator.Core.Tests;
 public class AnnyHeightMorphTests
 {
     [Fact]
-    public void ResolvePhenotypeKey_PrefersExplicitHeightLabel()
+    public void ResolvePhenotypeKey_PrefersLocalProportionOverGlobalHeight()
     {
-        var key = AnnyHeightMorph.ResolvePhenotypeKey(["weight", "height", "age"], ["torso"]);
+        var key = AnnyHeightMorph.ResolvePhenotypeKey(["weight", "height", "age"], ["torso_length", "smile"]);
+        Assert.Equal("torso_length", key);
+    }
+
+    [Fact]
+    public void ResolvePhenotypeKey_FallsBackToHeightWhenNoLocalProportion()
+    {
+        var key = AnnyHeightMorph.ResolvePhenotypeKey(["weight", "height", "age"], ["smile"]);
         Assert.Equal("height", key);
     }
 
@@ -27,5 +34,14 @@ public class AnnyHeightMorphTests
     {
         Assert.False(AnnyHeightMorph.LooksLikeNonUniformHeightChange(1f, 1.2f, 1f, 1.2f));
         Assert.True(AnnyHeightMorph.LooksLikeNonUniformHeightChange(1f, 1.15f, 1f, 1.02f));
+    }
+
+    [Fact]
+    public void IsProportionLocalKey_DetectsTorsoAndLeg()
+    {
+        Assert.True(AnnyHeightMorph.IsProportionLocalKey("torso_length"));
+        Assert.True(AnnyHeightMorph.IsProportionLocalKey("left_leg"));
+        Assert.False(AnnyHeightMorph.IsProportionLocalKey("smile"));
+        Assert.False(AnnyHeightMorph.IsProportionLocalKey("hair_length"));
     }
 }

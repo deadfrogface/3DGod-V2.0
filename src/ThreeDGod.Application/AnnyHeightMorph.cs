@@ -3,7 +3,7 @@ using ThreeDGod.Core.Domain;
 namespace ThreeDGod.Application;
 
 /// <summary>
-/// Maps product "height" intent onto Anny phenotype / local-change keys.
+/// Maps product "taller" / height intent onto Anny phenotype and local-change keys.
 /// Never applies uniform scene scale — callers must regenerate the human mesh.
 /// </summary>
 public static class AnnyHeightMorph
@@ -11,12 +11,12 @@ public static class AnnyHeightMorph
     public const string ProductParameterKey = "height";
 
     /// <summary>
-    /// Prefer explicit Anny catalog keys that describe body height / stature.
-    /// Falls back to product key "height" when the catalog exposes it.
+    /// Prefer local proportion keys (torso/leg/spine length) so "taller" stays non-uniform.
+    /// Global phenotype <c>height</c> is a last resort — Anny's height label grows near-isotropically.
     /// </summary>
     public static string ResolvePhenotypeKey(IReadOnlyList<string> phenotypeKeys, IReadOnlyList<string>? localChangeKeys = null)
     {
-        static string? Pick(IReadOnlyList<string>? keys, params string[] preferred)
+        static string? PickExactOrContains(IReadOnlyList<string>? keys, params string[] preferred)
         {
             if (keys is null || keys.Count == 0)
                 return null;
@@ -37,10 +37,21 @@ public static class AnnyHeightMorph
             return null;
         }
 
-        return Pick(phenotypeKeys, "height", "stature", "body_height", "tall")
-               ?? Pick(localChangeKeys, "height", "torso_length", "leg_length")
+        return PickExactOrContains(localChangeKeys, "torso_length", "leg_length", "thigh_length", "calf_length", "spine_length", "torso", "leg", "spine", "stature")
+               ?? PickExactOrContains(phenotypeKeys, "stature", "body_height", "tall", "height")
                ?? ProductParameterKey;
     }
+
+    public static bool IsProportionLocalKey(string key) =>
+        key.Contains("torso", StringComparison.OrdinalIgnoreCase)
+        || key.Contains("leg", StringComparison.OrdinalIgnoreCase)
+        || key.Contains("thigh", StringComparison.OrdinalIgnoreCase)
+        || key.Contains("calf", StringComparison.OrdinalIgnoreCase)
+        || key.Contains("spine", StringComparison.OrdinalIgnoreCase)
+        || key.Contains("stature", StringComparison.OrdinalIgnoreCase)
+        || (key.Contains("length", StringComparison.OrdinalIgnoreCase)
+            && !key.Contains("hair", StringComparison.OrdinalIgnoreCase)
+            && !key.Contains("finger", StringComparison.OrdinalIgnoreCase));
 
     public static void ApplyTaller(ParametricHumanState human, float delta, string resolvedKey, bool intoLocalChanges = false)
     {
@@ -53,7 +64,7 @@ public static class AnnyHeightMorph
     }
 
     /// <summary>
-    /// True when vertical bounds changed without a uniform XYZ scale of the whole mesh.
+    /// True when vertical bounds changed without a matching uniform XYZ scale of the whole mesh.
     /// </summary>
     public static bool LooksLikeNonUniformHeightChange(
         float beforeHeight,
@@ -70,4 +81,3 @@ public static class AnnyHeightMorph
         return h >= minHeightRatio && w <= maxWidthRatio;
     }
 }
-
