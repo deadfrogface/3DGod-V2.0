@@ -24,6 +24,9 @@ public static class LlamaSharpProvider
     public const string RecommendedModelId = "Qwen/Qwen2.5-0.5B-Instruct-GGUF";
     public const string RecommendedFile = "qwen2.5-0.5b-instruct-q4_k_m.gguf";
     public const string RecommendedLicense = "apache-2.0";
+    public const string RecommendedRevision = "9217f5db79a29953eb74d5343926648285ec7e67";
+    public const string RecommendedSha256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db";
+    public const long RecommendedSizeBytes = 491_400_032;
 
     public static string BackendAssembly => typeof(LLamaWeights).Assembly.GetName().Name ?? "LLamaSharp";
 

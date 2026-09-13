@@ -1,0 +1,136 @@
+name: FlaUI Interactive Runtime
+
+# Real interactive Windows UI proof. Honest skip when env contract unmet.
+# GH-hosted windows-latest is headless / non-interactive → GATED_INTERACTIVE_DESKTOP.
+# Self-hosted labels: self-hosted, windows, interactive
+
+on:
+  workflow_dispatch:
+    inputs:
+      install_root:
+        description: "THREEDGOD_INSTALL_ROOT (installed 3D God tree). Leave empty to use runner env."
+        required: false
+        type: string
+        default: ""
+      force_hosted_probe:
+        description: "Also run a hosted windows-latest probe that must honestly skip/gate"
+        type: boolean
+        default: true
+
+concurrency:
+  group: flaui-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  flaui-hosted-probe:
+    name: Hosted Windows FlaUI Gate Probe
+    if: ${{ inputs.force_hosted_probe }}
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build UiTests
+        shell: pwsh
+        run: dotnet build "3DGodCreator.UiTests/3DGodCreator.UiTests.csproj" -c Release -v minimal
+
+      - name: Prove hosted interactive gate (must skip live suite)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/flaui" | Out-Null
+          # Do NOT set THREEDGOD_INSTALL_ROOT — live tests must Skip with GATED_EXTERNAL_RUNNER.
+          Remove-Item Env:THREEDGOD_INSTALL_ROOT -ErrorAction SilentlyContinue
+          dotnet test "3DGodCreator.UiTests/3DGodCreator.UiTests.csproj" -c Release --no-build `
+            --logger "trx;LogFileName=flaui-hosted.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime/flaui"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::FlaUI hosted probe failed unexpectedly"
+            exit $LASTEXITCODE
+          }
+          "GATED_INTERACTIVE_DESKTOP" | Set-Content artifacts/runtime/flaui/hosted-classification.txt
+          Write-Host "FLAUI_HOSTED=GATED_INTERACTIVE_DESKTOP (honest skip without install root / interactive desktop)"
+
+      - name: Upload hosted FlaUI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaui-hosted-probe
+          path: artifacts/runtime/flaui/
+          if-no-files-found: warn
+          retention-days: 14
+
+  flaui-interactive:
+    name: Self-hosted FlaUI PASS_REAL
+    runs-on: [self-hosted, windows, interactive]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve install root
+        id: root
+        shell: pwsh
+        run: |
+          $root = "${{ inputs.install_root }}"
+          if ([string]::IsNullOrWhiteSpace($root)) { $root = $env:THREEDGOD_INSTALL_ROOT }
+          if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path $root)) {
+            Write-Host "GATED_INTERACTIVE_DESKTOP – THREEDGOD_INSTALL_ROOT unset/missing"
+            echo "gated=1" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          echo "gated=0" >> $env:GITHUB_OUTPUT
+          echo "root=$root" >> $env:GITHUB_OUTPUT
+          Write-Host "THREEDGOD_INSTALL_ROOT=$root"
+
+      - name: Run FlaUI live suite
+        if: steps.root.outputs.gated != '1'
+        shell: pwsh
+        env:
+          THREEDGOD_INSTALL_ROOT: ${{ steps.root.outputs.root }}
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/flaui" | Out-Null
+          dotnet test "3DGodCreator.UiTests/3DGodCreator.UiTests.csproj" -c Release `
+            --filter "FullyQualifiedName~InstalledAppFlaUiTests" `
+            --logger "trx;LogFileName=flaui-live.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime/flaui"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::FlaUI live suite FAILED (install root was set – not a skip)"
+            "FAIL" | Set-Content artifacts/runtime/flaui/classification.txt
+            exit $LASTEXITCODE
+          }
+          "PASS_REAL" | Set-Content artifacts/runtime/flaui/classification.txt
+          Write-Host "FLAUI_RUNTIME=PASS_REAL"
+
+      - name: Record gate when install root unmet
+        if: steps.root.outputs.gated == '1'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/flaui" | Out-Null
+          "GATED_INTERACTIVE_DESKTOP" | Set-Content artifacts/runtime/flaui/classification.txt
+          Write-Host "FLAUI_RUNTIME=GATED_INTERACTIVE_DESKTOP"
+
+      - name: Upload FlaUI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaui-interactive-runtime
+          path: artifacts/runtime/flaui/
+          if-no-files-found: warn
+          retention-days: 14

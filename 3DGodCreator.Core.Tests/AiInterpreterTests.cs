@@ -50,24 +50,28 @@ public class AiInterpreterTests
         Assert.Equal("Unsupported", plan.Status);
     }
 
-    [Fact]
+    [SkippableFact]
     public void LlamaSharp_IsHonestWithoutGguf()
     {
         var status = LlamaSharpProvider.Probe();
-        Assert.True(status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.Disabled or FeatureAvailability.Experimental);
+        Skip.If(
+            status.Availability == FeatureAvailability.Experimental,
+            "Licensed GGUF present – online PASS_REAL covered by CiOnlineRuntimeProofTests (not soft-pass here).");
+        Assert.True(status.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.Disabled);
         Assert.DoesNotContain("success", status.Message, StringComparison.OrdinalIgnoreCase);
         var plan = LlamaSharpProvider.Interpret("shoulders wider");
         Assert.Equal("Unsupported", plan.Status);
         Assert.NotEqual("valid", plan.Status);
-        if (status.Availability != FeatureAvailability.Experimental)
-            Assert.Contains("NotInstalled", plan.Reason + status.Message, StringComparison.OrdinalIgnoreCase);
-        else
-            Assert.Contains("no verified prompt-to-plan", plan.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("NotInstalled", plan.Reason + status.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void LlamaSharp_NeverProducesValidPlanWithoutVerifiedMapping()
+    [SkippableFact]
+    public void LlamaSharp_WithoutGguf_NeverProducesValidPlan()
     {
+        var status = LlamaSharpProvider.Probe();
+        Skip.If(
+            status.Availability == FeatureAvailability.Experimental,
+            "Licensed GGUF present – online PASS_REAL covered by CiOnlineRuntimeProofTests.");
         var plan = LlamaSharpProvider.Interpret("shoulders wider");
         Assert.NotEqual("valid", plan.Status);
         Assert.Equal("llamasharp", plan.Provider);
