@@ -28,6 +28,7 @@ Stage 4–11 product wiring is **PASS** on Windows CI with honest gates retained
 | [34546839170](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34546839170) | `13f8a87` usings fix | SUCCESS | Build+Test + Release Gate; Installer/Anny/Garment still skipped |
 | **[34547315306](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34547315306)** | **`63de6cd`** | **SUCCESS** | **All four jobs success:** Build+Test, Clean Installer Smoke, Anny/Garment CPU, Release Gate |
 | **[34698366244](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34698366244)** | **`f6063e9`** Stage 12–19 honesty | **SUCCESS** | Build+Test, Clean Installer Smoke, Anny/Garment CPU, Release Gate all success; INSTALLER/ANNY/GARMENT=CI_VERIFIED |
+| [34698863033](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34698863033) | `c4045da` docs tip after honesty | SUCCESS | Same four jobs success; INSTALLER/ANNY/GARMENT=CI_VERIFIED |
 | [34547318896](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34547318896) | `63de6cd` (PR) | SUCCESS | Same four jobs success on pull_request event |
 
 Proof tip live tests (runtime-integration job):
@@ -53,7 +54,7 @@ Proof tip live tests (runtime-integration job):
 | Setup Assistant | CUSTOM_BUILD | wizard frameworks | ComponentManager | thin WPF only | PASS (build+UI); FlaUI **GATED_EXTERNAL_RUNNER** |
 | uv provisioning | WRAP | astral-sh/uv | pinned 0.6.16 + SHA | no product `irm\|iex` | PASS (CI worker sync on Windows); product installer path coded |
 | Anny product path | WRAP/ADAPT | naver/anny | existing worker + uv.lock | manifests + installer | **CI_VERIFIED** on `63de6cd` |
-| Anny height morph | ADAPT | — | Anny phenotype keys | no uniform scale; FeatureAvailability Experimental | PASS (unit); live mesh via Anny generate **CI_VERIFIED** path; dedicated taller-delta mesh assert still Experimental |
+| Anny height morph | ADAPT | — | Anny phenotype keys | no uniform scale; FeatureAvailability Experimental | PASS (unit + CI live taller-delta assert on Anny job)|
 | GarmentCode | WRAP/KEEP | maria-korosteleva/GarmentCode | pygarment worker | NiceGUI unused by headless | **CI_VERIFIED** on `63de6cd`; further prune **PARTIAL** |
 | TripoSR | WRAP candidate | VAST-AI TripoSR | provider stubs + packaging NotInstalled | no fake inference; Setup Assistant install only with URL/local source | **GATED_MODEL** / NotInstalled |
 | SF3D | **REJECT** this cycle | Stability SF3D | routing/license gates | Setup Assistant CanInstall=false | **REJECTED** (`STAGE13_SF3D_SPAR3D_DECISION.md`) |
@@ -87,7 +88,7 @@ Proof tip live tests (runtime-integration job):
 2. **GATED_LICENSE + GATED_HARDWARE:** SkinTokens (and rejected SF3D/SPAR3D) pending commercial/VRAM clearance.
 3. **GATED_UE5 / GATED_GPU / GATED_NOT_INSTALLED:** real Unreal import, CUDA models, live Blender on stock runners.
 4. **GATED_EXTERNAL_RUNNER:** FlaUI desktop automation; InstalledAppSmoke remains the installer baseline.
-5. Height morph dedicated taller-delta live mesh golden remains Experimental (Anny generate path is CI_VERIFIED).
+5. Height morph taller-delta live mesh assert added as CiRuntimeIntegrationTests.Anny_HeightTallerDelta_IsNonUniformMeshChange (runs with Anny CI filter).
 
 ## Migration commits (Stage 4+)
 
