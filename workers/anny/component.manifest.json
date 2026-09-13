@@ -1,0 +1,21 @@
+{
+  "manifestVersion": 1,
+  "componentId": "anny",
+  "displayName": "Human Creator",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseAcceptedRequired": true,
+  "optional": true,
+  "featureId": "human.creator",
+  "localSourceHint": "workers/anny",
+  "hardware": {
+    "minVramMb": 0,
+    "requiresCuda": false
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "anny_worker.py" },
+    { "kind": "FileExists", "target": "uv.lock" },
+    { "kind": "WorkerPing", "target": "anny_worker.py" }
+  ],
+  "notes": "CI_VERIFIED via uv. End-user install uses pinned UvProvisioner (no irm|iex)."
+}

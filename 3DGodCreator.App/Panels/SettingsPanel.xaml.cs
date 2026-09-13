@@ -4,6 +4,8 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using ThreeDGod.Application;
 using ThreeDGod.Infrastructure;
+using ThreeDGod.Infrastructure.Components;
+using ThreeDGodCreator.App.Windows;
 using ThreeDGod.Infrastructure.Logging;
 using ThreeDGodCreator.App.Localization;
 using ThreeDGodCreator.Core;
@@ -21,14 +23,18 @@ public partial class SettingsPanel : UserControl, ILocalizableView
     private readonly Window _mainWindow;
     private bool _suppressLanguageChange;
     private bool _suppressSave;
+    private readonly IComponentManager? _components;
+    private readonly IWorkerUvComponentInstaller? _uvInstaller;
 
-    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow, IFeatureAvailabilityService features)
+    public SettingsPanel(CharacterSystem cs, ConfigService configService, IBlenderOperations blenderService, Window mainWindow, IFeatureAvailabilityService features, IComponentManager? components = null, IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
         _characterSystem = cs;
         _configService = configService;
         _blenderService = blenderService;
         _mainWindow = mainWindow;
+        _components = components;
+        _uvInstaller = uvInstaller;
 
         _suppressSave = true;
         var cfg = _configService.Load();
@@ -243,5 +249,16 @@ public partial class SettingsPanel : UserControl, ILocalizableView
         {
             MessageBox.Show($"Log-Ordner konnte nicht geöffnet werden: {ex.Message}", "Logs", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void BtnComponents_Click(object sender, RoutedEventArgs e)
+    {
+        if (_components is null)
+        {
+            MessageBox.Show("Component manager is not available.", "Components", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dlg = new SetupAssistantWindow(_components, _uvInstaller) { Owner = _mainWindow };
+        dlg.ShowDialog();
     }
 }

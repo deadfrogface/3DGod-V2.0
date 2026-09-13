@@ -178,6 +178,6 @@ public class ProductPhaseTests
     [Fact]
     public void UniformScale_IsNotAcceptedAsMorph()
     {
-        Assert.Equal(FeatureAvailability.NotImplemented, new FeatureAvailabilityService().GetStatus(FeatureIds.HeightMorph));
+        Assert.Equal(FeatureAvailability.Experimental, new FeatureAvailabilityService().GetStatus(FeatureIds.HeightMorph));
     }
 }

@@ -7,6 +7,7 @@ using ThreeDGod.Core.Editing;
 using ThreeDGod.Workers;
 using ThreeDGod.Persistence;
 using ThreeDGod.Physics;
+using ThreeDGod.Infrastructure.Components;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -98,6 +99,25 @@ public static class ThreeDGodComposition
             ImageTo3DManifest("trellis", 20, "trellis", accepted: false, minVram: 12288, cuda: true)
         ]));
         services.AddSingleton<IGpuJobScheduler, GpuJobScheduler>();
+        services.AddSingleton<IComponentHealthCheckRunner, ComponentHealthCheckRunner>();
+        services.AddSingleton<IComponentDownloadService, ComponentDownloadService>();
+        services.AddSingleton<IUvProvisioner>(sp =>
+            new UvProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
+        services.AddSingleton<IComponentManager>(sp =>
+        {
+            var modelsRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod",
+                "Models");
+            var repoRoot = AnnyRuntime.FindRepoRoot();
+            return ComponentManager.FromRepo(repoRoot, modelsRoot);
+        });
+        services.AddSingleton<IWorkerUvComponentInstaller>(sp =>
+            new WorkerUvComponentInstaller(
+                sp.GetRequiredService<IComponentManager>(),
+                sp.GetRequiredService<IUvProvisioner>(),
+                AnnyRuntime.FindRepoRoot(),
+                sp.GetRequiredService<IComponentHealthCheckRunner>()));
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();
