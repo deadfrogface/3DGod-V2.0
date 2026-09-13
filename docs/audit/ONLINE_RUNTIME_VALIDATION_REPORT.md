@@ -2,6 +2,8 @@
 
 **Branch:** `cursor/online-runtime-validation-b322`  
 **Base (accepted main HEAD):** `af41dcff2d167a90cd3ebc802eac10959242f222`  
+**Validated green tip:** `0425700ef6c042585a43c3eddcaab4b0c6323c16`  
+**PR:** https://github.com/deadfrogface/3DGod-V2.0/pull/7  
 **Goal:** Maximize **real** online runtime validation on GitHub Actions / CI; classify honestly.
 
 ## Classification vocabulary (no soft-pass)
