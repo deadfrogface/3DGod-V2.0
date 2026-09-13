@@ -1,19 +1,23 @@
-# Stage 16 — SkinTokens decision
+# Stage 16 — SkinTokens re-audit
 
-**Decision: DO NOT INTEGRATE for product install this cycle.**
+**Status: GATED_LICENSE (+ GATED_HARDWARE) — DO NOT INTEGRATE for commercial product install**
 
-## Gates that remain open
+## Upstream
 
-| Gate | Reason |
-|------|--------|
-| GATED_LICENSE | `pending-review` — commercial/provenance not cleared in `MODEL_LICENSES.json` |
-| GATED_HARDWARE | Documented need for NVIDIA CUDA and high VRAM (≥8–14 GB class) |
-| GATED_MODEL | No verified checkpoint hash / release ZIP for ComponentManager |
+- Repo: https://github.com/VAST-AI-Research/SkinTokens
+- Code license: typically Apache-2.0 for research code (verify current LICENSE on tip)
+- **Weights / checkpoints**: provenance and redistribution for commercial desktop products remain **uncleared** in `MODEL_LICENSES.json` (`pending-review`)
 
-## What remains in tree
+## Exact product blocker
 
-- `SkinTokensRigService` probes honestly (`NotInstalled` / `UnsupportedHardware`) and never writes a fake GLB
-- Packaging manifest `docs/packaging/workers/skintokens.manifest.json` with null download URL
-- Setup Assistant Automatic Rigging → **CanInstall = false**
+Until a written commercial-use / redistribution clearance exists for the **checkpoint weights** (not only the training code), Setup Assistant must keep `CanInstall=false`.
 
-Authored humanoid / freeform distance skinning paths stay available separately and are not claimed as SkinTokens.
+Classification:
+
+- Backend probe/stub code: present (`SkinTokensRigService`) — never writes a fake rigged GLB
+- Product install: **GATED_LICENSE**
+- Typical runtime: CUDA + high VRAM → also **GATED_HARDWARE** when a cleared checkpoint appears
+
+## Not claimed
+
+Authored humanoid / freeform distance skinning is separate and must not be labeled SkinTokens.

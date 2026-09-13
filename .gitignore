@@ -20,3 +20,5 @@ workers/anny/.venv/
 workers/garmentcode/.venv/
 *.pyc
 
+
+.cache/

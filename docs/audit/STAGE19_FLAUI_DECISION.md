@@ -1,13 +1,26 @@
-# Stage 19 — FlaUI decision
+# Stage 18 — FlaUI installed-app UI automation
 
-**Decision: DO NOT add FlaUI to CI. Keep InstalledAppSmoke as the installer baseline. Mark full UI automation GATED_EXTERNAL_RUNNER.**
+**Status: IMPLEMENTED_GATED_EXTERNAL_RUNNER**
 
-## Why
+## Decision update
 
-1. Hosted GitHub `windows-latest` agents are not a reliable interactive desktop for FlaUI.
-2. Flaky UI automation would destabilize the Release Gate that Stages 4–11 just made green.
-3. `--smoke-test` / `InstalledAppSmoke` already covers clean-install process start + DI + config without a desktop session.
+FlaUI is allowed **only** in a dedicated test project (`3DGodCreator.UiTests`), never in production app projects.
 
-## Revisit when
+## Suite intent (UIA3)
 
-A dedicated external Windows runner with an interactive session is provisioned and FlaUI scenarios are quarantined from the default PR gate.
+- Launch installed app
+- Main window appears
+- Open Setup Assistant
+- Inspect at least one component state
+- Open Settings
+- Close cleanly
+
+## CI posture
+
+- Default PR CI: **does not** run FlaUI (hosted agents lack stable interactive desktop)
+- Baseline remains `InstalledAppSmoke` / `--smoke-test`
+- Full FlaUI suite is runnable on local Windows or self-hosted interactive runners
+
+## Forbidden
+
+Adding FlaUI PackageReference to production `.csproj` files (asserted by honesty tests).

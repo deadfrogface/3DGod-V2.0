@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    LLamaSharp.Backend.Cpu ships CPU variants under
+    runtimes/<rid>/native/{noavx,avx,avx2,avx512}/ with identical filenames.
+    The .NET SDK flattens those to the same publish RelativePath → NETSDK1152.
+    Keep the hierarchy NativeLibraryWithAvx expects (runtimes/.../native/<avx>/...).
+  -->
+  <Target Name="PreserveLLamaSharpCpuNativePublishLayout"
+          AfterTargets="ComputeFilesToPublish"
+          BeforeTargets="_HandleFileConflictsForPublish">
+    <ItemGroup>
+      <_LLamaCpuNativePublish Include="@(ResolvedFileToPublish)"
+                              Condition="$([System.String]::Copy('%(Identity)').Replace('\','/').ToLowerInvariant().Contains('/llamasharp.backend.cpu/'))" />
+      <ResolvedFileToPublish Remove="@(_LLamaCpuNativePublish)" />
+      <ResolvedFileToPublish Include="@(_LLamaCpuNativePublish)">
+        <RelativePath Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.String]::Copy('%(Identity)').Replace('\','/')), '(?i)/runtimes/[^/]+/native/.+'))">$([System.Text.RegularExpressions.Regex]::Replace($([System.String]::Copy('%(Identity)').Replace('\','/')), '(?i)^.*/(runtimes/[^/]+/native/.+)$', '$1'))</RelativePath>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

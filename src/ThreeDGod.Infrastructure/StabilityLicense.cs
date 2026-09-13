@@ -49,7 +49,8 @@ public static class ImageTo3DProfiles
     {
         foreach (var profile in For(backendId).OrderByDescending(p => p.MinVramMb))
         {
-            if (profile.MinVramMb == 0 && !cuda && backendId == "sf3d")
+            // Explicit CPU profiles (MinVramMb == 0): TripoSR and SF3D cpu-fallback.
+            if (profile.MinVramMb == 0 && !cuda && backendId is "triposr" or "sf3d")
                 return profile;
             if (cuda && availableVramMb >= profile.MinVramMb)
                 return profile;

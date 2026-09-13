@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 1,
+  "workerId": "triposr",
+  "displayName": "TripoSR Image-to-3D",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
+  "licenseId": "mit",
+  "licenseRef": "workers/triposr/UPSTREAM_LICENSE_MIT.txt",
+  "includedInBaseInstaller": false,
+  "pythonPackage": {
+    "name": "3dgod-triposr",
+    "pinnedVersion": "0.1.0",
+    "pyproject": "workers/triposr/pyproject.toml",
+    "uvLock": "workers/triposr/uv.lock"
+  },
+  "model": {
+    "checkpointHash": "429e2c6b22a0923967459de24d67f05962b235f79cde6b032aa7ed2ffcd970ee",
+    "sizeBytes": 1677246742,
+    "verified": true
+  },
+  "releasePackage": {
+    "format": "huggingface",
+    "downloadUrl": "https://huggingface.co/stabilityai/TripoSR/resolve/main/model.ckpt",
+    "sha256": "429e2c6b22a0923967459de24d67f05962b235f79cde6b032aa7ed2ffcd970ee"
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": true,
+    "requiresBlender": false,
+    "notes": "CPU works but is slow (SUPPORTED_BUT_SLOW). ~6GB VRAM recommended for CUDA. Model MIT; code MIT (VAST-AI-Research/TripoSR@107cefdc)."
+  }
+}

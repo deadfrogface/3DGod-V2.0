@@ -1,0 +1,32 @@
+[project]
+name = "3dgod-triposr"
+version = "0.1.0"
+description = "Isolated 3D God TripoSR Image→3D worker (WRAP). MIT weights + code."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "torch>=2.2.0",
+    "torchvision>=0.17.0",
+    "numpy>=1.24,<2",
+    "pillow>=10.0",
+    "omegaconf==2.3.0",
+    "einops==0.7.0",
+    "transformers>=4.35.0,<4.46",
+    "trimesh==4.0.5",
+    "huggingface-hub>=0.20",
+    "scikit-image>=0.22",
+    "imageio>=2.31",
+    "rembg>=2.0.50",
+    "onnxruntime>=1.17.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

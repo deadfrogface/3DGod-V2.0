@@ -17,8 +17,10 @@ public class Stage12Through19HonestyTests
             var snap = SetupAssistantCatalog.Snapshot(mgr);
 
             var image = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.ImageTo3D);
-            Assert.False(image.CanInstall);
             Assert.Equal("triposr", image.Feature.PrimaryComponentId);
+            var triposr = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "triposr");
+            Assert.False(string.IsNullOrWhiteSpace(triposr.LocalSourceHint));
+            Assert.True(image.CanInstall);
 
             var flux = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.TextToCharacter);
             Assert.False(flux.CanInstall);
@@ -54,7 +56,7 @@ public class Stage12Through19HonestyTests
             ComponentState.Optional));
 
         Assert.True(SetupAssistantCatalog.CanOfferInstall(
-            new ComponentManifest { ComponentId = "anny", LocalSourceHint = "workers/anny" },
+            new ComponentManifest { ComponentId = "triposr", LocalSourceHint = "workers/triposr" },
             ComponentState.Optional));
 
         Assert.False(SetupAssistantCatalog.CanOfferInstall(
@@ -63,10 +65,10 @@ public class Stage12Through19HonestyTests
     }
 
     [Fact]
-    public void Stage17_NoNativeMeshoptimizerOrXatlasOrFlaUiPackageReferences()
+    public void Stage17_NoNativeMeshoptimizerOrXatlasOrFlaUiInProductionProjects()
     {
         var repo = RepoPaths.FindRepoRoot();
-        var forbidden = new[] { "meshoptimizer", "xatlas", "xatlas.NET", "FlaUI" };
+        var forbidden = new[] { "meshoptimizer", "xatlas", "xatlas.NET" };
         foreach (var csproj in Directory.EnumerateFiles(repo, "*.csproj", SearchOption.AllDirectories))
         {
             if (csproj.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
@@ -79,6 +81,13 @@ public class Stage12Through19HonestyTests
                 .ToList();
             foreach (var bad in forbidden)
                 Assert.DoesNotContain(packages, p => string.Equals(p, bad, StringComparison.OrdinalIgnoreCase));
+
+            // FlaUI is allowed only in the dedicated UI test project.
+            var isUiTests = csproj.Contains("3DGodCreator.UiTests", StringComparison.OrdinalIgnoreCase);
+            if (!isUiTests)
+                Assert.DoesNotContain(packages, p => string.Equals(p, "FlaUI.UIA3", StringComparison.OrdinalIgnoreCase)
+                                                     || string.Equals(p, "FlaUI.Core", StringComparison.OrdinalIgnoreCase)
+                                                     || string.Equals(p, "FlaUI", StringComparison.OrdinalIgnoreCase));
         }
     }
 

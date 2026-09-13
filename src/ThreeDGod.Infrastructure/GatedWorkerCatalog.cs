@@ -31,6 +31,11 @@ public static class GatedWorkerCatalog
             var probe = AnnyRuntime.Probe();
             return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
         }
+        if (string.Equals(workerId, "triposr", StringComparison.OrdinalIgnoreCase))
+        {
+            var probe = TripoSrRuntime.Probe();
+            return new GatedWorkerStatus { WorkerId = workerId, Availability = probe.Availability, Message = probe.Message };
+        }
         if (string.Equals(workerId, "garmentcode", StringComparison.OrdinalIgnoreCase))
         {
             var probe = GarmentCodeRuntime.Probe();
