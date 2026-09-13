@@ -33,5 +33,5 @@ Explicitly blocked from production release
 - SMPL-X without commercial license
 - Hunyuan EU-restricted checkpoints
 - AniGen / S-Lab non-commercial models
-- Unverified checkpoints (skintokens until license record verified)
+- SkinTokens (MIT code + MIT HF weights @ 79736cad…; optional download; CUDA ≥14GB for PASS_REAL)
 - Incompatible GPL linkage in shipped binaries

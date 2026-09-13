@@ -1,0 +1,22 @@
+{
+  "manifestVersion": 1,
+  "componentId": "flux",
+  "displayName": "Text → Image (FLUX.1-schnell)",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseAcceptedRequired": false,
+  "optional": true,
+  "featureId": "text.toimage",
+  "localSourceHint": "workers/flux",
+  "hardware": {
+    "minVramMb": 8192,
+    "requiresCuda": true,
+    "minDiskFreeBytes": 40000000000
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "flux_worker.py" },
+    { "kind": "FileExists", "target": "uv.lock" },
+    { "kind": "WorkerPing", "target": "flux_worker.py" }
+  ],
+  "notes": "WRAP black-forest-labs/FLUX.1-schnell@741f7c3ce8b383c54771c7003378a50191e9efe9 (Apache-2.0). HF gated:auto requires one-time accept. Non-schnell FLUX variants forbidden. CUDA >=8GB required for PASS_REAL."
+}

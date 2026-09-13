@@ -1,12 +1,18 @@
 {
   "manifestVersion": 1,
   "workerId": "flux",
-  "displayName": "FLUX.1-schnell Reference Image Backend",
+  "displayName": "FLUX.1-schnell Text-to-Image",
   "status": "NotInstalled",
   "packageVersion": "0.1.0",
   "licenseId": "apache-2.0",
   "licenseRef": "docs/audit/STAGE14_FLUX_DECISION.md",
   "includedInBaseInstaller": false,
+  "pythonPackage": {
+    "name": "3dgod-flux",
+    "pinnedVersion": "0.1.0",
+    "pyproject": "workers/flux/pyproject.toml",
+    "uvLock": "workers/flux/uv.lock"
+  },
   "model": {
     "checkpointHash": "741f7c3ce8b383c54771c7003378a50191e9efe9",
     "sizeBytes": 33000000000,
@@ -22,6 +28,6 @@
     "requiresCuda": true,
     "requiresUv": true,
     "requiresBlender": false,
-    "notes": "Only FLUX.1-schnell (Apache-2.0). Prefer workers/flux when present. IMPLEMENTED_GATED_HARDWARE until CUDA+weights produce a real PNG."
+    "notes": "Only FLUX.1-schnell (Apache-2.0). IMPLEMENTED_GATED_HARDWARE until CUDA+weights produce a real PNG. HF gated:auto accept required for download."
   }
 }

@@ -18,7 +18,7 @@ public static class SkinTokensRuntime
                 Availability = FeatureAvailability.UnsupportedHardware,
                 Message =
                     "UnsupportedHardware – SkinTokens needs NVIDIA CUDA and >=14GB VRAM. " +
-                    "Checkpoint/data stays Yellow until audit. No rig will be faked."
+                    "IMPLEMENTED_GATED_HARDWARE. No rig will be faked."
             };
         }
 
@@ -30,8 +30,9 @@ public static class SkinTokensRuntime
                 WorkerId = WorkerId,
                 Availability = FeatureAvailability.NotInstalled,
                 Message =
-                    "NotInstalled – SkinTokens checkpoint/runtime is not verified. " +
-                    "Code is MIT; weights remain Yellow. No rig will be faked."
+                    "NotInstalled – SkinTokens checkpoints/upstream runtime not present. " +
+                    "License MIT (code + HF weights); IMPLEMENTED_GATED_HARDWARE until CUDA+acquire+upstream PASS_REAL. " +
+                    "No rig will be faked."
             };
         }
 

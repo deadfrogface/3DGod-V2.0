@@ -1,0 +1,4 @@
+FLUX.1-schnell model weights and Black Forest Labs flux reference code are licensed under Apache License 2.0.
+See: https://github.com/black-forest-labs/flux/blob/main/model_licenses/LICENSE-FLUX1-schnell
+Pinned Hugging Face revision: 741f7c3ce8b383c54771c7003378a50191e9efe9 (black-forest-labs/FLUX.1-schnell)
+Non-schnell FLUX variants (dev/pro) are NOT permitted in 3D God.

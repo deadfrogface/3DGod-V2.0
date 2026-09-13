@@ -23,15 +23,21 @@ public class Stage12Through19HonestyTests
             Assert.True(image.CanInstall);
 
             var flux = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.TextToCharacter);
-            Assert.False(flux.CanInstall);
+            Assert.Equal("flux", flux.Feature.PrimaryComponentId);
+            var fluxManifest = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "flux");
+            Assert.False(string.IsNullOrWhiteSpace(fluxManifest.LocalSourceHint));
+            Assert.True(flux.CanInstall);
 
             var advanced = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.Advanced3DQuality);
             Assert.False(advanced.CanInstall);
             Assert.Contains("REJECTED", advanced.Message, StringComparison.OrdinalIgnoreCase);
 
             var skin = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.AutomaticRigging);
-            Assert.False(skin.CanInstall);
-            Assert.Contains("GATED", skin.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("skintokens", skin.Feature.PrimaryComponentId);
+            var skinManifest = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "skintokens");
+            Assert.False(string.IsNullOrWhiteSpace(skinManifest.LocalSourceHint));
+            Assert.True(skin.CanInstall);
+            Assert.DoesNotContain("GATED_LICENSE", skin.Message, StringComparison.OrdinalIgnoreCase);
 
             var human = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.HumanCreator);
             var anny = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "anny");

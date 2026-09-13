@@ -123,20 +123,35 @@ public static class WorkerPackageManifestReader
     public static IReadOnlyList<string> DiscoverManifestPaths(string repoRoot)
     {
         var paths = new List<string>();
+        var workerIdsFromTree = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var workersDir = Path.Combine(repoRoot, "workers");
         if (Directory.Exists(workersDir))
         {
             foreach (var dir in Directory.GetDirectories(workersDir))
             {
                 var manifest = Path.Combine(dir, "manifest.json");
-                if (File.Exists(manifest))
-                    paths.Add(manifest);
+                if (!File.Exists(manifest))
+                    continue;
+                paths.Add(manifest);
+                workerIdsFromTree.Add(Path.GetFileName(dir)!);
             }
         }
 
         var packagingDir = Path.Combine(repoRoot, "docs", "packaging", "workers");
         if (Directory.Exists(packagingDir))
-            paths.AddRange(Directory.GetFiles(packagingDir, "*.manifest.json"));
+        {
+            foreach (var file in Directory.GetFiles(packagingDir, "*.manifest.json"))
+            {
+                // Prefer workers/<id>/manifest.json when both exist (packaging docs are fallback stubs).
+                var id = Path.GetFileName(file);
+                if (id.EndsWith(".manifest.json", StringComparison.OrdinalIgnoreCase))
+                    id = id[..^".manifest.json".Length];
+                if (workerIdsFromTree.Contains(id))
+                    continue;
+                paths.Add(file);
+            }
+        }
+
         return paths;
     }
 }

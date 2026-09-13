@@ -100,7 +100,8 @@ public sealed class WorkerUvComponentInstaller : IWorkerUvComponentInstaller
                  {
                      "uv.lock", "pyproject.toml",
                      $"{componentId}_worker.py",
-                     "anny_worker.py", "garmentcode_worker.py", "echo_worker.py"
+                     "anny_worker.py", "garmentcode_worker.py", "echo_worker.py",
+                     "flux_worker.py", "skintokens_worker.py", "triposr_worker.py"
                  })
         {
             var src = Path.Combine(projectDir, name);
