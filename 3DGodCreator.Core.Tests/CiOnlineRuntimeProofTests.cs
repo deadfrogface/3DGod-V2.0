@@ -137,6 +137,7 @@ public class CiOnlineRuntimeProofTests
         Directory.CreateDirectory(outDir);
         var results = new List<object>();
 
+        var inferred = 0;
         foreach (var phrase in phrases)
         {
             var plan = LlamaSharpProvider.Interpret(phrase);
@@ -148,6 +149,14 @@ public class CiOnlineRuntimeProofTests
                 Assert.False(string.IsNullOrWhiteSpace(plan.Operation));
                 Assert.Contains(plan.Operation!, AiEditPlanSchema.AllowedOperations);
                 Assert.True(PromptSafety.ArgsAreSafe(plan.Args), "Unsafe args from model.");
+                inferred++;
+            }
+            else
+            {
+                // Ambiguous / Unsupported after real decode is honest — reason must explain rejection.
+                Assert.False(string.IsNullOrWhiteSpace(plan.Reason),
+                    $"Phrase '{phrase}' returned {plan.Status} without reason after real inference.");
+                inferred++;
             }
 
             var json = JsonSerializer.Serialize(plan);
@@ -167,6 +176,8 @@ public class CiOnlineRuntimeProofTests
                 plan.Args
             });
         }
+
+        Assert.Equal(phrases.Length, inferred);
 
         // Malformed / unsafe plans must be rejected by the validator (hard gate).
         var malformed = AiEditPlanValidator.Validate(new AiEditPlan

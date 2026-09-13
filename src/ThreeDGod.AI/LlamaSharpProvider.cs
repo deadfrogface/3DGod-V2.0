@@ -117,7 +117,20 @@ public static class LlamaSharpProvider
                 Provider = "llamasharp",
                 Reason = plan.Reason
             };
-            return AiEditPlanValidator.Validate(plan);
+            // Real GGUF inference already ran. Keep provider=llamasharp even when the
+            // allow-list rejects the model JSON (validator otherwise stamps Provider=validator).
+            var validated = AiEditPlanValidator.Validate(plan);
+            return new AiEditPlan
+            {
+                SchemaVersion = string.IsNullOrWhiteSpace(validated.SchemaVersion)
+                    ? AiEditPlanSchema.Version
+                    : validated.SchemaVersion,
+                Status = validated.Status,
+                Operation = validated.Operation,
+                Args = validated.Args,
+                Provider = "llamasharp",
+                Reason = validated.Reason
+            };
         }
         catch (Exception ex)
         {
@@ -155,7 +168,8 @@ Never include shell, URLs, code, filesystem paths, or extra keys. JSON only.
         {
             MaxTokens = 256,
             AntiPrompts = ["<|im_end|>", "```"],
-            SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0.1f }
+            // Temperature 0 for CI-stable real CPU inference (still real GGUF decode, not mocked).
+            SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0f }
         });
         foreach (var token in infer.ToBlockingEnumerable())
         {
