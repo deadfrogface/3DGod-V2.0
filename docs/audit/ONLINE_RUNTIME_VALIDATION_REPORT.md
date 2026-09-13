@@ -183,9 +183,9 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 | Field | Value |
 |-------|-------|
 | Branch | `cursor/online-runtime-validation-b322` |
-| Tip SHA | `36e34d07671fc936d6f3a41212a3a939c5cc61f5` |
-| PR URL | _(filled after PR)_ |
-| CI run URL(s) | _(filled after Actions)_ |
+| Tip SHA | `54f40dac09ae6577d89cc6207213fc32ead297c5` |
+| PR URL | _gh integration cannot create PRs (403); open via https://github.com/deadfrogface/3DGod-V2.0/pull/new/cursor/online-runtime-validation-b322_ |
+| CI run URL(s) | https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34787526297 (tip); prior cancelled by concurrency: https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34787510940 |
 | Report path | `docs/audit/ONLINE_RUNTIME_VALIDATION_REPORT.md` |
 | Self-hosted prep | `docs/ops/SELF_HOSTED_RUNNER_PREP.md` |
 
