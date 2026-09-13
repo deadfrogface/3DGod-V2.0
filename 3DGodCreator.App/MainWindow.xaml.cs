@@ -11,11 +11,13 @@ using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Export;
+using ThreeDGod.Infrastructure.Components;
 using ThreeDGod.Mesh;
 using ThreeDGod.Rendering;
 using ThreeDGod.Workers;
 using ThreeDGodCreator.App.Localization;
 using ThreeDGodCreator.App.Panels;
+using ThreeDGodCreator.App.Windows;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Localization;
 using ThreeDGodCreator.Core.Models;
@@ -47,6 +49,8 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly ViewportSelectionService _viewportSelection;
     private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
+    private readonly IComponentManager _components;
+    private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
     private ProblemsPanel? _problemsPanel;
 
@@ -62,7 +66,9 @@ public partial class MainWindow : Window, ILocalizableView
         AnnyHumanService anny,
         IAssetGenerationService assets,
         ViewportSelectionService viewportSelection,
-        IFbxExportService fbxExport)
+        IFbxExportService fbxExport,
+        IComponentManager components,
+        IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -79,6 +85,8 @@ public partial class MainWindow : Window, ILocalizableView
         _assets = assets;
         _viewportSelection = viewportSelection;
         _fbxExport = fbxExport;
+        _components = components;
+        _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
 
@@ -134,7 +142,7 @@ public partial class MainWindow : Window, ILocalizableView
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
         RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, () => _currentPreviewPath);
-        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features);
+        SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features, _components, _uvInstaller);
         AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
         _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);
         ProblemsPanel.Content = _problemsPanel;
@@ -552,8 +560,38 @@ public partial class MainWindow : Window, ILocalizableView
 
     private static readonly System.Windows.Input.RoutedCommand ToggleDebugCommand = new();
 
+    private void MenuSetupAssistant_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SetupAssistantWindow(_components, _uvInstaller) { Owner = this };
+        dlg.ShowDialog();
+    }
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var anyReady = _components.ListManifests().Any(m =>
+                _components.GetState(m.ComponentId).State == ComponentState.Ready);
+            var skipFlag = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod",
+                "setup-skipped.flag");
+            if (!anyReady && !File.Exists(skipFlag))
+            {
+                var dlg = new SetupAssistantWindow(_components, _uvInstaller) { Owner = this };
+                dlg.ShowDialog();
+                if (dlg.Skipped)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(skipFlag)!);
+                    File.WriteAllText(skipFlag, DateTime.UtcNow.ToString("O"));
+                }
+            }
+        }
+        catch
+        {
+            // Setup assistant must never block core startup.
+        }
+
         InputBindings.Add(new System.Windows.Input.KeyBinding(
             ToggleDebugCommand, System.Windows.Input.Key.F12, System.Windows.Input.ModifierKeys.None));
         CommandBindings.Add(new System.Windows.Input.CommandBinding(ToggleDebugCommand, (_, _) =>

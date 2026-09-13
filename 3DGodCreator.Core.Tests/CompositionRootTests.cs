@@ -36,9 +36,17 @@ public class CompositionRootTests
         Assert.NotNull(provider.GetService<IProjectService>());
         Assert.NotNull(provider.GetService<IWorkerHost>());
         Assert.NotNull(provider.GetService<IBackendRegistry>());
-        Assert.Null(provider.GetService<IImportService>());
-        Assert.Null(provider.GetService<IExportService>());
-        Assert.Null(provider.GetService<IRiggingService>());
+        // Honest NotInstalled / facade gates — not silent nulls pretending the capability is absent from the product surface.
+        var import = provider.GetService<IImportService>();
+        var export = provider.GetService<IExportService>();
+        var rigging = provider.GetService<IRiggingService>();
+        Assert.NotNull(import);
+        Assert.NotNull(export);
+        Assert.NotNull(rigging);
+        Assert.Equal(FeatureAvailability.NotInstalled, import!.Probe());
+        Assert.Equal(FeatureAvailability.Available, export!.Probe());
+        Assert.Equal(FeatureAvailability.NotInstalled, rigging!.Probe());
+        Assert.NotNull(provider.GetService<IAutoRigBackend>());
         Assert.NotNull(provider.GetService<IImageTo3DService>());
     }
 }

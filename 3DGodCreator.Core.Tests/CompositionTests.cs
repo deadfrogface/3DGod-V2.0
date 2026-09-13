@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
 using ThreeDGod.Infrastructure;
+using ThreeDGod.Mesh;
 using ThreeDGod.Persistence;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
@@ -34,9 +35,11 @@ public class CompositionTests
         Assert.IsType<ThreeDGod.Workers.GarmentCodeService>(provider.GetRequiredService<IGarmentCodeService>());
         Assert.NotNull(provider.GetRequiredService<AnnyPresetStore>());
         Assert.NotNull(provider.GetService<IBackendRegistry>());
-        Assert.Null(provider.GetService<IImportService>());
-        Assert.Null(provider.GetService<IExportService>());
-        Assert.Null(provider.GetService<IRiggingService>());
+        Assert.Equal(FeatureAvailability.NotInstalled, provider.GetRequiredService<IImportService>().Probe());
+        Assert.Equal(FeatureAvailability.Available, provider.GetRequiredService<IExportService>().Probe());
+        Assert.Equal(FeatureAvailability.NotInstalled, provider.GetRequiredService<IRiggingService>().Probe());
+        Assert.Equal(FeatureAvailability.NotInstalled, provider.GetRequiredService<IAutoRigBackend>().Probe());
+        Assert.NotNull(provider.GetService<IMeshProcessor>());
         Assert.NotNull(provider.GetService<IImageTo3DService>());
         Assert.IsType<ImageTo3DService>(provider.GetRequiredService<IImageTo3DService>());
         Assert.NotNull(provider.GetRequiredService<IAssetGenerationService>());

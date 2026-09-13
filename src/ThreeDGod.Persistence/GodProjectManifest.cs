@@ -5,7 +5,7 @@ public sealed class GodProjectManifest
     public string Format { get; set; } = "3dgod";
     public int FormatVersion { get; set; } = 1;
     public Guid ProjectId { get; set; }
-    public string MinimumAppVersion { get; set; } = "3.0.0";
+    public string MinimumAppVersion { get; set; } = "2.0.0";
     public string RootProjectPath { get; set; } = "project.json";
     public List<ManifestFileEntry> Files { get; set; } = [];
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

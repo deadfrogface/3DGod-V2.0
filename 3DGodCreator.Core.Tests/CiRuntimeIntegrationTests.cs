@@ -50,6 +50,127 @@ public class CiRuntimeIntegrationTests
         }
     }
 
+    [SkippableFact(Timeout = 900000)]
+    public async Task Anny_HeightTallerDelta_IsNonUniformMeshChange()
+    {
+        RequireIntegrationOrGate("Anny height morph");
+
+        var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
+        Assert.False(
+            probe.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled,
+            "Anny runtime missing while CI integration requested. Blocker: " + probe.Message);
+
+        await using var svc = new AnnyHumanService(new WorkerProcessHost());
+        var catalog = await svc.GetCatalogAsync();
+        Assert.True(catalog.PhenotypeKeys.Count > 0, "Anny catalog returned no phenotype keys.");
+        var key = AnnyHeightMorph.ResolvePhenotypeKey(catalog.PhenotypeKeys, catalog.LocalChangeKeys);
+        Assert.Contains(key, catalog.PhenotypeKeys.Concat(catalog.LocalChangeKeys), StringComparer.OrdinalIgnoreCase);
+
+        // Anny global "height" grows near-isotropically; drive proportion locals when present.
+        var proportionLocals = catalog.LocalChangeKeys
+            .Where(AnnyHeightMorph.IsProportionLocalKey)
+            .Take(6)
+            .ToArray();
+        if (proportionLocals.Length == 0)
+        {
+            // Fall back to non-facial locals if catalog uses unfamiliar proportion labels.
+            static bool IsFacialKey(string k) =>
+                k.Contains("smile", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("brow", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("eye", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("mouth", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("jaw", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("cheek", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("lip", StringComparison.OrdinalIgnoreCase)
+                || k.Contains("nose", StringComparison.OrdinalIgnoreCase);
+            proportionLocals = catalog.LocalChangeKeys.Where(k => !IsFacialKey(k)).Take(4).ToArray();
+        }
+
+        Assert.True(
+            proportionLocals.Length > 0,
+            "No usable Anny local-change keys for non-uniform taller morph. Locals=[" +
+            string.Join(',', catalog.LocalChangeKeys) + "] phenotypes=[" +
+            string.Join(',', catalog.PhenotypeKeys) + "]");
+
+        var shortPath = Path.Combine(Path.GetTempPath(), "3dgod-ci-anny-short-" + Guid.NewGuid().ToString("N") + ".glb");
+        var tallPath = Path.Combine(Path.GetTempPath(), "3dgod-ci-anny-tall-" + Guid.NewGuid().ToString("N") + ".glb");
+        try
+        {
+            // Hold global height phenotype fixed — Anny's height label is near-isotropic and would
+            // dominate/mask proportion locals. Product taller intent is applied via local keys.
+            const float fixedHeight = 0.5f;
+            var shortHuman = new ThreeDGod.Core.Domain.ParametricHumanState
+            {
+                PhenotypeParameters = { [AnnyHeightMorph.ProductParameterKey] = fixedHeight }
+            };
+            var tallHuman = new ThreeDGod.Core.Domain.ParametricHumanState
+            {
+                PhenotypeParameters = { [AnnyHeightMorph.ProductParameterKey] = fixedHeight }
+            };
+
+            var intoLocal = catalog.LocalChangeKeys.Contains(key, StringComparer.OrdinalIgnoreCase);
+            if (intoLocal && !proportionLocals.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                shortHuman.LocalShapeParameters[key] = 0.1f;
+                tallHuman.LocalShapeParameters[key] = 0.9f;
+            }
+            else if (!intoLocal
+                     && !string.Equals(key, AnnyHeightMorph.ProductParameterKey, StringComparison.OrdinalIgnoreCase))
+            {
+                shortHuman.PhenotypeParameters[key] = 0.1f;
+                tallHuman.PhenotypeParameters[key] = 0.9f;
+            }
+
+            foreach (var localKey in proportionLocals)
+            {
+                shortHuman.LocalShapeParameters[localKey] = 0.1f;
+                tallHuman.LocalShapeParameters[localKey] = 0.9f;
+            }
+
+            await svc.GenerateGlbAsync(shortPath, AnnyHumanService.FromState(shortHuman));
+            await svc.GenerateGlbAsync(tallPath, AnnyHumanService.FromState(tallHuman));
+
+            var shortVerts = MeshCompare.ReadPositions(shortPath);
+            var tallVerts = MeshCompare.ReadPositions(tallPath);
+            Assert.True(shortVerts.Count >= 100, $"Expected real Anny mesh, got {shortVerts.Count} verts.");
+            Assert.Equal(shortVerts.Count, tallVerts.Count);
+
+            static (float height, float width) Bounds(System.Collections.Generic.IReadOnlyList<System.Numerics.Vector3> verts)
+            {
+                var min = verts[0];
+                var max = verts[0];
+                foreach (var v in verts)
+                {
+                    min = System.Numerics.Vector3.Min(min, v);
+                    max = System.Numerics.Vector3.Max(max, v);
+                }
+                var size = max - min;
+                return (size.Y, MathF.Max(size.X, size.Z));
+            }
+
+            var (beforeH, beforeW) = Bounds(shortVerts);
+            var (afterH, afterW) = Bounds(tallVerts);
+            Assert.True(afterH > beforeH * 1.02f,
+                $"Expected taller mesh; height {beforeH:F3}->{afterH:F3}, key={key}, locals=[{string.Join(',', proportionLocals)}].");
+            Assert.False(
+                MeshCompare.IsUniformScale(shortVerts, tallVerts),
+                $"Taller morph must not be uniform XYZ scale; height {beforeH:F3}->{afterH:F3}, width {beforeW:F3}->{afterW:F3}, key={key}, locals=[{string.Join(',', proportionLocals)}].");
+            Assert.True(
+                AnnyHeightMorph.LooksLikeNonUniformHeightChange(beforeH, afterH, beforeW, afterW)
+                || afterH / beforeH > (afterW / MathF.Max(beforeW, 1e-5f)) * 1.05f,
+                $"Expected height to outpace width (non-uniform); height {beforeH:F3}->{afterH:F3}, width {beforeW:F3}->{afterW:F3}, key={key}, locals=[{string.Join(',', proportionLocals)}].");
+        }
+        finally
+        {
+            foreach (var p in new[] { shortPath, tallPath })
+            {
+                if (File.Exists(p)) File.Delete(p);
+                var obj = Path.ChangeExtension(p, ".obj");
+                if (File.Exists(obj)) File.Delete(obj);
+            }
+        }
+    }
+
     [SkippableFact(Timeout = 600000)]
     public async Task GarmentCode_CpuJacket_WritesRealGlb()
     {

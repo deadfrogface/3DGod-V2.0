@@ -12,17 +12,15 @@ public class AssetSmokeTests
     [InlineData("view_overlay/clothes", "clothes_demo_asset.png")]
     [InlineData("view_overlay/piercings", "piercings_demo_asset.png")]
     [InlineData("view_overlay/tattoos", "tattoos_demo_asset.png")]
-    public void PreviewAndOverlayPngs_AreNotValidPngFiles(string relativeDir, string fileName)
+    public void PreviewAndOverlayPngs_AreValidPngFiles(string relativeDir, string fileName)
     {
         var path = Path.Combine(RepoPaths.AssetsDir, relativeDir.Replace('/', Path.DirectorySeparatorChar), fileName);
         Assert.True(File.Exists(path), path + " missing from repository.");
 
         var bytes = File.ReadAllBytes(path);
         var looksLikePng = bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(PngSignature);
-        Assert.False(looksLikePng,
-            path + " unexpectedly looks like a real PNG. Update docs/audit/V2_FEATURE_AUDIT.md if placeholders were replaced.");
-        Assert.True(bytes.Length < 64,
-            path + " is larger than the known 9-byte '.gitinore' placeholder.");
+        Assert.True(looksLikePng, path + " must be a real PNG signature after Safe Reuse asset repair.");
+        Assert.True(bytes.Length >= 64, path + " is unexpectedly tiny for a preview PNG.");
     }
 
     [Fact]

@@ -1,32 +1,32 @@
 {
   "phase": 59,
-  "generatedUtc": "2026-09-09T22:21:15.6400217Z",
+  "generatedUtc": "2026-09-11T00:19:25.9004732Z",
   "environment": {
     "cpuCount": 4,
-    "ramBytes": 8241008640,
+    "ramBytes": 16791945216,
     "gpuName": "unknown",
     "vramMb": 0,
     "cuda": false,
-    "diskFreeBytes": 31877476352
+    "diskFreeBytes": 263766761472
   },
   "benchmarks": {
     "startupMs": {
-      "value": 31.6395,
+      "value": 45.9003,
       "unit": "ms",
       "status": "measured"
     },
     "projectLoadMs": {
-      "value": 27.031,
+      "value": 0.3397,
       "unit": "ms",
       "status": "measured"
     },
     "projectSaveMs": {
-      "value": 1576.3239,
+      "value": 6.3529,
       "unit": "ms",
       "status": "measured"
     },
     "humanSliderMs": {
-      "value": 0.7273,
+      "value": 1.0765,
       "unit": "ms",
       "status": "measured"
     },
@@ -36,9 +36,9 @@
       "reason": "Requires interactive WPF render loop; not measured in headless benchmark runner"
     },
     "generationMs": {
-      "value": 749.4537,
       "unit": "ms",
-      "status": "measured"
+      "status": "gated",
+      "reason": "StartFailed"
     },
     "workerProcessReleased": {
       "value": 1,
@@ -51,7 +51,7 @@
       "reason": "No CUDA worker/runtime in this environment"
     },
     "ramBytesWorkingSet": {
-      "value": 129445888,
+      "value": 138948608,
       "unit": "bytes",
       "status": "measured"
     }

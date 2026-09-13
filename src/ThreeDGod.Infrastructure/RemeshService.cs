@@ -8,8 +8,13 @@ namespace ThreeDGod.Infrastructure;
 public sealed class RemeshService : IRemeshService
 {
     private readonly IDiagnosticService? _diagnostics;
+    private readonly IMeshProcessor _processor;
 
-    public RemeshService(IDiagnosticService? diagnostics = null) => _diagnostics = diagnostics;
+    public RemeshService(IDiagnosticService? diagnostics = null, IMeshProcessor? processor = null)
+    {
+        _diagnostics = diagnostics;
+        _processor = processor ?? MeshProcessorSelector.Create();
+    }
 
     public string RemeshGlb(string sourceGlb, string destinationGlb, RemeshProfile profile)
     {
@@ -23,8 +28,8 @@ public sealed class RemeshService : IRemeshService
                     throw new InvalidOperationException("Mesh.Validate failed before remesh.");
             });
 
-            var remeshed = RemeshPipeline.Run(positions, indices, profile);
-            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.UV", "Completed", "spherical");
+            var remeshed = _processor.Process(positions, indices, profile);
+            PipelineTrace.Stage(_diagnostics, "Mesh", "Mesh.UV", "Completed", remeshed.BackendId);
 
             // Real LOD mesh via RemeshPipeline profiles (not triangle-count arithmetic alone).
             var lod = LodService.BuildLodMesh(remeshed.Positions, remeshed.Indices, level: 1);

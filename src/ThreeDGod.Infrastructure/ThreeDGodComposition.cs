@@ -1,10 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using ThreeDGod.Application;
+using ThreeDGod.Mesh;
+using ThreeDGod.Rigging;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Workers;
 using ThreeDGod.Persistence;
 using ThreeDGod.Physics;
+using ThreeDGod.Infrastructure.Components;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -33,7 +36,14 @@ public static class ThreeDGodComposition
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
         services.AddSingleton<AssetLibrary>();
         services.AddSingleton<IAssetGenerationService, AiAssetPipeline>();
-        services.AddSingleton<IRemeshService, RemeshService>();
+        services.AddSingleton<IUvUnwrapper, SphericalUvUnwrapper>();
+        services.AddSingleton<IMeshProcessor>(sp => MeshProcessorSelector.Create(uv: sp.GetRequiredService<IUvUnwrapper>()));
+        services.AddSingleton<IRemeshService>(sp => new RemeshService(sp.GetRequiredService<IDiagnosticService>(), sp.GetRequiredService<IMeshProcessor>()));
+        services.AddSingleton<ISkinWeightSolver, DistanceSkinWeightSolver>();
+        services.AddSingleton<IImportService, NotInstalledImportService>();
+        services.AddSingleton<IExportService, PreferSpecificExportService>();
+        services.AddSingleton<IAutoRigBackend, NotInstalledAutoRigBackend>();
+        services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigBackend>());
         services.AddSingleton<ISkinTokensRigService, SkinTokensRigService>();
         services.AddSingleton<IRigValidator, RigValidationService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();
@@ -89,6 +99,25 @@ public static class ThreeDGodComposition
             ImageTo3DManifest("trellis", 20, "trellis", accepted: false, minVram: 12288, cuda: true)
         ]));
         services.AddSingleton<IGpuJobScheduler, GpuJobScheduler>();
+        services.AddSingleton<IComponentHealthCheckRunner, ComponentHealthCheckRunner>();
+        services.AddSingleton<IComponentDownloadService, ComponentDownloadService>();
+        services.AddSingleton<IUvProvisioner>(sp =>
+            new UvProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
+        services.AddSingleton<IComponentManager>(sp =>
+        {
+            var modelsRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod",
+                "Models");
+            var repoRoot = AnnyRuntime.FindRepoRoot();
+            return ComponentManager.FromRepo(repoRoot, modelsRoot);
+        });
+        services.AddSingleton<IWorkerUvComponentInstaller>(sp =>
+            new WorkerUvComponentInstaller(
+                sp.GetRequiredService<IComponentManager>(),
+                sp.GetRequiredService<IUvProvisioner>(),
+                AnnyRuntime.FindRepoRoot(),
+                sp.GetRequiredService<IComponentHealthCheckRunner>()));
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();

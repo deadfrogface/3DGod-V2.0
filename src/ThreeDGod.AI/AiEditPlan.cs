@@ -33,7 +33,8 @@ public static class AiEditPlanSchema
         "creature.addPart",
         "garment.parameter.delta",
         "parameter.set",
-        "parameter.delta"
+        "parameter.delta",
+        "material.pbr"
     };
 }
 

@@ -5,7 +5,7 @@
   "status": "NotInstalled",
   "packageVersion": "0.0.0",
   "licenseId": "stability-community",
-  "licenseRef": "docs/audit/PHASE_27_REPORT.md",
+  "licenseRef": "docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md",
   "includedInBaseInstaller": false,
   "model": {
     "checkpointHash": null,
@@ -22,6 +22,6 @@
     "requiresCuda": true,
     "requiresUv": false,
     "requiresBlender": false,
-    "notes": "Requires accepted Stability Community License in license.json. LicenseBlocked until user accepts."
+    "notes": "REJECTED for product install this cycle. Manifest retained for honest probing only."
   }
 }
