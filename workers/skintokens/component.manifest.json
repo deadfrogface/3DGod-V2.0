@@ -1,0 +1,22 @@
+{
+  "manifestVersion": 1,
+  "componentId": "skintokens",
+  "displayName": "Automatic Rigging (SkinTokens)",
+  "packageVersion": "0.1.0",
+  "licenseId": "mit",
+  "licenseAcceptedRequired": false,
+  "optional": true,
+  "featureId": "mesh.autoroot",
+  "localSourceHint": "workers/skintokens",
+  "hardware": {
+    "minVramMb": 14000,
+    "requiresCuda": true,
+    "minDiskFreeBytes": 8000000000
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "skintokens_worker.py" },
+    { "kind": "FileExists", "target": "uv.lock" },
+    { "kind": "WorkerPing", "target": "skintokens_worker.py" }
+  ],
+  "notes": "WRAP VAST-AI-Research/SkinTokens + VAST-AI/SkinTokens@79736cad0fd84de384d5eede659b4ebd24effe33 (MIT). IMPLEMENTED_GATED_HARDWARE: CUDA >=14GB + checkpoints + upstream code required. Never fakes skinned GLB."
+}

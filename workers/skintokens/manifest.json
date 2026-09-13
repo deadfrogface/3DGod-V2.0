@@ -1,12 +1,18 @@
 {
   "manifestVersion": 1,
   "workerId": "skintokens",
-  "displayName": "SkinTokens Rig Backend",
+  "displayName": "SkinTokens Mesh Auto-Root",
   "status": "NotInstalled",
   "packageVersion": "0.1.0",
   "licenseId": "mit",
   "licenseRef": "docs/audit/STAGE16_SKINTOKENS_DECISION.md",
   "includedInBaseInstaller": false,
+  "pythonPackage": {
+    "name": "3dgod-skintokens",
+    "pinnedVersion": "0.1.0",
+    "pyproject": "workers/skintokens/pyproject.toml",
+    "uvLock": "workers/skintokens/uv.lock"
+  },
   "model": {
     "checkpointHash": "79736cad0fd84de384d5eede659b4ebd24effe33",
     "sizeBytes": 0,
@@ -22,6 +28,6 @@
     "requiresCuda": true,
     "requiresUv": true,
     "requiresBlender": false,
-    "notes": "MIT code + MIT HF weights at pinned revision 79736cad0fd84de384d5eede659b4ebd24effe33. Status NotInstalled until worker env + checkpoints + upstream produce PASS_REAL. Classification: IMPLEMENTED_GATED_HARDWARE."
+    "notes": "MIT code + MIT HF weights (pinned revision). IMPLEMENTED_GATED_HARDWARE until CUDA>=14GB + checkpoints + upstream produce a real skinned GLB. Never fake rig outputs."
   }
 }

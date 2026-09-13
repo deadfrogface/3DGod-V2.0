@@ -40,8 +40,7 @@ public static class SetupAssistantCatalog
     private static readonly HashSet<string> InstallRejectedIds = new(StringComparer.OrdinalIgnoreCase)
     {
         "sf3d",
-        "spar3d",
-        "skintokens"
+        "spar3d"
     };
 
     public static IReadOnlyList<SetupFeatureDescriptor> Features { get; } =
@@ -143,9 +142,7 @@ public static class SetupAssistantCatalog
                     State = rejectedState.State is ComponentState.Ready
                         ? ComponentState.DownloadUnavailable
                         : rejectedState.State,
-                    Message = id is "skintokens"
-                        ? "GATED_LICENSE / GATED_HARDWARE – SkinTokens is not integrated until license + VRAM are cleared."
-                        : "REJECTED – SF3D/SPAR3D not selected for product install this cycle (see docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md).",
+                    Message = "REJECTED – SF3D/SPAR3D not selected for product install this cycle (see docs/audit/STAGE13_SF3D_SPAR3D_DECISION.md).",
                     CanInstall = false,
                     CanRepair = false,
                     CanRemove = rejectedState.State is ComponentState.Ready or ComponentState.Broken

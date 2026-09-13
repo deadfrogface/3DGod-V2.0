@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using ThreeDGod.Application;
 using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Workers;
 
 namespace ThreeDGod.Infrastructure;
 
@@ -19,11 +20,29 @@ public static class ReferenceImageRuntime
 
     public static ReferenceImageRuntimeStatus Probe(string? backendId = null)
     {
+        if (string.IsNullOrWhiteSpace(backendId) ||
+            string.Equals(backendId, "flux", StringComparison.OrdinalIgnoreCase))
+        {
+            var flux = FluxRuntime.Probe();
+            if (flux.Availability is not FeatureAvailability.NotInstalled || flux.HasCheckpoint)
+            {
+                return new ReferenceImageRuntimeStatus
+                {
+                    Availability = flux.Availability,
+                    Message = flux.Message,
+                    BackendId = "flux",
+                    CheckpointPath = flux.ModelDir
+                };
+            }
+        }
+
         var hw = HardwareProfiler.Probe();
         var candidates = string.IsNullOrWhiteSpace(backendId) ? Backends : [backendId];
         ReferenceImageRuntimeStatus? firstCheckpoint = null;
         foreach (var id in candidates)
         {
+            if (string.Equals(id, "flux", StringComparison.OrdinalIgnoreCase))
+                continue;
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "3DGod", "Models", id);
@@ -55,10 +74,13 @@ public static class ReferenceImageRuntime
         if (firstCheckpoint is not null)
             return firstCheckpoint;
 
+        var fluxStatus = FluxRuntime.Probe();
         return new ReferenceImageRuntimeStatus
         {
-            Availability = FeatureAvailability.NotInstalled,
-            Message = "NotInstalled – FLUX.1-schnell / Qwen-Image checkpoint missing. No image will be generated."
+            Availability = fluxStatus.Availability,
+            Message = fluxStatus.Message,
+            BackendId = "flux",
+            CheckpointPath = fluxStatus.ModelDir
         };
     }
 }
@@ -74,13 +96,35 @@ public sealed class ReferenceImageService : IReferenceImageGenerationService
 
     public Task<ReferenceImage> GenerateAsync(string prompt, long? seed, ProjectBundle bundle, CancellationToken cancellationToken = default)
     {
-        var status = ReferenceImageRuntime.Probe();
-        return PipelineTrace.RunAsync<ReferenceImage>(_diagnostics, "AI", "ReferenceImage.Generate", () =>
-            Task.FromException<ReferenceImage>(new InvalidOperationException(status.Message)),
-            provider: status.BackendId ?? "flux/qwen");
+        var status = ReferenceImageRuntime.Probe("flux");
+        return PipelineTrace.RunAsync(_diagnostics, "AI", "ReferenceImage.Generate", async () =>
+        {
+            if (status.Availability is FeatureAvailability.NotInstalled
+                or FeatureAvailability.UnsupportedHardware
+                or FeatureAvailability.Disabled)
+                throw new InvalidOperationException(status.Message);
+
+            var work = Path.Combine(Path.GetTempPath(), "3dgod-flux-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(work);
+            var pngPath = Path.Combine(work, "flux.png");
+            try
+            {
+                await using var flux = new FluxService(new WorkerProcessHost(_diagnostics), _diagnostics);
+                await flux.GeneratePngAsync(prompt, pngPath, seed, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var image = AttachExistingPng(pngPath, prompt, seed, bundle);
+                image.BackendId = "flux";
+                image.ModelId = FluxRuntime.HfRepo;
+                image.Source = "flux-schnell";
+                return image;
+            }
+            finally
+            {
+                try { Directory.Delete(work, recursive: true); } catch { /* best-effort */ }
+            }
+        }, provider: status.BackendId ?? "flux");
     }
 
-    public ReferenceImage AttachExistingPng(string pngPath, string prompt, long? seed, ProjectBundle bundle)
+public ReferenceImage AttachExistingPng(string pngPath, string prompt, long? seed, ProjectBundle bundle)
     {
         ArgumentNullException.ThrowIfNull(bundle);
         if (string.IsNullOrWhiteSpace(pngPath) || !File.Exists(pngPath))

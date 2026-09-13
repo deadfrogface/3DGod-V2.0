@@ -1,0 +1,27 @@
+[project]
+name = "3dgod-skintokens"
+version = "0.1.0"
+description = "Isolated 3D God SkinTokens mesh auto-root worker (MIT code + HF weights)."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "torch>=2.2.0",
+    "torchvision>=0.17.0",
+    "numpy>=1.24,<2",
+    "pillow>=10.0",
+    "huggingface-hub>=0.24.0",
+    "safetensors>=0.4.0",
+    "trimesh>=4.0.0",
+]
+
+[tool.uv]
+package = false
+
+# Lock uses CPU wheels so CI/agents can sync; runtime still requires CUDA for PASS_REAL.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

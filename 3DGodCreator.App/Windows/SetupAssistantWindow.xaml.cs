@@ -31,7 +31,7 @@ public partial class SetupAssistantWindow : Window
                 Title = status.Feature.Title,
                 Description = status.Feature.Description,
                 ComponentId = status.Feature.PrimaryComponentId ?? "",
-                StateLine = $"{status.State}: {status.Message}",
+                StateLine = $"{FormatUserState(status.State)}: {status.Message}",
                 AdvancedLine = string.IsNullOrWhiteSpace(status.Feature.AdvancedBackendName)
                     ? ""
                     : $"Backend: {status.Feature.AdvancedBackendName}",
@@ -128,6 +128,21 @@ public partial class SetupAssistantWindow : Window
             LblStatus.Text = $"{label} failed: {ex.Message}";
         }
     }
+
+
+    private static string FormatUserState(ComponentState state) => state switch
+    {
+        ComponentState.Ready => "READY",
+        ComponentState.Optional => "OPTIONAL",
+        ComponentState.NotInstalled => "NOT INSTALLED",
+        ComponentState.Installing => "INSTALLING",
+        ComponentState.UpdateAvailable => "UPDATE AVAILABLE",
+        ComponentState.HardwareUnsupported => "HARDWARE UNSUPPORTED",
+        ComponentState.LicenseBlocked => "LICENSE BLOCKED",
+        ComponentState.Broken => "BROKEN",
+        ComponentState.DownloadUnavailable => "DOWNLOAD UNAVAILABLE",
+        _ => state.ToString().ToUpperInvariant()
+    };
 
     private sealed class FeatureRow
     {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-09-10",
+  "lastUpdated": "2026-09-13",
   "components": [
     {
       "id": "3dgod-app",
@@ -137,12 +137,13 @@
     {
       "id": "skintokens",
       "kind": "model-backend",
-      "licenseId": "pending-review",
-      "licenseRef": "docs/audit/V2_FEATURE_AUDIT.md",
-      "shippingStatus": "not-shipping",
-      "commercialUse": false,
-      "requiresUserAccept": true,
-      "verified": false
+      "licenseId": "mit",
+      "licenseRef": "docs/audit/STAGE16_SKINTOKENS_DECISION.md",
+      "shippingStatus": "optional-download",
+      "commercialUse": true,
+      "requiresUserAccept": false,
+      "verified": true,
+      "notes": "License verified MIT for code (VAST-AI-Research/SkinTokens) and HF weights (VAST-AI/SkinTokens@79736cad0fd84de384d5eede659b4ebd24effe33). Runtime remains IMPLEMENTED_GATED_HARDWARE (CUDA>=14GB + checkpoints + upstream). Residual training-data provenance (ArticulationXL/VRoid/ModelsResource mix) noted but does not block MIT redistribution of published weights."
     },
     {
       "id": "male_base.glb",
