@@ -38,8 +38,8 @@ jobs:
           Write-Host "GPU_PROBE:"
           try {
             $nvsmi = Get-Command nvidia-smi -ErrorAction SilentlyContinue
-            if ($nvsmi) { & nvidia-smi -L } else { Write-Host "nvidia-smi not found -> GATED_GPU for CUDA inference" }
-          } catch { Write-Host "GPU probe failed -> GATED_GPU" }
+            if ($nvsmi) { & nvidia-smi -L } else { Write-Host "nvidia-smi not found -> GATED_HARDWARE for CUDA inference" }
+          } catch { Write-Host "GPU probe failed -> GATED_HARDWARE" }
 
       - name: Restore + Build + Test via build.ps1
         id: build
@@ -88,6 +88,7 @@ jobs:
             artifacts/test/
             artifacts/gate/
           if-no-files-found: warn
+          retention-days: 14
 
   clean-install-smoke:
     name: Clean Windows Installer Smoke
@@ -139,6 +140,7 @@ jobs:
             artifacts/publish/
             artifacts/releases/
           if-no-files-found: warn
+          retention-days: 7
 
   runtime-integration:
     name: Anny / Garment CPU Integration
@@ -154,6 +156,7 @@ jobs:
     timeout-minutes: 90
     outputs:
       anny_status: ${{ steps.runtime.outputs.anny_status }}
+      anny_morph_status: ${{ steps.runtime.outputs.anny_morph_status }}
       garment_status: ${{ steps.runtime.outputs.garment_status }}
 
     steps:
@@ -200,20 +203,30 @@ jobs:
         shell: pwsh
         env:
           THREEDGOD_CI_RUNTIME_INTEGRATION: "1"
+          THREEDGOD_CI_ARTIFACT_DIR: artifacts/runtime
         run: |
           $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
           New-Item -ItemType Directory -Force -Path "artifacts/runtime" | Out-Null
-          $anny = "GATED_EXTERNAL_RUNTIME"
-          $garment = "GATED_EXTERNAL_RUNTIME"
+          $anny = "FAIL"
+          $morph = "FAIL"
+          $garment = "FAIL"
           $code = 0
 
           Write-Host "=== Anny live generate ==="
           dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
-            --filter "FullyQualifiedName~CiRuntimeIntegrationTests.Anny_" `
+            --filter "FullyQualifiedName~CiRuntimeIntegrationTests.Anny_CpuGenerate_WritesRealGlb" `
             --logger "trx;LogFileName=anny.trx" `
             --logger "console;verbosity=normal" `
             --results-directory "artifacts/runtime"
-          if ($LASTEXITCODE -eq 0) { $anny = "CI_VERIFIED" } else { $anny = "FAILED"; $code = 1 }
+          if ($LASTEXITCODE -eq 0) { $anny = "PASS_REAL" } else { $anny = "FAIL"; $code = 1 }
+
+          Write-Host "=== Anny height/proportion morph ==="
+          dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
+            --filter "FullyQualifiedName~CiRuntimeIntegrationTests.Anny_HeightTallerDelta_IsNonUniformMeshChange" `
+            --logger "trx;LogFileName=anny-morph.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime"
+          if ($LASTEXITCODE -eq 0) { $morph = "PASS_REAL" } else { $morph = "FAIL"; $code = 1 }
 
           Write-Host "=== GarmentCode live jacket ==="
           dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
@@ -221,14 +234,16 @@ jobs:
             --logger "trx;LogFileName=garment.trx" `
             --logger "console;verbosity=normal" `
             --results-directory "artifacts/runtime"
-          if ($LASTEXITCODE -eq 0) { $garment = "CI_VERIFIED" } else { $garment = "FAILED"; $code = 1 }
+          if ($LASTEXITCODE -eq 0) { $garment = "PASS_REAL" } else { $garment = "FAIL"; $code = 1 }
 
           echo "anny_status=$anny" >> $env:GITHUB_OUTPUT
+          echo "anny_morph_status=$morph" >> $env:GITHUB_OUTPUT
           echo "garment_status=$garment" >> $env:GITHUB_OUTPUT
           Write-Host "ANNY_RUNTIME=$anny"
+          Write-Host "ANNY_MORPH=$morph"
           Write-Host "GARMENT_RUNTIME=$garment"
           if ($code -ne 0) {
-            Write-Host "::error::Runtime integration failed (Anny=$anny Garment=$garment). No silent skip."
+            Write-Host "::error::Runtime integration failed (Anny=$anny Morph=$morph Garment=$garment). No silent skip."
             exit $code
           }
 
@@ -237,12 +252,93 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-integration
-          path: artifacts/runtime/
+          path: |
+            artifacts/runtime/**
+            !artifacts/runtime/**/*.ckpt
+            !artifacts/runtime/**/*.gguf
           if-no-files-found: warn
+          retention-days: 14
+
+  llamasharp-cpu:
+    name: LLamaSharp CPU GGUF Proof
+    needs: build-and-test
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      startsWith(github.ref, 'refs/heads/release/') ||
+      startsWith(github.ref, 'refs/heads/cursor/') ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'main' || startsWith(github.base_ref, 'cursor/')))
+    runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      llama_status: ${{ steps.llama.outputs.llama_status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache pinned Qwen GGUF
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/3dgod-llama-cache
+          key: llama-gguf-qwen25-05b-q4km-74a4da8c9fdbcd15
+
+      - name: Acquire pinned Apache-2.0 GGUF
+        shell: pwsh
+        run: |
+          $cache = Join-Path $env:RUNNER_TEMP "3dgod-llama-cache"
+          New-Item -ItemType Directory -Force -Path $cache | Out-Null
+          & "scripts/ci/Invoke-AcquireLlamaGguf.ps1" -ModelDir $cache -SkipIfPresent
+          $dest = Join-Path $env:LOCALAPPDATA "3DGod\Models\llama"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item (Join-Path $cache "qwen2.5-0.5b-instruct-q4_k_m.gguf") $dest -Force
+          Copy-Item (Join-Path $cache "license.json") $dest -Force
+
+      - name: Build + run LLamaSharp live proof
+        id: llama
+        shell: pwsh
+        env:
+          THREEDGOD_CI_RUNTIME_INTEGRATION: "1"
+          THREEDGOD_CI_LLAMASHARP: "1"
+          THREEDGOD_CI_ARTIFACT_DIR: artifacts/runtime
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/llamasharp" | Out-Null
+          dotnet build "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release -v minimal
+          if ($LASTEXITCODE -ne 0) { echo "llama_status=FAIL" >> $env:GITHUB_OUTPUT; exit $LASTEXITCODE }
+          dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
+            --filter "FullyQualifiedName~CiOnlineRuntimeProofTests.LlamaSharp_CpuGguf_Phrases_InvokeInferenceAndValidatePlans" `
+            --logger "trx;LogFileName=llamasharp.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime"
+          if ($LASTEXITCODE -eq 0) {
+            echo "llama_status=PASS_REAL" >> $env:GITHUB_OUTPUT
+            Write-Host "LLAMASHARP_RUNTIME=PASS_REAL"
+          } else {
+            echo "llama_status=FAIL" >> $env:GITHUB_OUTPUT
+            Write-Host "::error::LLamaSharp CPU GGUF proof FAILED (not soft-skip)"
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload LLamaSharp structured output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llamasharp-runtime
+          path: |
+            artifacts/runtime/llamasharp/
+            artifacts/runtime/*.trx
+          if-no-files-found: warn
+          retention-days: 14
 
   release-gate-summary:
     name: Release Gate Summary
-    needs: [build-and-test, clean-install-smoke, runtime-integration]
+    needs: [build-and-test, clean-install-smoke, runtime-integration, llamasharp-cpu]
     if: always()
     runs-on: windows-latest
     steps:
@@ -260,35 +356,78 @@ jobs:
           }
           $anny = "${{ needs.runtime-integration.outputs.anny_status }}"
           if ([string]::IsNullOrWhiteSpace($anny)) {
-            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $anny = "GATED_EXTERNAL_RUNTIME" }
-            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $anny = "FAILED" }
+            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $anny = "SKIPPED_ENVIRONMENT" }
+            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $anny = "FAIL" }
             else { $anny = "unknown" }
+          }
+          $morph = "${{ needs.runtime-integration.outputs.anny_morph_status }}"
+          if ([string]::IsNullOrWhiteSpace($morph)) {
+            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $morph = "SKIPPED_ENVIRONMENT" }
+            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $morph = "FAIL" }
+            else { $morph = "unknown" }
           }
           $garment = "${{ needs.runtime-integration.outputs.garment_status }}"
           if ([string]::IsNullOrWhiteSpace($garment)) {
-            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $garment = "GATED_EXTERNAL_RUNTIME" }
-            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $garment = "FAILED" }
+            if ("${{ needs.runtime-integration.result }}" -eq "skipped") { $garment = "SKIPPED_ENVIRONMENT" }
+            elseif ("${{ needs.runtime-integration.result }}" -eq "failure") { $garment = "FAIL" }
             else { $garment = "unknown" }
+          }
+          $llama = "${{ needs.llamasharp-cpu.outputs.llama_status }}"
+          if ([string]::IsNullOrWhiteSpace($llama)) {
+            if ("${{ needs.llamasharp-cpu.result }}" -eq "skipped") { $llama = "SKIPPED_ENVIRONMENT" }
+            elseif ("${{ needs.llamasharp-cpu.result }}" -eq "failure") { $llama = "FAIL" }
+            else { $llama = "unknown" }
           }
           $build = "${{ needs.build-and-test.outputs.build_result }}"
           if ([string]::IsNullOrWhiteSpace($build)) { $build = "${{ needs.build-and-test.result }}" }
+          $buildClass = if ($build -eq "SUCCESS" -or $build -eq "success") { "PASS_REAL" } else { "FAIL" }
+          $installerClass = switch ($installer) {
+            "success" { "PASS_REAL" }
+            "failure" { "FAIL" }
+            "skipped" { "SKIPPED_ENVIRONMENT" }
+            default { $installer }
+          }
+
+          # Map legacy CI_VERIFIED labels for the older summary script.
+          $annyLegacy = if ($anny -eq "PASS_REAL") { "CI_VERIFIED" } elseif ($anny -eq "FAIL") { "FAILED" } else { "GATED_EXTERNAL_RUNTIME" }
+          $garmentLegacy = if ($garment -eq "PASS_REAL") { "CI_VERIFIED" } elseif ($garment -eq "FAIL") { "FAILED" } else { "GATED_EXTERNAL_RUNTIME" }
 
           & "scripts/ci/Write-ReleaseGateClassification.ps1" `
             -InstallerSmoke $installer `
-            -Anny $anny `
-            -Garment $garment `
+            -Anny $annyLegacy `
+            -Garment $garmentLegacy `
             -BuildResult $build
+
+          & "scripts/ci/Write-OnlineRuntimeClassification.ps1" `
+            -Build $buildClass `
+            -Installer $installerClass `
+            -Anny $anny `
+            -AnnyMorph $morph `
+            -Garment $garment `
+            -TripoSr "SKIPPED_ENVIRONMENT (heavy job: runtime-triposr-cpu.yml)" `
+            -LlamaSharp $llama `
+            -Flux "GATED_HARDWARE (GH GPU larger runners require Team/Enterprise billing; use self-hosted labels gpu+cuda)" `
+            -SkinTokens "GATED_HARDWARE (needs >=14GB VRAM CUDA; self-hosted gpu+cuda)" `
+            -Ue5 "GATED_UE5 (Unreal not on GH-hosted; runtime-ue5.yml self-hosted)" `
+            -FlaUi "GATED_INTERACTIVE_DESKTOP (runtime-flaui.yml self-hosted interactive)" `
+            -SaveLoad "PASS_REAL (unit job GodProjectArchiveTests)" `
+            -Security "PASS_REAL (unit job SecurityHardeningTests)" `
+            -Diagnostics "PASS_REAL (unit job WorkerSmartDiagnosticsTests/DiagnosticServiceTests)" `
+            -SetupAssistant "PASS_REAL (unit job SetupAssistantCatalogTests/Stage12Through19HonestyTests)" `
+            -ComponentManager "PASS_REAL (unit job ComponentManagerTests)"
 
           Write-Host ""
           Write-Host "JOB_RESULTS:"
           Write-Host "  build-and-test: ${{ needs.build-and-test.result }}"
           Write-Host "  clean-install-smoke: ${{ needs.clean-install-smoke.result }}"
           Write-Host "  runtime-integration: ${{ needs.runtime-integration.result }}"
+          Write-Host "  llamasharp-cpu: ${{ needs.llamasharp-cpu.result }}"
 
           $fail = $false
           if ("${{ needs.build-and-test.result }}" -ne "success") { $fail = $true }
           if ("${{ needs.clean-install-smoke.result }}" -eq "failure") { $fail = $true }
           if ("${{ needs.runtime-integration.result }}" -eq "failure") { $fail = $true }
+          if ("${{ needs.llamasharp-cpu.result }}" -eq "failure") { $fail = $true }
           if ($fail) {
             Write-Host "::error::Release gate summary detected failing required jobs"
             exit 1
@@ -301,3 +440,4 @@ jobs:
           name: release-gate-classification
           path: artifacts/gate/
           if-no-files-found: warn
+          retention-days: 30

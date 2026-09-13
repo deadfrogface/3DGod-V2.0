@@ -24,6 +24,9 @@ public static class LlamaSharpProvider
     public const string RecommendedModelId = "Qwen/Qwen2.5-0.5B-Instruct-GGUF";
     public const string RecommendedFile = "qwen2.5-0.5b-instruct-q4_k_m.gguf";
     public const string RecommendedLicense = "apache-2.0";
+    public const string RecommendedRevision = "9217f5db79a29953eb74d5343926648285ec7e67";
+    public const string RecommendedSha256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db";
+    public const long RecommendedSizeBytes = 491_400_032;
 
     public static string BackendAssembly => typeof(LLamaWeights).Assembly.GetName().Name ?? "LLamaSharp";
 
@@ -114,7 +117,20 @@ public static class LlamaSharpProvider
                 Provider = "llamasharp",
                 Reason = plan.Reason
             };
-            return AiEditPlanValidator.Validate(plan);
+            // Real GGUF inference already ran. Keep provider=llamasharp even when the
+            // allow-list rejects the model JSON (validator otherwise stamps Provider=validator).
+            var validated = AiEditPlanValidator.Validate(plan);
+            return new AiEditPlan
+            {
+                SchemaVersion = string.IsNullOrWhiteSpace(validated.SchemaVersion)
+                    ? AiEditPlanSchema.Version
+                    : validated.SchemaVersion,
+                Status = validated.Status,
+                Operation = validated.Operation,
+                Args = validated.Args,
+                Provider = "llamasharp",
+                Reason = validated.Reason
+            };
         }
         catch (Exception ex)
         {
@@ -152,7 +168,8 @@ Never include shell, URLs, code, filesystem paths, or extra keys. JSON only.
         {
             MaxTokens = 256,
             AntiPrompts = ["<|im_end|>", "```"],
-            SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0.1f }
+            // Temperature 0 for CI-stable real CPU inference (still real GGUF decode, not mocked).
+            SamplingPipeline = new DefaultSamplingPipeline { Temperature = 0f }
         });
         foreach (var token in infer.ToBlockingEnumerable())
         {

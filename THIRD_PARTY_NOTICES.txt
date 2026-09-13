@@ -26,12 +26,15 @@ Python worker dependencies (not bundled in base installer)
 Optional model backends (ModelManager only, never in base installer)
 --------------------------------------------------------------------
 - Stability SF3D/SPAR3D — Stability Community License (user accept required)
-- FLUX / Qwen / TRELLIS / TripoSR / LLama GGUF — see MODEL_LICENSES.json
+- FLUX.1-schnell — Apache-2.0 (CUDA ≥8GB for PASS_REAL) — see MODEL_LICENSES.json
+- TripoSR — MIT checkpoint (CPU SUPPORTED_BUT_SLOW) — see MODEL_LICENSES.json
+- Qwen2.5-0.5B-Instruct GGUF Q4_K_M — Apache-2.0 @ 9217f5db… / SHA-256 74a4da8c… — LLamaSharp CPU
+- SkinTokens — MIT code + MIT HF weights @ 79736cad… (CUDA ≥14GB for PASS_REAL)
+- TRELLIS / other gated backends — see MODEL_LICENSES.json
 
 Explicitly blocked from production release
 ------------------------------------------
 - SMPL-X without commercial license
 - Hunyuan EU-restricted checkpoints
 - AniGen / S-Lab non-commercial models
-- SkinTokens (MIT code + MIT HF weights @ 79736cad…; optional download; CUDA ≥14GB for PASS_REAL)
 - Incompatible GPL linkage in shipped binaries

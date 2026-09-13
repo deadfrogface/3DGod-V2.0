@@ -2,26 +2,29 @@
   "manifestVersion": 1,
   "workerId": "llama",
   "displayName": "LLamaSharp GGUF Local LLM",
-  "status": "NotInstalled",
-  "packageVersion": "0.0.0",
-  "licenseId": "llama-model",
-  "licenseRef": "src/ThreeDGod.AI/LlamaSharpProvider.cs",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseRef": "docs/audit/STAGE15_LLAMASHARP_DECISION.md",
   "includedInBaseInstaller": false,
   "model": {
-    "checkpointHash": null,
-    "sizeBytes": 0,
-    "verified": false
+    "checkpointHash": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+    "sizeBytes": 491400032,
+    "verified": true,
+    "fileName": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+    "modelId": "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
   },
   "releasePackage": {
-    "format": "zip",
-    "downloadUrl": null,
-    "sha256": null
+    "format": "huggingface",
+    "downloadUrl": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
   },
   "requirements": {
-    "minVramMb": 4096,
+    "minVramMb": 0,
     "requiresCuda": false,
     "requiresUv": false,
     "requiresBlender": false,
-    "notes": "GGUF + license.json required under %LocalAppData%/3DGod/Models/llama."
+    "notes": "Apache-2.0 GGUF + license.json under %LocalAppData%/3DGod/Models/llama. CPU PASS_REAL via LLamaSharp; AiEditPlanValidator rejects malformed/unsafe plans."
   }
 }

@@ -41,6 +41,13 @@ public class CiRuntimeIntegrationTests
             var doc = CanonicalGltfPipeline.Load(glb);
             Assert.True(doc.VertexCount >= 100, $"Expected real Anny mesh, got {doc.VertexCount} verts.");
             Assert.True(doc.TriangleCount >= 100);
+            CiOnlineRuntimeProofTests.AssertRealGlb(glb, minVerts: 100);
+            var artDir = Path.Combine(
+                Environment.GetEnvironmentVariable(CiOnlineRuntimeProofTests.ArtifactDirEnv)
+                ?? Path.Combine(RepoPaths.FindRepoRoot(), "artifacts", "runtime"),
+                "anny");
+            Directory.CreateDirectory(artDir);
+            File.Copy(glb, Path.Combine(artDir, "anny-cpu.glb"), overwrite: true);
         }
         finally
         {
@@ -195,6 +202,13 @@ public class CiRuntimeIntegrationTests
             Assert.True(new FileInfo(glb).Length > 64);
             var doc = CanonicalGltfPipeline.Load(glb);
             Assert.True(doc.VertexCount >= 12, $"Expected jacket mesh, got {doc.VertexCount} verts.");
+            CiOnlineRuntimeProofTests.AssertRealGlb(glb, minVerts: 12, minBytes: 64);
+            var artDir = Path.Combine(
+                Environment.GetEnvironmentVariable(CiOnlineRuntimeProofTests.ArtifactDirEnv)
+                ?? Path.Combine(RepoPaths.FindRepoRoot(), "artifacts", "runtime"),
+                "garmentcode");
+            Directory.CreateDirectory(artDir);
+            File.Copy(glb, Path.Combine(artDir, "jacket-cpu.glb"), overwrite: true);
         }
         finally
         {

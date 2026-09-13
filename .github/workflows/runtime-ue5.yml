@@ -1,0 +1,104 @@
+name: UE5 Runtime Validation
+
+# Manual only on self-hosted Windows runners with Unreal Engine installed.
+# Does not fake UE5 install. Exit codes from Invoke-Ue5ImportSmoke.ps1:
+#   0 = PASS_REAL (3DGOD_UE5_IMPORT_OK)
+#   2 = GATED_UE5
+#   other = FAIL
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset_path:
+        description: "Path to FBX/GLB asset to import (repo-relative or absolute on runner)"
+        required: true
+        type: string
+      project_path:
+        description: "Path to .uproject (or set THREEDGOD_UE5_PROJECT on the runner)"
+        required: false
+        type: string
+        default: ""
+      destination_path:
+        description: "Content browser destination path inside the project"
+        required: false
+        type: string
+        default: "/Game/3DGod/Imports"
+
+concurrency:
+  group: ue5-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ue5-import:
+    name: UE5 Editor Import Smoke
+    runs-on: [self-hosted, windows, ue5]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve UE5 env contract
+        id: env
+        shell: pwsh
+        run: |
+          if (-not $env:UE_ROOT -or -not (Test-Path $env:UE_ROOT)) {
+            Write-Host "GATED_UE5 – UE_ROOT not set or missing on self-hosted ue5 runner"
+            echo "gated=1" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $project = "${{ inputs.project_path }}"
+          if ([string]::IsNullOrWhiteSpace($project)) { $project = $env:THREEDGOD_UE5_PROJECT }
+          if ([string]::IsNullOrWhiteSpace($project) -or -not (Test-Path $project)) {
+            Write-Host "GATED_UE5 – provide project_path input or THREEDGOD_UE5_PROJECT"
+            echo "gated=1" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          echo "gated=0" >> $env:GITHUB_OUTPUT
+          echo "project=$project" >> $env:GITHUB_OUTPUT
+          Write-Host "UE_ROOT=$env:UE_ROOT"
+          Write-Host "PROJECT=$project"
+
+      - name: Run UE5 import automation
+        if: steps.env.outputs.gated != '1'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/ue5" | Out-Null
+          $asset = "${{ inputs.asset_path }}"
+          if (-not [System.IO.Path]::IsPathRooted($asset)) {
+            $asset = Join-Path (Get-Location) $asset
+          }
+          & "scripts/ue5/Invoke-Ue5ImportSmoke.ps1" `
+            -AssetPath $asset `
+            -ProjectPath "${{ steps.env.outputs.project }}" `
+            -DestinationPath "${{ inputs.destination_path }}" `
+            -UeRoot $env:UE_ROOT
+          $code = $LASTEXITCODE
+          if ($code -eq 0) {
+            Write-Host "UE5_RUNTIME=PASS_REAL"
+            "PASS_REAL" | Set-Content artifacts/runtime/ue5/classification.txt
+          } elseif ($code -eq 2) {
+            Write-Host "UE5_RUNTIME=GATED_UE5"
+            "GATED_UE5" | Set-Content artifacts/runtime/ue5/classification.txt
+            exit 0
+          } else {
+            Write-Host "::error::UE5 import FAILED (exit $code)"
+            "FAIL" | Set-Content artifacts/runtime/ue5/classification.txt
+            exit $code
+          }
+
+      - name: Record gate when env unmet
+        if: steps.env.outputs.gated == '1'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/ue5" | Out-Null
+          "GATED_UE5" | Set-Content artifacts/runtime/ue5/classification.txt
+          Write-Host "UE5_RUNTIME=GATED_UE5 (honest skip – env contract unmet)"
+
+      - name: Upload UE5 logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ue5-runtime
+          path: artifacts/runtime/ue5/
+          if-no-files-found: warn
+          retention-days: 14
