@@ -108,7 +108,7 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 | ComponentManager | `PASS_REAL` | `ComponentManagerTests` |
 | Worker uv sync (Anny/Garment) | `PASS_REAL` | CI `uv sync --frozen` |
 | LLamaSharp CPU GGUF phrases | `PASS_REAL` | `llamasharp-cpu` job (when green) |
-| TripoSR CPU chair→GLB | **Was `FAIL` on main run 34790344214** (harness same-path `File.Copy` after real inference); fix on `cursor/triposr-ci-fix-b322` — re-proof via `runtime-triposr-cpu.yml` → expected **`PASS_REAL`** | Real CPU inference already completed in ~86s before harness IOException; see `TRIPOSR_CI_FAILURE_ANALYSIS.md` |
+| TripoSR CPU chair→GLB | **PASS_REAL** on [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073) (`bytes=228776`); prior main FAIL [34790344214](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34790344214) was harness-only | Real CPU inference + GLB validation on `windows-latest`; see `TRIPOSR_CI_FAILURE_ANALYSIS.md` |
 | FLUX PNG | `GATED_HARDWARE` | No CUDA on GH-hosted standard; paid GPU not auto-enabled |
 | FLUX→TripoSR | `GATED_HARDWARE` | Same + TripoSR ckpt |
 | SkinTokens rig | `GATED_HARDWARE` | Needs ≥14GB VRAM CUDA + checkpoints + upstream |
@@ -209,7 +209,7 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 
 | Item | Classification | Exact reason |
 |------|----------------|--------------|
-| TripoSR every-PR | Was `FAIL` on main [34790344214](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34790344214); harness fix on `cursor/triposr-ci-fix-b322` — see `TRIPOSR_CI_FAILURE_ANALYSIS.md` | Real inference succeeded; Windows same-path `File.Copy` after write. Re-proof: `runtime-triposr-cpu.yml` |
+| TripoSR path/weekly/dispatch | **PASS_REAL** proven [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073); default every-commit CI still omits heavy job except path filters | Harness fix on `cursor/triposr-ci-fix-b322`; still intentionally not on every unrelated PR |
 | FLUX.1-schnell | `GATED_HARDWARE` | No CUDA on GH-hosted `windows-latest`; paid GPU larger runners need Team/Enterprise billing — not auto-enabled; workflow ready: labels `self-hosted,windows,gpu,cuda` |
 | FLUX→TripoSR | `GATED_HARDWARE` | Same CUDA gate + TripoSR checkpoint |
 | SkinTokens | `GATED_HARDWARE` | Needs NVIDIA CUDA ≥14GB VRAM + checkpoints + upstream; never fakes skinned GLB |
