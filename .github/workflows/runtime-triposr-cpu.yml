@@ -7,6 +7,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 4 * * 1" # weekly Monday 04:17 UTC
+  pull_request:
+    paths:
+      - "workers/triposr/**"
+      - "src/ThreeDGod.Workers/TripoSrService.cs"
+      - "src/ThreeDGod.Infrastructure/TripoSrModelAcquire.cs"
+      - "3DGodCreator.Core.Tests/CiOnlineRuntimeProofTests.cs"
+      - "3DGodCreator.Core.Tests/TripoSrLiveTests.cs"
+      - ".github/workflows/runtime-triposr-cpu.yml"
   push:
     branches: [main]
     paths:
@@ -80,10 +88,13 @@ jobs:
         env:
           THREEDGOD_CI_RUNTIME_INTEGRATION: "1"
           THREEDGOD_CI_TRIPOSR: "1"
-          THREEDGOD_CI_ARTIFACT_DIR: artifacts/runtime
+          # Absolute path so artifacts land at repo-root upload location even if
+          # the test host CWD is under bin/Release (see docs/audit/TRIPOSR_CI_FAILURE_ANALYSIS.md).
+          THREEDGOD_CI_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/runtime
         run: |
           $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
-          New-Item -ItemType Directory -Force -Path "artifacts/runtime/triposr" | Out-Null
+          $art = Join-Path $env:GITHUB_WORKSPACE "artifacts/runtime/triposr"
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
           dotnet build "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release -v minimal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
@@ -95,7 +106,12 @@ jobs:
             Write-Host "::error::TripoSR CPU proof FAILED – not soft-skipped"
             exit $LASTEXITCODE
           }
-          Write-Host "TRIPOSR_RUNTIME=PASS_REAL"
+          $glb = Join-Path $art "chair-cpu.glb"
+          if (-not (Test-Path -LiteralPath $glb)) {
+            Write-Host "::error::Expected TripoSR artifact missing: $glb"
+            exit 1
+          }
+          Write-Host "TRIPOSR_RUNTIME=PASS_REAL bytes=$((Get-Item -LiteralPath $glb).Length)"
 
       - name: Upload TripoSR GLB + logs (not the checkpoint)
         if: always()

@@ -108,7 +108,7 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 | ComponentManager | `PASS_REAL` | `ComponentManagerTests` |
 | Worker uv sync (Anny/Garment) | `PASS_REAL` | CI `uv sync --frozen` |
 | LLamaSharp CPU GGUF phrases | `PASS_REAL` | `llamasharp-cpu` job (when green) |
-| TripoSR CPU chair→GLB | `SKIPPED_ENVIRONMENT` on default PR CI; **`PASS_REAL` when** `runtime-triposr-cpu.yml` runs | Heavy job by design (~1.6GB + slow CPU) |
+| TripoSR CPU chair→GLB | **PASS_REAL** on [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073) (`bytes=228776`); prior main FAIL [34790344214](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34790344214) was harness-only | Real CPU inference + GLB validation on `windows-latest`; see `TRIPOSR_CI_FAILURE_ANALYSIS.md` |
 | FLUX PNG | `GATED_HARDWARE` | No CUDA on GH-hosted standard; paid GPU not auto-enabled |
 | FLUX→TripoSR | `GATED_HARDWARE` | Same + TripoSR ckpt |
 | SkinTokens rig | `GATED_HARDWARE` | Needs ≥14GB VRAM CUDA + checkpoints + upstream |
@@ -209,9 +209,27 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 
 | Item | Classification | Exact reason |
 |------|----------------|--------------|
-| TripoSR every-PR | `SKIPPED_ENVIRONMENT` on default PR CI | Heavy ~1.6GB MIT ckpt + slow CPU; dedicated `runtime-triposr-cpu.yml` (dispatch/weekly/path) for `PASS_REAL` |
+| TripoSR path/weekly/dispatch | **PASS_REAL** proven [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073); default every-commit CI still omits heavy job except path filters | Harness fix on `cursor/triposr-ci-fix-b322`; still intentionally not on every unrelated PR |
 | FLUX.1-schnell | `GATED_HARDWARE` | No CUDA on GH-hosted `windows-latest`; paid GPU larger runners need Team/Enterprise billing — not auto-enabled; workflow ready: labels `self-hosted,windows,gpu,cuda` |
 | FLUX→TripoSR | `GATED_HARDWARE` | Same CUDA gate + TripoSR checkpoint |
 | SkinTokens | `GATED_HARDWARE` | Needs NVIDIA CUDA ≥14GB VRAM + checkpoints + upstream; never fakes skinned GLB |
 | UE5 editor import | `GATED_UE5` | Unreal not on GH-hosted; needs `UE_ROOT` + `.uproject`; `runtime-ue5.yml` for `[self-hosted,windows,ue5]` |
 | FlaUI interactive | `GATED_INTERACTIVE_DESKTOP` | Needs interactive desktop + `THREEDGOD_INSTALL_ROOT`; hosted probe skips honestly; `runtime-flaui.yml` for `[self-hosted,windows,interactive]` |
+
+---
+
+## TripoSR CI failure fix (follow-up) — VERIFIED PASS_REAL
+
+| Field | Value |
+|-------|-------|
+| Original failing run | [34790344214](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34790344214) |
+| Root cause | **H. test harness bug** — Windows `File.Copy(src, src)` after real TripoSR CPU inference already produced a validated GLB |
+| Fix branch / tip | `cursor/triposr-ci-fix-b322` @ `f933145d8ac1d4da244fd887958a955d87e44e5a` |
+| Files | `3DGodCreator.Core.Tests/CiOnlineRuntimeProofTests.cs`, `.github/workflows/runtime-triposr-cpu.yml`, `docs/audit/TRIPOSR_CI_FAILURE_ANALYSIS.md` |
+| Exact fix | Repo-root artifact dir; skip same-path `CopyArtifact`; absolute `THREEDGOD_CI_ARTIFACT_DIR`; assert GLB exists; path-filtered PR trigger |
+| Validation weakened? | **No** |
+| Final classification | **PASS_REAL** |
+| Green run | [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073) — `TRIPOSR_RUNTIME=PASS_REAL bytes=228776` (~1 m 42 s test) |
+| PR | https://github.com/deadfrogface/3DGod-V2.0/pull/8 |
+| Analysis | `docs/audit/TRIPOSR_CI_FAILURE_ANALYSIS.md` |
+

@@ -24,6 +24,12 @@ public class CiOnlineRuntimeProofTests
         var root = Environment.GetEnvironmentVariable(ArtifactDirEnv);
         if (string.IsNullOrWhiteSpace(root))
             root = Path.Combine(RepoPaths.FindRepoRoot(), "artifacts", "runtime");
+        else if (!Path.IsPathRooted(root))
+            // Relative paths must resolve against the repo root — not the test host CWD
+            // (dotnet test often runs with CWD under bin/Release/...).
+            root = Path.GetFullPath(Path.Combine(RepoPaths.FindRepoRoot(), root));
+        else
+            root = Path.GetFullPath(root);
         Directory.CreateDirectory(root);
         return root;
     }
@@ -37,9 +43,14 @@ public class CiOnlineRuntimeProofTests
     private static void CopyArtifact(string source, string name)
     {
         if (!File.Exists(source)) return;
-        var dest = Path.Combine(ArtifactRoot(), name);
+        var dest = Path.GetFullPath(Path.Combine(ArtifactRoot(), name));
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-        File.Copy(source, dest, overwrite: true);
+        var src = Path.GetFullPath(source);
+        // Windows File.Copy(src, src, overwrite) throws IOException ("used by another process").
+        // TripoSR already writes into ArtifactRoot()/triposr/... — skip redundant copy.
+        if (string.Equals(src, dest, StringComparison.OrdinalIgnoreCase))
+            return;
+        File.Copy(src, dest, overwrite: true);
     }
 
     public static void AssertRealGlb(string glbPath, int minVerts = 100, long minBytes = 1024)
