@@ -68,3 +68,22 @@ Evidence:
 ## Expected status after fix
 
 `PASS_REAL` on GitHub-hosted `windows-latest`, given the same inference path already completed successfully on run 34790344214 before the harness bug.
+
+---
+
+## Final verification (GitHub-hosted)
+
+| Field | Value |
+|-------|-------|
+| Final classification | **PASS_REAL** |
+| Fix tip SHA | `f933145d8ac1d4da244fd887958a955d87e44e5a` |
+| Green workflow run | [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073) |
+| Job | TripoSR CPU PASS_REAL — **success** |
+| Proof line | `TRIPOSR_RUNTIME=PASS_REAL bytes=228776` |
+| Test | `CiOnlineRuntimeProofTests.TripoSr_CpuGenerate_WritesValidatedGlb` **Passed** (~1 m 42 s) |
+| Runner | `windows-latest` (Windows Server 2025) |
+| Checkpoint cache | used (acquire step success) |
+| Validation weakened? | **No** |
+| Remaining TripoSR limits | Heavy job (~1.6GB ckpt); kept off default every-PR CI except path filters / weekly / dispatch |
+| PR | https://github.com/deadfrogface/3DGod-V2.0/pull/8 |
+

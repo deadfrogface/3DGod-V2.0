@@ -218,16 +218,18 @@ GitHub offers **paid** GPU larger runners (Tesla T4, Windows ~$0.102/min) requir
 
 ---
 
-## TripoSR CI failure fix (follow-up)
+## TripoSR CI failure fix (follow-up) — VERIFIED PASS_REAL
 
 | Field | Value |
 |-------|-------|
 | Original failing run | [34790344214](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34790344214) |
-| Root cause | **H. test harness bug** — Windows `File.Copy(src, src)` after real TripoSR CPU inference (~86s) already produced a validated GLB |
-| Fix branch | `cursor/triposr-ci-fix-b322` |
+| Root cause | **H. test harness bug** — Windows `File.Copy(src, src)` after real TripoSR CPU inference already produced a validated GLB |
+| Fix branch / tip | `cursor/triposr-ci-fix-b322` @ `f933145d8ac1d4da244fd887958a955d87e44e5a` |
 | Files | `3DGodCreator.Core.Tests/CiOnlineRuntimeProofTests.cs`, `.github/workflows/runtime-triposr-cpu.yml`, `docs/audit/TRIPOSR_CI_FAILURE_ANALYSIS.md` |
-| Exact fix | Resolve relative artifact dir against repo root; skip same-path `CopyArtifact`; absolute `THREEDGOD_CI_ARTIFACT_DIR` in workflow; assert GLB artifact exists |
-| Validation weakened? | **No** — inference + `AssertRealGlb` unchanged |
-| Final classification | Pending green `runtime-triposr-cpu.yml` on this branch → `PASS_REAL` (inference already proven on the failing run before harness IOException) |
+| Exact fix | Repo-root artifact dir; skip same-path `CopyArtifact`; absolute `THREEDGOD_CI_ARTIFACT_DIR`; assert GLB exists; path-filtered PR trigger |
+| Validation weakened? | **No** |
+| Final classification | **PASS_REAL** |
+| Green run | [34792261073](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/34792261073) — `TRIPOSR_RUNTIME=PASS_REAL bytes=228776` (~1 m 42 s test) |
+| PR | https://github.com/deadfrogface/3DGod-V2.0/pull/8 |
 | Analysis | `docs/audit/TRIPOSR_CI_FAILURE_ANALYSIS.md` |
 
