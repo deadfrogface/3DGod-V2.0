@@ -7,6 +7,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 4 * * 1" # weekly Monday 04:17 UTC
+  pull_request:
+    paths:
+      - "workers/triposr/**"
+      - "src/ThreeDGod.Workers/TripoSrService.cs"
+      - "src/ThreeDGod.Infrastructure/TripoSrModelAcquire.cs"
+      - "3DGodCreator.Core.Tests/CiOnlineRuntimeProofTests.cs"
+      - "3DGodCreator.Core.Tests/TripoSrLiveTests.cs"
+      - ".github/workflows/runtime-triposr-cpu.yml"
   push:
     branches: [main]
     paths:
