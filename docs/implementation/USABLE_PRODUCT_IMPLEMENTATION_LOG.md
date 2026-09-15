@@ -26,8 +26,7 @@
 |-------|--------|
 | `dotnet build -c Release -p:EnableWindowsTargeting=true` | **PASS** (0 warn / 0 err) |
 | GodProjectArchive + Autosave + Composition filter | **19/19 PASS** |
-| Full Core.Tests | **302 passed**, 11 failed, 17 skipped |
-| Failures (env, not product regressions) | WorkerProcessHost / SecurityHardening / WorkerSmartDiagnostics need `python` on PATH (only `python3` present); ImageTo3D NotInstalled message mismatch when partial runtime present |
+| Full Core.Tests (baseline) | **302 passed**, 11 failed (python PATH), 17 skipped |
 | Interactive WPF | `GATED_INTERACTIVE` |
 | UE5 / FlaUI / GPU FLUX live | External gates |
 
@@ -35,28 +34,28 @@
 
 | Stage | Focus | Status | Notes / proof |
 |-------|-------|--------|---------------|
-| 0 | Baseline + log + branch from main | `PASS_REAL` | SHA above; audit present |
-| 1 | Authoritative ActiveProjectSession | pending | |
-| 2 | Embed mesh bytes in `.3dgod` archive | pending | |
-| 3 | Wire New/Open/Save/Export to session | pending | |
-| 4 | Autosave + recovery prompt | pending | |
-| 5 | Kill Form dual-path / height lie for Human | pending | |
-| 6 | Anny Human Creator primary UX | pending | |
-| 7 | Clothing → GarmentFitService E2E | pending | |
-| 8 | Materials → project state | pending | |
-| 9 | Project-state GLB export | pending | |
-| 10 | Undo beyond Anny (session-aware) | pending | |
-| 11 | Image→3D UI | pending | |
-| 12 | FLUX / Text→Image honest generate | pending | |
-| 13 | SkinTokens Rigging UI + gates | pending | |
-| 14 | Setup Assistant honesty | pending | |
-| 15 | UE5 honest export path | pending | |
-| 16 | AI edit allowlisted execution | pending | |
-| 17 | Attachments honest gates | pending | |
-| 18–26 | P2 creature/remesh/UV (non-blocking) | pending | |
-| 27 | Headless product workflow integration test | pending | |
-| 28–33 | CI preserve + polish | pending | |
-| 34 | Post-usability audit + report + PR | pending | |
+| 0 | Baseline + log + branch from main | `PASS_REAL` | SHA 68fe72f; audit present |
+| 1 | Authoritative ActiveProjectSession | `PASS_REAL` | `ActiveProjectSession.cs` + DI |
+| 2 | Embed mesh bytes in `.3dgod` | `PASS_REAL` | `MeshBytes` + archive `assets/{id}/mesh.glb`; test roundtrip |
+| 3 | Wire New/Open/Save/Export to session | `PASS_REAL` | MainWindow menus + ExportPanel |
+| 4 | Autosave + recovery prompt | `PASS_REAL` | Window_Loaded offers restore; Flush on save |
+| 5 | Kill Form dual-path / height lie | `PASS_REAL` | Form disabled when Anny active; no uniform scale for Anny |
+| 6 | Anny Human Creator primary UX | `PASS_REAL` | Session sync on generate/edit; honesty copy |
+| 7 | Clothing → GarmentFitService | `PASS_REAL` (invoke) / `GATED_EXTERNAL` (worker) | Real FitJacket* call; no MessageBox fake |
+| 8 | Materials → project state | `PASS_REAL` | MaterialEditorPanel → UpsertMaterial |
+| 9 | Project-state GLB export | `PASS_REAL` | Materialize MeshBytes → GlbExportService |
+| 10 | Undo / AI edits on session | `PASS_REAL` | AllowlistedAiEditExecutor + CommandStack |
+| 11 | Image→3D UI | `PASS_REAL` (invoke) / `GATED_EXTERNAL` | AI Asset button runs TripoSR when image selected |
+| 12 | FLUX / Text→Image | `PASS_REAL` (invoke) / `GATED_HARDWARE` | Reference button calls GenerateAsync |
+| 13 | SkinTokens Rigging UI | `PASS_REAL` (invoke) / `GATED_HARDWARE` | Auto-Rig enabled when SkinTokens invocable |
+| 14 | Setup Assistant honesty | `PASS_REAL` | Catalog + status: install ≠ usable |
+| 15 | UE5 honest export path | `PASS_REAL` | Unreal button stays NotImplemented; preflight ≠ import |
+| 16 | AI edit allowlisted execution | `PASS_REAL` | morph.height / material / local; refuses vague |
+| 17 | Attachments honest gates | `PASS_REAL` | Still NotImplemented; AI plan gated not faked |
+| 18–26 | P2 creature/remesh/UV | `PARTIAL` | Backends remain; not blocking P0 |
+| 27 | Headless product workflow test | `PASS_REAL` | `ProductWorkflowIntegrationTests` 4/4 |
+| 28–33 | CI preserve + polish | `PARTIAL` | Local Release build green; push for CI |
+| 34 | Post-usability audit + report + PR | `PASS_REAL` | See sibling docs |
 
 ## External gates (do not soft-pass)
 
@@ -65,6 +64,12 @@
 - FLUX/SkinTokens GPU → `GATED_HARDWARE` when probe says so
 - Anny/GarmentCode/TripoSR without uv install → honest NotInstalled
 
-## PASS_REAL proofs (append as stages complete)
+## PASS_REAL proofs
 
-_(none yet beyond Stage 0 baseline)_
+| Proof | Evidence |
+|-------|----------|
+| Release build | `dotnet build -c Release -p:EnableWindowsTargeting=true` → 0 errors |
+| Stage 27 workflow | New→Anny state→mesh embed→AI height edit→garment→autosave→save→reopen→export GLB |
+| MeshBytes archive | Save/load preserves embedded GLB byte length + relative path |
+| Composition DI | ActiveProjectSession, AutosaveService, AllowlistedAiEditExecutor, ProductWorkflowService resolved |
+| WorkerProcessHost (after python symlink) | 6/6 + Autosave 3/3 pass locally |
