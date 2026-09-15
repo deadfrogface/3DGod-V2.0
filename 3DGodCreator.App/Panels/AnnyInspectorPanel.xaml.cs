@@ -3,8 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using ThreeDGod.Application;
-using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
+using ThreeDGod.Core.Domain;
 using ThreeDGod.Persistence;
 using ThreeDGod.Workers;
 
@@ -16,6 +16,7 @@ public partial class AnnyInspectorPanel : UserControl
     private readonly AnnyPresetStore _presets = new();
     private readonly CommandStack _commands;
     private readonly Action<string> _loadPreview;
+    private readonly ActiveProjectSession? _session;
     private readonly DispatcherTimer _debounce;
     private readonly Dictionary<string, Slider> _sliders = new();
     private readonly Guid _targetId = Guid.NewGuid();
@@ -29,12 +30,18 @@ public partial class AnnyInspectorPanel : UserControl
         RigProfile = "anny"
     };
 
-    public AnnyInspectorPanel(AnnyHumanService anny, IFeatureAvailabilityService features, CommandStack commands, Action<string> loadPreview)
+    public AnnyInspectorPanel(
+        AnnyHumanService anny,
+        IFeatureAvailabilityService features,
+        CommandStack commands,
+        Action<string> loadPreview,
+        ActiveProjectSession? session = null)
     {
         InitializeComponent();
         _anny = anny;
         _commands = commands;
         _loadPreview = loadPreview;
+        _session = session;
         _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
         _debounce.Tick += async (_, _) =>
         {
@@ -44,12 +51,14 @@ public partial class AnnyInspectorPanel : UserControl
 
         if (!features.IsInvocable(FeatureIds.AnnyHuman))
         {
-            StatusLabel.Text = features.GetStatusMessage(FeatureIds.AnnyHuman);
+            StatusLabel.Text = features.GetStatusMessage(FeatureIds.AnnyHuman)
+                + "\n\nHuman Creator: Setup Assistant → Human Creator installieren, dann hier Parameter editieren.";
             IsEnabled = false;
             return;
         }
 
-        StatusLabel.Text = features.GetStatusMessage(FeatureIds.AnnyHuman);
+        StatusLabel.Text = features.GetStatusMessage(FeatureIds.AnnyHuman)
+            + "\nHuman Creator: Parameter → echte Anny-Regeneration (kein Uniform-Scale).";
         RefreshPresetList();
         Loaded += async (_, _) => await LoadCatalogAsync();
     }
@@ -106,6 +115,7 @@ public partial class AnnyInspectorPanel : UserControl
     public async Task ApplyStateAsync(ParametricHumanState state, bool generate)
     {
         State = Clone(state);
+        _session?.SetAnnyState(State, markDirty: true);
         _suppress = true;
         foreach (var kv in _sliders)
         {
@@ -194,6 +204,7 @@ public partial class AnnyInspectorPanel : UserControl
             value =>
             {
                 SetValue(State, id, Convert.ToSingle(value));
+                _session?.SetAnnyState(State);
                 _suppress = true;
                 if (_sliders.TryGetValue(id, out var slider))
                     slider.Value = Convert.ToSingle(value);
@@ -213,6 +224,7 @@ public partial class AnnyInspectorPanel : UserControl
         try
         {
             StatusLabel.Text = "Erzeuge Anny-Vorschau…";
+            _session?.SetAnnyState(State);
             var dest = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "3DGod", "Generated", "anny-live.glb");
