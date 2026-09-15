@@ -103,7 +103,18 @@ public sealed class GodProjectArchive : IProjectService
         foreach (var character in bundle.Characters)
             Add($"characters/{character.CharacterId:D}/character.json", character);
         foreach (var mesh in bundle.Meshes)
+        {
+            if (bundle.MeshBytes.TryGetValue(mesh.MeshAssetId, out var embedded) && embedded.Length > 0)
+                mesh.CanonicalGlbPath = $"assets/{mesh.MeshAssetId:D}/mesh.glb";
             Add($"assets/{mesh.MeshAssetId:D}/asset.json", mesh);
+        }
+        foreach (var (id, bytes) in bundle.MeshBytes)
+        {
+            if (bytes.Length == 0)
+                continue;
+            var rel = ArchivePathRules.NormalizeRelativePath($"assets/{id:D}/mesh.glb");
+            files.Add((rel, bytes));
+        }
         foreach (var material in bundle.Materials)
             Add($"materials/{material.MaterialId:D}.json", material);
         foreach (var rig in bundle.Rigs)
@@ -210,6 +221,12 @@ public sealed class GodProjectArchive : IProjectService
                 bundle.Characters.Add(ParseJson<CharacterDocument>(bytes, path));
             else if (path.StartsWith("assets/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/asset.json", StringComparison.OrdinalIgnoreCase))
                 bundle.Meshes.Add(ParseJson<MeshAsset>(bytes, path));
+            else if (path.StartsWith("assets/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/mesh.glb", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = Path.GetFileName(Path.GetDirectoryName(path.Replace('\\', '/')) ?? "");
+                if (Guid.TryParse(name, out var meshId))
+                    bundle.MeshBytes[meshId] = bytes;
+            }
             else if (path.StartsWith("materials/", StringComparison.OrdinalIgnoreCase) && path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 bundle.Materials.Add(ParseJson<MaterialDefinition>(bytes, path));
             else if (path.EndsWith("/rig.json", StringComparison.OrdinalIgnoreCase))

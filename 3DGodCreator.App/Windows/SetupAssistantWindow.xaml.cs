@@ -43,7 +43,7 @@ public partial class SetupAssistantWindow : Window
         }
 
         FeatureList.ItemsSource = rows;
-        LblStatus.Text = "Optional components only. Skip is always safe.";
+        LblStatus.Text = "Install ≠ usable: after Ready, use the matching App tab (Anny / AI / Clothing / Rigging). Skip is always safe.";
     }
 
     private void BtnSkip_Click(object sender, RoutedEventArgs e)

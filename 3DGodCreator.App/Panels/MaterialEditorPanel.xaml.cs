@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using ThreeDGod.Application;
 using ThreeDGod.Mesh;
 using ThreeDGodCreator.Core;
 
@@ -8,12 +9,14 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class MaterialEditorPanel : UserControl
 {
     private readonly CharacterSystem _cs;
+    private readonly ActiveProjectSession _session;
     private bool _syncing;
 
-    public MaterialEditorPanel(CharacterSystem cs)
+    public MaterialEditorPanel(CharacterSystem cs, ActiveProjectSession session)
     {
         InitializeComponent();
         _cs = cs;
+        _session = session;
         CmbMaterial.SelectedIndex = 0;
         CmbPreset.SelectedIndex = 6;
         SyncUiFromSlot();
@@ -52,6 +55,27 @@ public partial class MaterialEditorPanel : UserControl
             null,
             SldRoughness.Value,
             SldMetallic.Value);
+        SyncToProjectSession();
+    }
+
+    private void SyncToProjectSession()
+    {
+        var key = GetSelectedMaterial();
+        if (!_cs.Materials.TryGetValue(key, out var mat))
+            return;
+        var hex = (mat.Color ?? "#cccccc").Trim().TrimStart('#');
+        float r = 0.8f, g = 0.8f, b = 0.8f;
+        if (hex.Length >= 6)
+        {
+            try
+            {
+                r = Convert.ToInt32(hex[..2], 16) / 255f;
+                g = Convert.ToInt32(hex.Substring(2, 2), 16) / 255f;
+                b = Convert.ToInt32(hex.Substring(4, 2), 16) / 255f;
+            }
+            catch { /* keep defaults */ }
+        }
+        _session.UpsertMaterial(key, r, g, b, 1f, (float)mat.Metallic, (float)mat.Roughness);
     }
 
     private void CmbMaterial_SelectionChanged(object sender, SelectionChangedEventArgs e) => SyncUiFromSlot();
@@ -64,6 +88,7 @@ public partial class MaterialEditorPanel : UserControl
         var hex = ColorToHex(preset.BaseColor);
         _cs.SetMaterialPbr(GetSelectedMaterial(), hex, preset.Roughness, preset.Metallic);
         SyncUiFromSlot();
+        SyncToProjectSession();
     }
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => PushSlotToCharacterSystem();
@@ -77,6 +102,7 @@ public partial class MaterialEditorPanel : UserControl
         {
             var hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
             _cs.SetMaterialPbr(mat, hex, null, null);
+            SyncToProjectSession();
         }
     }
 
@@ -85,6 +111,7 @@ public partial class MaterialEditorPanel : UserControl
         _cs.ActiveMaterialSlot = GetSelectedMaterial();
         PushSlotToCharacterSystem();
         _cs.RefreshLayers();
+        SyncToProjectSession();
     }
 
     private static string ColorToHex(System.Numerics.Vector4 rgba) =>
