@@ -1,8 +1,9 @@
 # PR #10 Clothing Repair Report
 
 **BASELINE_PR10_SHA:** `c774c0fd60d91e8db95c48730ea4c370524e4e58`  
+**REPAIRED_SHA:** `e8928e3323bc7f8c60daba9dbbe5b08d23c704f6`  
 **CURRENT_BRANCH:** `cursor/make-product-usable-b322`  
-**CURRENT_CI (pre-repair):** green on tip `c774c0f` — clothing E2E claims overstated
+**CURRENT_CI:** **PASS** — push run [35151901022](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35151901022), PR run [35151905375](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35151905375) (10/10 including Anny/Garment CPU Integration)
 
 ## REPRODUCED_DEFECTS
 
