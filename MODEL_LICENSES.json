@@ -148,6 +148,17 @@
       "notes": "License verified MIT for code (VAST-AI-Research/SkinTokens) and HF weights (VAST-AI/SkinTokens@79736cad0fd84de384d5eede659b4ebd24effe33). Runtime remains IMPLEMENTED_GATED_HARDWARE (CUDA>=14GB + checkpoints + upstream). Residual training-data provenance (ArticulationXL/VRoid/ModelsResource mix) noted but does not block MIT redistribution of published weights."
     },
     {
+      "id": "skintokens-cpp",
+      "kind": "model-backend",
+      "licenseId": "apache-2.0",
+      "licenseRef": "docs/productization/AUTORIG_PROVIDER_EVALUATION.md",
+      "shippingStatus": "optional-download",
+      "commercialUse": true,
+      "requiresUserAccept": true,
+      "verified": true,
+      "notes": "WRAP localai-org/skin-tokens.cpp (Apache-2.0) @ 43e885af2eadee9c40aa85849b71528d1c958293. GGUF models LocalAI-io/SkinTokens-GGUF (MIT-labelled). CPU/Vulkan Auto-Rig; not in base installer. Runtime IMPLEMENTED_GATED_RUNTIME until CLI+GGUF; Vulkan IMPLEMENTED_GATED_VULKAN_RUNTIME_PROOF."
+    },
+    {
       "id": "male_base.glb",
       "kind": "asset",
       "licenseId": "project-asset",

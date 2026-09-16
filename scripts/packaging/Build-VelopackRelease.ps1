@@ -11,6 +11,7 @@ param(
     [string]$PackId = "ThreeDGodCreator",
     [string]$VelopackToolVersion = "1.2.0",
     [switch]$SkipVpk,
+    [switch]$SelfContained,
     [switch]$FrameworkDependent
 )
 
@@ -18,7 +19,9 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $publish = Join-Path $root "artifacts/publish/win-x64"
 $releases = Join-Path $root "artifacts/releases/$Channel"
-$SelfContained = -not $FrameworkDependent
+# Default self-contained for end-user installs; -FrameworkDependent opts out. -SelfContained kept for callers.
+if ($FrameworkDependent) { $SelfContained = $false }
+elseif (-not $PSBoundParameters.ContainsKey('SelfContained')) { $SelfContained = $true }
 
 Write-Host "== 3D God Velopack release =="
 Write-Host "Version: $Version  Channel: $Channel  PackId: $PackId  SelfContained: $SelfContained"

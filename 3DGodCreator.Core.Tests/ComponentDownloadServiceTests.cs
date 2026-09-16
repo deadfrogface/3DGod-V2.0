@@ -19,7 +19,7 @@ public class ComponentDownloadServiceTests
         {
             var result = await svc.DownloadAsync(new ComponentDownloadRequest
             {
-                Url = new Uri("https://example.test/pkg.bin"),
+                Url = new Uri("https://github.com/3dgod/test-fixtures/pkg.bin"),
                 DestinationPath = dest,
                 ExpectedSha256 = sha
             });
@@ -45,7 +45,7 @@ public class ComponentDownloadServiceTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             svc.DownloadAsync(new ComponentDownloadRequest
             {
-                Url = new Uri("https://example.test/slow.bin"),
+                Url = new Uri("https://github.com/3dgod/test-fixtures/slow.bin"),
                 DestinationPath = dest
             }, cts.Token));
     }
@@ -60,7 +60,7 @@ public class ComponentDownloadServiceTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             svc.DownloadAsync(new ComponentDownloadRequest
             {
-                Url = new Uri("https://example.test/pkg.bin"),
+                Url = new Uri("https://github.com/3dgod/test-fixtures/pkg.bin"),
                 DestinationPath = dest,
                 ExpectedSha256 = new string('a', 64)
             }));
@@ -78,7 +78,7 @@ public class ComponentDownloadServiceTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             svc.DownloadAsync(new ComponentDownloadRequest
             {
-                Url = new Uri("https://example.test/missing.bin"),
+                Url = new Uri("https://github.com/3dgod/test-fixtures/missing.bin"),
                 DestinationPath = dest
             }));
         Assert.Contains("HttpFailure", ex.Message);
@@ -99,6 +99,20 @@ public class ComponentDownloadServiceTests
     }
 
     [Fact]
+    public async Task DownloadAsync_BlockedHost_Rejected()
+    {
+        using var svc = new ComponentDownloadService(new HttpClient());
+        var dest = Path.Combine(Path.GetTempPath(), "3dgod-dl-block-" + Guid.NewGuid().ToString("N") + ".bin");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.DownloadAsync(new ComponentDownloadRequest
+            {
+                Url = new Uri("https://example.test/pkg.bin"),
+                DestinationPath = dest
+            }));
+        Assert.Contains("BlockedUrl", ex.Message);
+    }
+
+    [Fact]
     public async Task DownloadAsync_ResumesPartial_WhenServerSupportsRange()
     {
         var full = Encoding.UTF8.GetBytes("ABCDEFGHIJKLMNOP");
@@ -111,7 +125,7 @@ public class ComponentDownloadServiceTests
         {
             var result = await svc.DownloadAsync(new ComponentDownloadRequest
             {
-                Url = new Uri("https://example.test/resume.bin"),
+                Url = new Uri("https://github.com/3dgod/test-fixtures/resume.bin"),
                 DestinationPath = dest,
                 AllowResume = true
             });

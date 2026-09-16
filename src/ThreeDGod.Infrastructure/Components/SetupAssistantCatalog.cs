@@ -152,7 +152,7 @@ public static class SetupAssistantCatalog
             }
 
             if (!manifests.TryGetValue(id, out var manifest) &&
-                id is "triposr" or "flux" or "sf3d" or "skintokens" or "blender")
+                id is "triposr" or "flux" or "sf3d" or "skintokens" or "skintokens-cpp" or "blender")
             {
                 return new SetupFeatureStatus
                 {

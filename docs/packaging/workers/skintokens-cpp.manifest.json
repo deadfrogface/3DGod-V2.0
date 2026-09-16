@@ -1,9 +1,22 @@
 {
-  "schemaVersion": 1,
-  "id": "skintokens-cpp",
-  "displayName": "skin-tokens.cpp Auto-Rig",
-  "version": "0.1.0",
+  "manifestVersion": 1,
+  "workerId": "skintokens-cpp",
+  "displayName": "skin-tokens.cpp Auto-Rig (CPU / Vulkan)",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
   "licenseId": "apache-2.0",
+  "licenseRef": "docs/productization/AUTORIG_PROVIDER_EVALUATION.md",
   "includedInBaseInstaller": false,
-  "capabilities": ["rig.auto"]
+  "model": {
+    "checkpointHash": "LocalAI-io/SkinTokens-GGUF@F16",
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "Packaging stub; prefer workers/skintokens-cpp/manifest.json when present."
+  }
 }
