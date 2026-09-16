@@ -12,21 +12,21 @@ public partial class ClothingPanel : UserControl
     private readonly IFeatureAvailabilityService _features;
     private readonly IGarmentFitService _garmentFit;
     private readonly ActiveProjectSession _session;
-    private readonly Action<string> _loadPreview;
+    private readonly Action _refreshViewportFromProject;
 
     public ClothingPanel(
         CharacterSystem cs,
         IFeatureAvailabilityService features,
         IGarmentFitService garmentFit,
         ActiveProjectSession session,
-        Action<string> loadPreview)
+        Action refreshViewportFromProject)
     {
         InitializeComponent();
         _ = cs;
         _features = features;
         _garmentFit = garmentFit;
         _session = session;
-        _loadPreview = loadPreview;
+        _refreshViewportFromProject = refreshViewportFromProject;
 
         var fitMsg = _features.GetStatusMessage(FeatureIds.ClothingFit);
         var fitOk = _features.IsInvocable(FeatureIds.ClothingFit);
@@ -75,14 +75,17 @@ public partial class ClothingPanel : UserControl
                 throw new InvalidOperationException("Fit produced no GLB (honest failure — no fake clothing).");
 
             _session.AddFittedGarment(result.FittedGlb, "jacket", result.Report);
-            _loadPreview(result.FittedGlb);
+            // Composed scene: BODY + JACKET (do not replace body with jacket-only preview).
+            _refreshViewportFromProject();
             AvailabilityLabel.Text =
-                $"Jacket fitted. insideAfter={result.Report.InsideAfter}, minDist={result.Report.MinDistanceAfter:F4}. Persisted in project session.";
+                $"Jacket fitted. Scene = body + jacket. insideAfter={result.Report.InsideAfter}, minDist={result.Report.MinDistanceAfter:F4}. Persisted in project session.";
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Clothing Fit", MessageBoxButton.OK, MessageBoxImage.Warning);
             AvailabilityLabel.Text = ex.Message;
+            // Keep previous composed scene (body) on failure.
+            try { _refreshViewportFromProject(); } catch { /* ignore */ }
         }
         finally
         {

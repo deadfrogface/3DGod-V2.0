@@ -90,10 +90,26 @@ public sealed class ProductWorkflowService
 
     public string ExportActiveGlb(string destinationGlb)
     {
-        var src = _session.GetActiveMeshGlbPathOrMaterialize(Path.Combine(_workRoot, "materialize"));
-        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
-            throw new InvalidOperationException("No active project mesh to export.");
-        return GlbExportService.Export(src, destinationGlb);
+        var sceneRoot = Path.Combine(_workRoot, "compose-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sceneRoot);
+        try
+        {
+            var parts = _session.MaterializeSceneGlbs(sceneRoot);
+            if (parts.Count == 0)
+                throw new InvalidOperationException("No active project mesh to export.");
+
+            if (parts.Count == 1)
+                return GlbExportService.Export(parts[0].GlbPath, destinationGlb);
+
+            var composeInputs = parts
+                .Select(p => (NodeName: p.Name, SourceGlb: p.GlbPath))
+                .ToList();
+            return GlbExportService.ComposeScenes(composeInputs, destinationGlb);
+        }
+        finally
+        {
+            try { Directory.Delete(sceneRoot, recursive: true); } catch { /* best-effort */ }
+        }
     }
 
     public Task<AiEditExecutionResult> ApplyAiEditAsync(string prompt, CancellationToken cancellationToken = default) =>

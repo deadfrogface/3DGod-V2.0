@@ -19,9 +19,16 @@ public class ImageTo3DTests
         Assert.DoesNotContain("success", status.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Generate_WithoutRuntime_ThrowsAndWritesNoGlb()
     {
+        var probe = ImageTo3DRuntime.Probe("triposr");
+        if (probe.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+        {
+            TestGate.ExternalDependency("TripoSR runtime installed; NotInstalled throw path not exercised.");
+            return;
+        }
+
         var dest = Path.Combine(Path.GetTempPath(), "3dgod-fake-triposr-" + Guid.NewGuid().ToString("N") + ".glb");
         var png = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".png");
         File.WriteAllBytes(png, Convert.FromBase64String(

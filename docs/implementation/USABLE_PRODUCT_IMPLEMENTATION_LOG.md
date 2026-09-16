@@ -41,9 +41,9 @@
 | 4 | Autosave + recovery prompt | `PASS_REAL` | Window_Loaded offers restore; Flush on save |
 | 5 | Kill Form dual-path / height lie | `PASS_REAL` | Form disabled when Anny active; no uniform scale for Anny |
 | 6 | Anny Human Creator primary UX | `PASS_REAL` | Session sync on generate/edit; honesty copy |
-| 7 | Clothing → GarmentFitService | `PASS_REAL` (invoke) / `GATED_EXTERNAL` (worker) | Real FitJacket* call; no MessageBox fake |
-| 8 | Materials → project state | `PASS_REAL` | MaterialEditorPanel → UpsertMaterial |
-| 9 | Project-state GLB export | `PASS_REAL` | Materialize MeshBytes → GlbExportService |
+| 7 | Clothing → GarmentFitService | `PASS_REAL` | Production FitJacket*; ClothingPanel → session + composed viewport |
+| 8 | Materials → project state | `PASS_REAL` | MaterialEditorPanel → UpsertMaterial (character skin slot) |
+| 9 | Project-state GLB export | `PASS_REAL` | Composed BODY+GARMENT via `GlbExportService.ComposeScenes` when garments present |
 | 10 | Undo / AI edits on session | `PASS_REAL` | AllowlistedAiEditExecutor + CommandStack |
 | 11 | Image→3D UI | `PASS_REAL` (invoke) / `GATED_EXTERNAL` | AI Asset button runs TripoSR when image selected |
 | 12 | FLUX / Text→Image | `PASS_REAL` (invoke) / `GATED_HARDWARE` | Reference button calls GenerateAsync |
@@ -53,9 +53,14 @@
 | 16 | AI edit allowlisted execution | `PASS_REAL` | morph.height / material / local; refuses vague |
 | 17 | Attachments honest gates | `PASS_REAL` | Still NotImplemented; AI plan gated not faked |
 | 18–26 | P2 creature/remesh/UV | `PARTIAL` | Backends remain; not blocking P0 |
-| 27 | Headless product workflow test | `PASS_REAL` | `ProductWorkflowIntegrationTests` 4/4 |
+| 27 | Headless product workflow test | Split | Persistence-only + composed export + **real** GarmentCode/Fit pipeline (see PR10 clothing repair) |
+| 27a | Garment persistence roundtrip | `PASS_REAL` | `GarmentPersistence_Roundtrip_PreservesEmbeddedGarmentMesh` (NOT clothing E2E) |
+| 27b | Real clothing pipeline | `PASS_REAL` / `GATED_EXTERNAL` | `RealGarmentCodeFit_SaveReopen_ComposedExport_ContainsBodyAndJacket` |
+| 27c | Composed export | `PASS_REAL` | MeshCount≥2 structural GLB asserts |
+| 27d | Composed viewport data path | `PASS_REAL` headless / `GATED_INTERACTIVE` visual | `MaterializeSceneGlbs` + Helix Model3DGroup |
 | 28–33 | CI preserve + polish | `PARTIAL` | Local Release build green; push for CI |
 | 34 | Post-usability audit + report + PR | `PASS_REAL` | See sibling docs |
+| 35 | PR #10 clothing repair | `PASS_REAL` | `docs/implementation/PR10_CLOTHING_REPAIR_REPORT.md` |
 
 ## External gates (do not soft-pass)
 
@@ -69,7 +74,9 @@
 | Proof | Evidence |
 |-------|----------|
 | Release build | `dotnet build -c Release -p:EnableWindowsTargeting=true` → 0 errors |
-| Stage 27 workflow | New→Anny state→mesh embed→AI height edit→garment→autosave→save→reopen→export GLB |
+| Garment persistence | Embed jacket bytes → autosave → save → reopen (persistence-only; not Fit E2E) |
+| Real clothing pipeline | GarmentCode → GarmentFit → session → save → reopen → composed export MeshCount≥2 |
+| Composed export | `ComposedExport_BodyPlusGarment_ContainsBothMeshes` structural GLB |
 | MeshBytes archive | Save/load preserves embedded GLB byte length + relative path |
 | Composition DI | ActiveProjectSession, AutosaveService, AllowlistedAiEditExecutor, ProductWorkflowService resolved |
 | WorkerProcessHost (after python symlink) | 6/6 + Autosave 3/3 pass locally |

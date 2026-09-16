@@ -193,12 +193,82 @@ public sealed class ActiveProjectSession
             character.SourceRepresentation = character.ParametricHumanState is not null
                 ? SourceRepresentation.AnnyParameters
                 : source;
+            // Body topology/shape changed — existing fitted garments are no longer trusted.
+            foreach (var instance in _bundle.GarmentInstances.Where(g => g.CharacterId == character.CharacterId))
+            {
+                if (string.Equals(instance.FitState, "fitted", StringComparison.OrdinalIgnoreCase))
+                    instance.FitState = "stale-needs-refit";
+            }
+
             character.EditRevision++;
             Touch(character);
             _materializedMeshPath = null;
             _dirty = true;
         }
         RaiseChanged();
+    }
+
+    /// <summary>
+    /// Body first, then fitted garments (for viewport / composed export).
+    /// </summary>
+    public IReadOnlyList<(string Role, Guid MeshAssetId, string Name)> ListSceneParts()
+    {
+        lock (_gate)
+        {
+            var character = ActiveCharacterUnlocked();
+            if (character is null)
+                return [];
+
+            var parts = new List<(string Role, Guid MeshAssetId, string Name)>();
+            var bodyId = character.MeshSet.MeshAssetIds.FirstOrDefault();
+            if (bodyId != Guid.Empty)
+            {
+                var body = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == bodyId);
+                parts.Add(("body", bodyId, string.IsNullOrWhiteSpace(body?.Name) ? "body" : body!.Name));
+            }
+
+            foreach (var instance in _bundle.GarmentInstances.Where(g => g.CharacterId == character.CharacterId))
+            {
+                if (instance.MeshAssetId is not Guid mid || mid == Guid.Empty)
+                    continue;
+                var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == mid);
+                var name = string.IsNullOrWhiteSpace(mesh?.Name) ? "garment" : mesh!.Name;
+                parts.Add(("garment", mid, name));
+            }
+
+            return parts;
+        }
+    }
+
+    public IReadOnlyList<(string Role, string Name, string GlbPath)> MaterializeSceneGlbs(string workRoot)
+    {
+        Directory.CreateDirectory(workRoot);
+        var parts = ListSceneParts();
+        var result = new List<(string Role, string Name, string GlbPath)>();
+        lock (_gate)
+        {
+            foreach (var (role, meshId, name) in parts)
+            {
+                if (!_bundle.MeshBytes.TryGetValue(meshId, out var bytes) || bytes.Length < 12)
+                {
+                    var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == meshId);
+                    if (mesh is not null && !string.IsNullOrWhiteSpace(mesh.CanonicalGlbPath) && File.Exists(mesh.CanonicalGlbPath)
+                        && !mesh.CanonicalGlbPath.StartsWith("assets/", StringComparison.Ordinal))
+                    {
+                        result.Add((role, name, mesh.CanonicalGlbPath));
+                        continue;
+                    }
+                    continue;
+                }
+
+                var dest = Path.Combine(workRoot, $"{role}-{meshId:N}.glb");
+                File.WriteAllBytes(dest, bytes);
+                if (string.Equals(role, "body", StringComparison.OrdinalIgnoreCase))
+                    _materializedMeshPath = dest;
+                result.Add((role, name, dest));
+            }
+        }
+        return result;
     }
 
     public string? TryMaterializeActiveMesh(string workRoot)

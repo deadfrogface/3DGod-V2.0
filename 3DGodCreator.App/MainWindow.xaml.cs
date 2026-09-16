@@ -156,14 +156,14 @@ public partial class MainWindow : Window, ILocalizableView
         FormPanel.Content = new FormPanel(_characterSystem, _projectSession);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
-        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features, _garmentFit, _projectSession, LoadPreview);
+        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features, _garmentFit, _projectSession, RefreshViewportFromProject);
         PhysicsPanel.Content = new PhysicsPanel(_characterSystem, _features);
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem, _projectSession);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
-        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features, _skinTokens, _projectSession, LoadPreview);
+        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features, _skinTokens, _projectSession, LoadPreviewOrRefreshProjectScene);
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, GetExportSourceGlb, _projectSession);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features, _components, _uvInstaller);
-        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets, _imageTo3D, _referenceImages, _projectSession, _aiEdits, _commandStack);
+        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreviewOrRefreshProjectScene, _assets, _imageTo3D, _referenceImages, _projectSession, _aiEdits, _commandStack);
         _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);
         ProblemsPanel.Content = _problemsPanel;
     }
@@ -182,17 +182,123 @@ public partial class MainWindow : Window, ILocalizableView
         {
             DebugLog.Write($"[Project] Mesh embed skipped: {ex.Message}");
         }
-        LoadPreview(glbPath);
+        RefreshViewportFromProject();
+    }
+
+    /// <summary>
+    /// GLB paths refresh the composed project scene (body + garments).
+    /// Non-mesh previews (e.g. reference PNG) keep single LoadPreview.
+    /// </summary>
+    private void LoadPreviewOrRefreshProjectScene(string path)
+    {
+        if (!string.IsNullOrWhiteSpace(path)
+            && (path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".gltf", StringComparison.OrdinalIgnoreCase)))
+        {
+            RefreshViewportFromProject();
+            return;
+        }
+
+        LoadPreview(path);
+    }
+
+    /// <summary>
+    /// Authoritative viewport composition from ActiveProjectSession:
+    /// body + fitted garments (and later attachments) as one Model3DGroup.
+    /// </summary>
+    public void RefreshViewportFromProject()
+    {
+        try
+        {
+            var work = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "ViewportScene");
+            var parts = _projectSession.MaterializeSceneGlbs(work);
+            if (parts.Count == 0)
+            {
+                ShowPlaceholder();
+                return;
+            }
+
+            var root = new Model3DGroup();
+            var allPositions = new List<Vector3>();
+            var allIndices = new List<int>();
+            string? primaryPath = null;
+            var hasBones = false;
+
+            foreach (var part in parts)
+            {
+                var content = GlbLoader.Load(part.GlbPath);
+                if (content is null)
+                    continue;
+                root.Children.Add(content);
+                primaryPath ??= part.GlbPath;
+                try
+                {
+                    var (pos, idx) = MeshCompare.ReadMesh(part.GlbPath);
+                    var baseIndex = allPositions.Count;
+                    allPositions.AddRange(pos);
+                    allIndices.AddRange(idx.Select(i => baseIndex + i));
+                }
+                catch (Exception meshEx)
+                {
+                    DebugLog.Write($"[Viewport] Scene part mesh read skipped ({part.Name}): {meshEx.Message}");
+                }
+
+                if (string.Equals(part.Role, "body", StringComparison.OrdinalIgnoreCase))
+                {
+                    var validation = ModelValidator.Validate(part.GlbPath);
+                    hasBones = validation.HasRig && validation.HasSkin;
+                    _characterSystem.IsCurrentModelRigged = hasBones;
+                }
+            }
+
+            if (root.Children.Count == 0)
+            {
+                ShowPlaceholder();
+                return;
+            }
+
+            _currentPreviewPath = primaryPath ?? "";
+            _characterSystem.PreviewGlbPath = primaryPath;
+            var vp = CreateViewport3D(root, allPositions, allIndices, hasRealBones: hasBones);
+            ViewportHost.Child = vp;
+            ApplySculptTransform(_characterSystem.SculptData);
+            if (FormPanel.Content is FormPanel fp)
+                fp.RefreshModelState();
+            DebugLog.Write($"[Viewport] Composed scene: {parts.Count} part(s) from ActiveProjectSession.");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Viewport] RefreshViewportFromProject failed: {ex.Message}");
+            ShowAnatomyPreview();
+        }
     }
 
     private string GetExportSourceGlb()
     {
-        if (!string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath))
-            return _currentPreviewPath;
         var work = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "3DGod", "ExportWork");
-        return _projectSession.GetActiveMeshGlbPathOrMaterialize(work) ?? "";
+        try
+        {
+            var dest = Path.Combine(work, "composed-export.glb");
+            var parts = _projectSession.MaterializeSceneGlbs(Path.Combine(work, "parts"));
+            if (parts.Count == 0)
+                return !string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath)
+                    ? _currentPreviewPath
+                    : "";
+            if (parts.Count == 1)
+                return parts[0].GlbPath;
+            return GlbExportService.ComposeScenes(
+                parts.Select(p => (p.Name, p.GlbPath)).ToList(),
+                dest);
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Export] Compose failed, falling back: {ex.Message}");
+            return _projectSession.GetActiveMeshGlbPathOrMaterialize(work) ?? _currentPreviewPath ?? "";
+        }
     }
 
     private void UpdateSelectionInspector(Guid? domainObjectId)
@@ -718,7 +824,7 @@ public partial class MainWindow : Window, ILocalizableView
         var meshPath = _projectSession.TryMaterializeActiveMesh(work);
         if (!string.IsNullOrWhiteSpace(meshPath) && File.Exists(meshPath))
         {
-            LoadPreview(meshPath);
+            RefreshViewportFromProject();
         }
         else if (state is not null && _features.IsInvocable(FeatureIds.AnnyHuman) && _annyInspector is not null)
         {

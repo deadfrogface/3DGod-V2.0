@@ -80,6 +80,81 @@ public sealed class GlbExportService : IGlbExportService
         }, provider: "sharpgltf-complete-scene");
     }
 
+    /// <summary>
+    /// Compose multiple source GLBs into one multi-node scene (body + garments + …).
+    /// Does not merge topology — each source becomes a named rigid mesh node.
+    /// </summary>
+    public static string ComposeScenes(
+        IReadOnlyList<(string NodeName, string SourceGlb)> parts,
+        string destinationGlb,
+        IDiagnosticService? diagnostics = null)
+    {
+        return PipelineTrace.Run(diagnostics, "Export", "Export.Compose", () =>
+        {
+            if (parts is null || parts.Count == 0)
+                throw new InvalidOperationException("ComposeScenes requires at least one mesh part.");
+
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationGlb))!);
+            var scene = new SceneBuilder();
+            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (rawName, sourceGlb) in parts)
+            {
+                if (string.IsNullOrWhiteSpace(sourceGlb) || !File.Exists(sourceGlb))
+                    throw new FileNotFoundException("Compose source GLB missing.", sourceGlb);
+
+                var (positions, indices) = MeshCompare.ReadMesh(sourceGlb);
+                if (positions.Count < 3 || indices.Count < 3)
+                    throw new InvalidOperationException($"Compose source has no triangles: {sourceGlb}");
+
+                foreach (var v in positions)
+                {
+                    if (!float.IsFinite(v.X) || !float.IsFinite(v.Y) || !float.IsFinite(v.Z))
+                        throw new InvalidOperationException($"Non-finite vertex in {sourceGlb}");
+                }
+
+                for (var i = 0; i < indices.Count; i++)
+                {
+                    if (indices[i] < 0 || indices[i] >= positions.Count)
+                        throw new InvalidOperationException($"Invalid index in {sourceGlb}");
+                }
+
+                var baseName = string.IsNullOrWhiteSpace(rawName) ? "part" : rawName.Trim();
+                var name = baseName;
+                var n = 2;
+                while (!usedNames.Add(name))
+                    name = $"{baseName}-{n++}";
+
+                var material = new MaterialBuilder(name + "-mat")
+                    .WithDoubleSide(true)
+                    .WithMetallicRoughnessShader()
+                    .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, Vector4.One);
+
+                var mesh = new MeshBuilder<VertexPosition>(name);
+                var prim = mesh.UsePrimitive(material);
+                for (var i = 0; i + 2 < indices.Count; i += 3)
+                {
+                    prim.AddTriangle(
+                        new VertexPosition(positions[indices[i]]),
+                        new VertexPosition(positions[indices[i + 1]]),
+                        new VertexPosition(positions[indices[i + 2]]));
+                }
+
+                var node = new NodeBuilder(name);
+                scene.AddRigidMesh(mesh, node);
+            }
+
+            scene.ToGltf2().SaveGLB(destinationGlb);
+            var inspect = CanonicalGltfPipeline.Load(destinationGlb);
+            if (inspect.MeshCount < parts.Count)
+                throw new InvalidOperationException(
+                    $"Composed GLB expected >= {parts.Count} meshes, got {inspect.MeshCount}.");
+            if (inspect.VertexCount < 3 || inspect.TriangleCount < 1)
+                throw new InvalidOperationException("Composed GLB has no usable geometry.");
+            return destinationGlb;
+        }, provider: "sharpgltf-compose");
+    }
+
     public static GlbSceneCounts ToCounts(CanonicalGltfDocument doc) => new()
     {
         MeshCount = doc.MeshCount,
