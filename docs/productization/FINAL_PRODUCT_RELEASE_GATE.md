@@ -21,6 +21,15 @@ Optional hardware features may remain gated without blocking PRODUCT_VALIDATED:
 - FlaUI interactive visual
 - UE5 editor import
 
+## Latest evaluated tip
+
+| Field | Value |
+|-------|-------|
+| SHA | `0c3573a2bc83e957f0e0046d768a1ca664df8184` |
+| PR CI run | `35162936197` |
+| PRODUCT_VALIDATED | **True** |
+| Auto-Rig CPU job | `GATED_EXTERNAL_RUNTIME` (CLI/GGUF not on runner) |
+
 ## Machine-readable
 
 `artifacts/gate/release-gate-classification.json` includes `productValidated: true|false`.
