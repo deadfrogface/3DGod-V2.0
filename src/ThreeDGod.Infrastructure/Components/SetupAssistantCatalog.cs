@@ -49,7 +49,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.HumanCreator,
             Title = "Human Creator",
-            Description = "Create realistic humans with local body parameters.",
+            Description = "Install Anny worker, then use the Anny tab to create/edit humans. Install alone is not enough — open Anny after Ready.",
             PrimaryComponentId = "anny",
             AdvancedBackendName = "Anny",
             Optional = true
@@ -58,7 +58,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.ImageTo3D,
             Title = "Image → 3D",
-            Description = "Turn a reference image into a 3D mesh.",
+            Description = "Install TripoSR, then AI tab: load image → Asset/Image→3D. Install ≠ auto-generate.",
             PrimaryComponentId = "triposr",
             AdvancedBackendName = "TripoSR",
             Optional = true
@@ -67,7 +67,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.TextToCharacter,
             Title = "Text → Character",
-            Description = "Generate a reference image from text, then build a character.",
+            Description = "Install FLUX (GPU), then AI tab → Referenzbild erzeugen. Not a one-click full character.",
             PrimaryComponentId = "flux",
             AdvancedBackendName = "FLUX.1-schnell",
             Optional = true
@@ -76,7 +76,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.ParametricClothing,
             Title = "Parametric Clothing",
-            Description = "Build garment patterns and meshes from measurements.",
+            Description = "Install GarmentCode, then Clothing tab → Jacket Fit. Install ≠ fitted clothes.",
             PrimaryComponentId = "garmentcode",
             AdvancedBackendName = "GarmentCode",
             Optional = true
@@ -85,7 +85,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.AutomaticRigging,
             Title = "Automatic Rigging",
-            Description = "Add a skeleton and skin weights to a mesh.",
+            Description = "Install SkinTokens (GPU), then Rigging tab → Auto-Rig. Anny humans keep Anny rig profile.",
             PrimaryComponentId = "skintokens",
             AdvancedBackendName = "SkinTokens",
             Optional = true
@@ -103,7 +103,7 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.UnrealExport,
             Title = "Unreal Export",
-            Description = "Prepare assets for Unreal Engine 5 (Blender headless FBX path).",
+            Description = "Blender FBX + UE5 preflight. Not in-app editor import — external UE5 scripts only.",
             PrimaryComponentId = "blender",
             AdvancedBackendName = "Blender",
             Optional = true

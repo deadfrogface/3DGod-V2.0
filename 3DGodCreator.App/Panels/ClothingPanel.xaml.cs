@@ -1,6 +1,8 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ThreeDGod.Application;
+using ThreeDGod.Core.Domain;
 using ThreeDGodCreator.Core;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -8,19 +10,29 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class ClothingPanel : UserControl
 {
     private readonly IFeatureAvailabilityService _features;
+    private readonly IGarmentFitService _garmentFit;
+    private readonly ActiveProjectSession _session;
+    private readonly Action _refreshViewportFromProject;
 
-    public ClothingPanel(CharacterSystem cs, IFeatureAvailabilityService features)
+    public ClothingPanel(
+        CharacterSystem cs,
+        IFeatureAvailabilityService features,
+        IGarmentFitService garmentFit,
+        ActiveProjectSession session,
+        Action refreshViewportFromProject)
     {
         InitializeComponent();
         _ = cs;
         _features = features;
+        _garmentFit = garmentFit;
+        _session = session;
+        _refreshViewportFromProject = refreshViewportFromProject;
 
         var fitMsg = _features.GetStatusMessage(FeatureIds.ClothingFit);
         var fitOk = _features.IsInvocable(FeatureIds.ClothingFit);
         AvailabilityLabel.Text =
             fitMsg + "\nPiercings/Tattoos: NotImplemented – no mesh loaders. Buttons stay disabled.";
 
-        // Jacket fit may be Experimental when GarmentCode is installed; piercings/tattoos are never real.
         BtnClothes.IsEnabled = fitOk;
         BtnClothes.Content = fitOk ? "Jacket Fit (Experimental)" : "Lade Kleidung (Unavailable)";
         BtnClothes.ToolTip = fitMsg;
@@ -34,7 +46,7 @@ public partial class ClothingPanel : UserControl
         BtnTattoos.ToolTip = "NotImplemented – no tattoo pipeline.";
     }
 
-    private void BtnClothes_Click(object sender, RoutedEventArgs e)
+    private async void BtnClothes_Click(object sender, RoutedEventArgs e)
     {
         if (!_features.IsInvocable(FeatureIds.ClothingFit))
         {
@@ -42,11 +54,43 @@ public partial class ClothingPanel : UserControl
             return;
         }
 
-        MessageBox.Show(
-            "Experimental – Jacket fit runs via GarmentCode + geometry3Sharp when invoked from Anny/Garment tools. This panel does not fake a clothing load.",
-            "Clothing",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        try
+        {
+            BtnClothes.IsEnabled = false;
+            AvailabilityLabel.Text = "Fitting jacket via GarmentCode + geometry3Sharp…";
+
+            var work = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Garments");
+            Directory.CreateDirectory(work);
+
+            var body = _session.GetActiveMeshGlbPathOrMaterialize(Path.Combine(work, "body"));
+            GarmentFitResult result;
+            if (!string.IsNullOrWhiteSpace(body) && File.Exists(body))
+                result = await _garmentFit.FitJacketToBodyAsync(body, work, "active-human");
+            else
+                result = await _garmentFit.FitJacketToPresetAsync("male_base", work);
+
+            if (string.IsNullOrWhiteSpace(result.FittedGlb) || !File.Exists(result.FittedGlb))
+                throw new InvalidOperationException("Fit produced no GLB (honest failure — no fake clothing).");
+
+            _session.AddFittedGarment(result.FittedGlb, "jacket", result.Report);
+            // Composed scene: BODY + JACKET (do not replace body with jacket-only preview).
+            _refreshViewportFromProject();
+            AvailabilityLabel.Text =
+                $"Jacket fitted. Scene = body + jacket. insideAfter={result.Report.InsideAfter}, minDist={result.Report.MinDistanceAfter:F4}. Persisted in project session.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Clothing Fit", MessageBoxButton.OK, MessageBoxImage.Warning);
+            AvailabilityLabel.Text = ex.Message;
+            // Keep previous composed scene (body) on failure.
+            try { _refreshViewportFromProject(); } catch { /* ignore */ }
+        }
+        finally
+        {
+            BtnClothes.IsEnabled = _features.IsInvocable(FeatureIds.ClothingFit);
+        }
     }
 
     private void BtnPiercings_Click(object sender, RoutedEventArgs e) =>

@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.IO;
-using ThreeDGodCreator.App;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Controls;
+using ThreeDGod.Application;
+using ThreeDGodCreator.App;
 using ThreeDGodCreator.Core;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -12,14 +13,51 @@ namespace ThreeDGodCreator.App.Panels;
 public partial class FormPanel : UserControl
 {
     private readonly CharacterSystem _cs;
+    private readonly ActiveProjectSession _session;
     private readonly Dictionary<string, Slider> _sliders = new();
+    private TextBlock? _honestyLabel;
 
-    public FormPanel(CharacterSystem cs)
+    public FormPanel(CharacterSystem cs, ActiveProjectSession session)
     {
         InitializeComponent();
         _cs = cs;
+        _session = session;
         _cs.SliderSyncCallback = RefreshSliders;
+        InsertHonestyBanner();
         LoadParameters();
+        RefreshHumanCreatorMode();
+        _session.Changed += () => Dispatcher.Invoke(RefreshHumanCreatorMode);
+    }
+
+    private void InsertHonestyBanner()
+    {
+        _honestyLabel = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = System.Windows.Media.Brushes.Orange,
+            FontSize = 12,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        if (Content is StackPanel root)
+            root.Children.Insert(1, _honestyLabel);
+    }
+
+    private void RefreshHumanCreatorMode()
+    {
+        var anny = _session.IsAnnyHumanActive;
+        if (_honestyLabel is not null)
+        {
+            _honestyLabel.Text = anny
+                ? "Human Creator = Anny-Tab. Form-Slider sind Legacy und KEINE anatomische Höhe (kein Uniform-Scale als Morph). Nutze Anny-Parameter."
+                : "Legacy Form: unskinned Base-GLBs. Größe = nur Viewport-Uniform-Scale (kein Anny-HeightMorph). Für echte Menschen: Anny-Tab.";
+        }
+
+        // When Anny human is active, disable Form sculpt to kill dual-state confusion.
+        SlidersPanel.IsEnabled = !anny && _cs.IsCurrentModelRigged;
+        BtnMale.IsEnabled = !anny;
+        BtnFemale.IsEnabled = !anny;
+        foreach (var kv in _sliders)
+            kv.Value.IsEnabled = SlidersPanel.IsEnabled;
     }
 
     private void LoadParameters()
@@ -41,7 +79,7 @@ public partial class FormPanel : UserControl
         {
             pars = new Dictionary<string, BodyParam>
             {
-                ["height"] = new() { Label = "Größe", Min = 0, Max = 100, Default = 50 },
+                ["height"] = new() { Label = "Größe (Legacy Scale)", Min = 0, Max = 100, Default = 50 },
                 ["breast_size"] = new() { Label = "Brustgröße", Min = 0, Max = 100, Default = 50 },
                 ["hip_width"] = new() { Label = "Hüftbreite", Min = 0, Max = 100, Default = 50 },
                 ["arm_length"] = new() { Label = "Armlänge", Min = 0, Max = 100, Default = 50 },
@@ -56,7 +94,7 @@ public partial class FormPanel : UserControl
             {
                 Text = kv.Value.Label,
                 Foreground = System.Windows.Media.Brushes.White,
-                Width = 120,
+                Width = 140,
                 VerticalAlignment = VerticalAlignment.Center
             });
             var slider = new Slider
@@ -64,7 +102,7 @@ public partial class FormPanel : UserControl
                 Minimum = kv.Value.Min,
                 Maximum = kv.Value.Max,
                 Value = _cs.SculptData.GetValueOrDefault(kv.Key, kv.Value.Default),
-                Width = 200,
+                Width = 180,
                 VerticalAlignment = VerticalAlignment.Center
             };
             var key = kv.Key;
@@ -89,15 +127,17 @@ public partial class FormPanel : UserControl
 
     public void RefreshModelState()
     {
-        var enabled = _cs.IsCurrentModelRigged;
-        SlidersPanel.IsEnabled = enabled;
-        foreach (var kv in _sliders)
-            kv.Value.IsEnabled = enabled;
+        RefreshHumanCreatorMode();
     }
 
     private void BtnMale_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("[Form] Männlich gewählt");
+        if (_session.IsAnnyHumanActive)
+        {
+            MessageBox.Show("Aktives Human-Projekt ist Anny. Form Base-Modelle würden Dual-State erzeugen — abgebrochen.", "Form", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        DebugLog.Write("[Form] Männlich gewählt (Legacy base)");
         _cs.SetGender("male");
         _cs.LoadBaseModel("male");
         RefreshSliders();
@@ -105,7 +145,12 @@ public partial class FormPanel : UserControl
 
     private void BtnFemale_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("[Form] Weiblich gewählt");
+        if (_session.IsAnnyHumanActive)
+        {
+            MessageBox.Show("Aktives Human-Projekt ist Anny. Form Base-Modelle würden Dual-State erzeugen — abgebrochen.", "Form", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        DebugLog.Write("[Form] Weiblich gewählt (Legacy base)");
         _cs.SetGender("female");
         _cs.LoadBaseModel("female");
         RefreshSliders();

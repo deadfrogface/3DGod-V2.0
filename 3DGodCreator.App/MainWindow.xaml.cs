@@ -11,8 +11,10 @@ using ThreeDGod.Core.Diagnostics;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Core.Editing;
 using ThreeDGod.Export;
+using ThreeDGod.Infrastructure;
 using ThreeDGod.Infrastructure.Components;
 using ThreeDGod.Mesh;
+using ThreeDGod.Persistence;
 using ThreeDGod.Rendering;
 using ThreeDGod.Workers;
 using ThreeDGodCreator.App.Localization;
@@ -44,8 +46,15 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly CommandStack _commandStack;
     private readonly IDiagnosticService _diagnostics;
     private readonly IProjectService _projects;
+    private readonly ActiveProjectSession _projectSession;
+    private readonly AutosaveService _autosave;
     private readonly AnnyHumanService _anny;
     private readonly IAssetGenerationService _assets;
+    private readonly IGarmentFitService _garmentFit;
+    private readonly IImageTo3DService _imageTo3D;
+    private readonly IReferenceImageGenerationService _referenceImages;
+    private readonly ISkinTokensRigService _skinTokens;
+    private readonly AllowlistedAiEditExecutor _aiEdits;
     private readonly ViewportSelectionService _viewportSelection;
     private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
@@ -63,8 +72,15 @@ public partial class MainWindow : Window, ILocalizableView
         CommandStack commandStack,
         IDiagnosticService diagnostics,
         IProjectService projects,
+        ActiveProjectSession projectSession,
+        AutosaveService autosave,
         AnnyHumanService anny,
         IAssetGenerationService assets,
+        IGarmentFitService garmentFit,
+        IImageTo3DService imageTo3D,
+        IReferenceImageGenerationService referenceImages,
+        ISkinTokensRigService skinTokens,
+        AllowlistedAiEditExecutor aiEdits,
         ViewportSelectionService viewportSelection,
         IFbxExportService fbxExport,
         IComponentManager components,
@@ -81,8 +97,15 @@ public partial class MainWindow : Window, ILocalizableView
         _commandStack = commandStack;
         _diagnostics = diagnostics;
         _projects = projects;
+        _projectSession = projectSession;
+        _autosave = autosave;
         _anny = anny;
         _assets = assets;
+        _garmentFit = garmentFit;
+        _imageTo3D = imageTo3D;
+        _referenceImages = referenceImages;
+        _skinTokens = skinTokens;
+        _aiEdits = aiEdits;
         _viewportSelection = viewportSelection;
         _fbxExport = fbxExport;
         _components = components;
@@ -120,32 +143,162 @@ public partial class MainWindow : Window, ILocalizableView
         ApplyTheme(cfg.Theme);
         ApplyLocalization();
 
-        if (_presetService.Exists("default"))
-            _characterSystem.LoadPreset("default");
-        else
-            _characterSystem.LoadBaseModel(_characterSystem.Config.Gender);
-
-        DebugLog.Write($"App gestartet. Basis: {_basePath}");
+        // Authoritative product path is ProjectBundle/Anny — do not auto-load legacy Form base as "the character".
+        _projectSession.NewProject("Untitled");
+        DebugLog.Write($"App gestartet. Basis: {_basePath}. Active project session ready.");
     }
 
     private void LoadPanels()
     {
         DebugConsoleHost.Content = new DebugConsole();
-        _annyInspector = new AnnyInspectorPanel(_anny, _features, _commandStack, LoadPreview);
+        _annyInspector = new AnnyInspectorPanel(_anny, _features, _commandStack, OnAnnyPreviewReady, _projectSession);
         AnnyPanel.Content = _annyInspector;
-        FormPanel.Content = new FormPanel(_characterSystem);
+        FormPanel.Content = new FormPanel(_characterSystem, _projectSession);
         SculptPanel.Content = new SculptPanel(_characterSystem);
         NsfwPanel.Content = new NsfwPanel(_characterSystem);
-        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features);
+        ClothingPanel.Content = new ClothingPanel(_characterSystem, _features, _garmentFit, _projectSession, RefreshViewportFromProject);
         PhysicsPanel.Content = new PhysicsPanel(_characterSystem, _features);
-        MaterialPanel.Content = new MaterialEditorPanel(_characterSystem);
+        MaterialPanel.Content = new MaterialEditorPanel(_characterSystem, _projectSession);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
-        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features);
-        ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, () => _currentPreviewPath);
+        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features, _skinTokens, _projectSession, LoadPreviewOrRefreshProjectScene);
+        ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, GetExportSourceGlb, _projectSession);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features, _components, _uvInstaller);
-        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreview, _assets);
+        AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreviewOrRefreshProjectScene, _assets, _imageTo3D, _referenceImages, _projectSession, _aiEdits, _commandStack);
         _problemsPanel = new ProblemsPanel(_diagnostics, ShowDiagnosticIssueInViewport, ClearDiagnosticHighlight);
         ProblemsPanel.Content = _problemsPanel;
+    }
+
+    private void OnAnnyPreviewReady(string glbPath)
+    {
+        try
+        {
+            if (_annyInspector is not null)
+                _projectSession.SetAnnyState(_annyInspector.State, markDirty: false);
+            _projectSession.SetActiveMeshFromGlbFile(glbPath, "anny-body");
+            _autosave.MarkDirty(_projectSession.Snapshot());
+            _ = _autosave.ScheduleAutosaveAsync(_projectSession.Snapshot());
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Project] Mesh embed skipped: {ex.Message}");
+        }
+        RefreshViewportFromProject();
+    }
+
+    /// <summary>
+    /// GLB paths refresh the composed project scene (body + garments).
+    /// Non-mesh previews (e.g. reference PNG) keep single LoadPreview.
+    /// </summary>
+    private void LoadPreviewOrRefreshProjectScene(string path)
+    {
+        if (!string.IsNullOrWhiteSpace(path)
+            && (path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".gltf", StringComparison.OrdinalIgnoreCase)))
+        {
+            RefreshViewportFromProject();
+            return;
+        }
+
+        LoadPreview(path);
+    }
+
+    /// <summary>
+    /// Authoritative viewport composition from ActiveProjectSession:
+    /// body + fitted garments (and later attachments) as one Model3DGroup.
+    /// </summary>
+    public void RefreshViewportFromProject()
+    {
+        try
+        {
+            var work = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "ViewportScene");
+            var parts = _projectSession.MaterializeSceneGlbs(work);
+            if (parts.Count == 0)
+            {
+                ShowPlaceholder();
+                return;
+            }
+
+            var root = new Model3DGroup();
+            var allPositions = new List<Vector3>();
+            var allIndices = new List<int>();
+            string? primaryPath = null;
+            var hasBones = false;
+
+            foreach (var part in parts)
+            {
+                var content = GlbLoader.Load(part.GlbPath);
+                if (content is null)
+                    continue;
+                root.Children.Add(content);
+                primaryPath ??= part.GlbPath;
+                try
+                {
+                    var (pos, idx) = MeshCompare.ReadMesh(part.GlbPath);
+                    var baseIndex = allPositions.Count;
+                    allPositions.AddRange(pos);
+                    allIndices.AddRange(idx.Select(i => baseIndex + i));
+                }
+                catch (Exception meshEx)
+                {
+                    DebugLog.Write($"[Viewport] Scene part mesh read skipped ({part.Name}): {meshEx.Message}");
+                }
+
+                if (string.Equals(part.Role, "body", StringComparison.OrdinalIgnoreCase))
+                {
+                    var validation = ModelValidator.Validate(part.GlbPath);
+                    hasBones = validation.HasRig && validation.HasSkin;
+                    _characterSystem.IsCurrentModelRigged = hasBones;
+                }
+            }
+
+            if (root.Children.Count == 0)
+            {
+                ShowPlaceholder();
+                return;
+            }
+
+            _currentPreviewPath = primaryPath ?? "";
+            _characterSystem.PreviewGlbPath = primaryPath;
+            var vp = CreateViewport3D(root, allPositions, allIndices, hasRealBones: hasBones);
+            ViewportHost.Child = vp;
+            ApplySculptTransform(_characterSystem.SculptData);
+            if (FormPanel.Content is FormPanel fp)
+                fp.RefreshModelState();
+            DebugLog.Write($"[Viewport] Composed scene: {parts.Count} part(s) from ActiveProjectSession.");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Viewport] RefreshViewportFromProject failed: {ex.Message}");
+            ShowAnatomyPreview();
+        }
+    }
+
+    private string GetExportSourceGlb()
+    {
+        var work = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "3DGod", "ExportWork");
+        try
+        {
+            var dest = Path.Combine(work, "composed-export.glb");
+            var parts = _projectSession.MaterializeSceneGlbs(Path.Combine(work, "parts"));
+            if (parts.Count == 0)
+                return !string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath)
+                    ? _currentPreviewPath
+                    : "";
+            if (parts.Count == 1)
+                return parts[0].GlbPath;
+            return GlbExportService.ComposeScenes(
+                parts.Select(p => (p.Name, p.GlbPath)).ToList(),
+                dest);
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Export] Compose failed, falling back: {ex.Message}");
+            return _projectSession.GetActiveMeshGlbPathOrMaterialize(work) ?? _currentPreviewPath ?? "";
+        }
     }
 
     private void UpdateSelectionInspector(Guid? domainObjectId)
@@ -469,11 +622,23 @@ public partial class MainWindow : Window, ILocalizableView
     /// </summary>
     public void ApplySculptTransform(Dictionary<string, int> sculptData)
     {
+        // Human Creator height is Anny phenotype regeneration — never pretend uniform scale is anatomy.
+        if (_projectSession.IsAnnyHumanActive)
+        {
+            if (_sculptScaleTransform != null)
+            {
+                _sculptScaleTransform.ScaleX = 1;
+                _sculptScaleTransform.ScaleY = 1;
+                _sculptScaleTransform.ScaleZ = 1;
+            }
+            return;
+        }
+
         if (_sculptScaleTransform == null) return;
 
         var height = sculptData.GetValueOrDefault("height", 50);
 
-        // Scale: 50 = 1.0, 0 = 0.6, 100 = 1.4 (uniform)
+        // Legacy Form path only: uniform scale is NOT anatomical height morph.
         var s = 0.6 + (height / 100.0) * 0.8;
         var prevS = _sculptScaleTransform.ScaleX;
 
@@ -482,7 +647,7 @@ public partial class MainWindow : Window, ILocalizableView
         _sculptScaleTransform.ScaleZ = s;
 
         if (Math.Abs(s - prevS) > 1e-6)
-            AppLogger.Write($"[Transform] Scale changed from {prevS:F3} to {s:F3} (height={height})");
+            AppLogger.Write($"[Transform] Legacy uniform scale {prevS:F3} → {s:F3} (Form height={height}; not Anny morph)");
     }
 
     public void ApplyMaterialOverridesToViewport(Dictionary<string, MaterialData> materials)
@@ -570,6 +735,8 @@ public partial class MainWindow : Window, ILocalizableView
     {
         try
         {
+            TryOfferAutosaveRecovery();
+
             var anyReady = _components.ListManifests().Any(m =>
                 _components.GetState(m.ComponentId).State == ComponentState.Ready);
             var skipFlag = Path.Combine(
@@ -613,11 +780,75 @@ public partial class MainWindow : Window, ILocalizableView
             System.Windows.Input.ApplicationCommands.Redo, System.Windows.Input.Key.Y, System.Windows.Input.ModifierKeys.Control));
     }
 
+    private async void TryOfferAutosaveRecovery()
+    {
+        try
+        {
+            var recoveries = _autosave.ListRecoveries()
+                .Where(r => !string.Equals(r.ProjectName, "(unreadable)", StringComparison.Ordinal))
+                .Take(5)
+                .ToList();
+            if (recoveries.Count == 0)
+                return;
+
+            var latest = recoveries[0];
+            var answer = MessageBox.Show(
+                $"Autosave gefunden: {latest.ProjectName}\n{latest.SavedUtc:u}\n\nWiederherstellen?",
+                "Crash Recovery",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+                return;
+
+            var bundle = await _autosave.RestoreAsync(latest.SessionId);
+            await ApplyLoadedBundleAsync(bundle, projectPath: null);
+            DebugLog.Write($"[Autosave] Wiederhergestellt: {latest.SessionId}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Autosave] Recovery skipped: {ex.Message}");
+        }
+    }
+
+    private async Task ApplyLoadedBundleAsync(ProjectBundle bundle, string? projectPath)
+    {
+        _projectSession.LoadFrom(bundle, projectPath);
+        _autosave.AssociateMainFile(projectPath);
+        var state = _projectSession.ActiveCharacter?.ParametricHumanState;
+        if (state is not null && _annyInspector is not null)
+            await _annyInspector.ApplyStateAsync(state, generate: false);
+
+        var work = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "3DGod", "ProjectMeshes");
+        var meshPath = _projectSession.TryMaterializeActiveMesh(work);
+        if (!string.IsNullOrWhiteSpace(meshPath) && File.Exists(meshPath))
+        {
+            RefreshViewportFromProject();
+        }
+        else if (state is not null && _features.IsInvocable(FeatureIds.AnnyHuman) && _annyInspector is not null)
+        {
+            await _annyInspector.ApplyStateAsync(state, generate: true);
+        }
+
+        // Restore material display from domain if present
+        var mat = _projectSession.Bundle.Materials.FirstOrDefault();
+        if (mat is not null)
+        {
+            var hex = $"#{(int)(mat.BaseColorFactor.R * 255):X2}{(int)(mat.BaseColorFactor.G * 255):X2}{(int)(mat.BaseColorFactor.B * 255):X2}";
+            _characterSystem.SetMaterialPbr(mat.Name, hex, mat.RoughnessFactor, mat.MetallicFactor);
+        }
+    }
+
     private async void MenuNewProject_Click(object sender, RoutedEventArgs e)
     {
+        _projectSession.NewProject("Untitled");
+        _autosave.AssociateMainFile(null);
         if (_annyInspector is not null)
             await _annyInspector.ApplyStateAsync(new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" }, generate: false);
-        DebugLog.Write("[Project] Neues leeres Domain-Projekt im Speicher.");
+        _currentPreviewPath = "";
+        ShowPlaceholder();
+        DebugLog.Write("[Project] Neues Domain-Projekt (ActiveProjectSession).");
     }
 
     private async void MenuOpenProject_Click(object sender, RoutedEventArgs e)
@@ -627,10 +858,8 @@ public partial class MainWindow : Window, ILocalizableView
         try
         {
             var bundle = await _projects.LoadAsync(dlg.FileName);
-            var state = bundle.Characters.FirstOrDefault()?.ParametricHumanState;
-            if (state is not null && _annyInspector is not null)
-                await _annyInspector.ApplyStateAsync(state, generate: _features.IsInvocable(FeatureIds.AnnyHuman));
-            DebugLog.Write($"[Project] Geladen: {bundle.Project.Name} ({bundle.Project.ProjectId})");
+            await ApplyLoadedBundleAsync(bundle, dlg.FileName);
+            DebugLog.Write($"[Project] Geladen: {_projectSession.Bundle.Project.Name} ({_projectSession.Bundle.Project.ProjectId}) meshes={_projectSession.Bundle.MeshBytes.Count}");
         }
         catch (Exception ex)
         {
@@ -644,29 +873,60 @@ public partial class MainWindow : Window, ILocalizableView
         if (dlg.ShowDialog() != true) return;
         try
         {
-            var state = _annyInspector is null ? new ParametricHumanState() : AnnyInspectorPanel.Clone(_annyInspector.State);
-            var character = new CharacterDocument
+            if (_annyInspector is not null)
+                _projectSession.SetAnnyState(AnnyInspectorPanel.Clone(_annyInspector.State), markDirty: false);
+
+            if (!string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath)
+                && Path.GetExtension(_currentPreviewPath).Equals(".glb", StringComparison.OrdinalIgnoreCase))
             {
-                Name = Path.GetFileNameWithoutExtension(dlg.FileName),
-                CharacterKind = CharacterKind.ParametricHuman,
-                SourceRepresentation = SourceRepresentation.AnnyParameters,
-                ParametricHumanState = state
-            };
-            var bundle = new ProjectBundle
-            {
-                Project = new ProjectDocument
-                {
-                    Name = character.Name,
-                    CharacterIds = [character.CharacterId]
-                },
-                Characters = [character]
-            };
+                try { _projectSession.SetActiveMeshFromGlbFile(_currentPreviewPath, "body"); }
+                catch (Exception meshEx) { DebugLog.Write($"[Project] Mesh capture: {meshEx.Message}"); }
+            }
+
+            SyncLegacyMaterialsIntoSession();
+
+            var bundle = _projectSession.Snapshot();
+            bundle.Project.Name = Path.GetFileNameWithoutExtension(dlg.FileName);
+            bundle.Project.AppVersionLastSaved = "2.0.0";
+            if (bundle.Characters.Count > 0)
+                bundle.Characters[0].Name = bundle.Project.Name;
+
             await _projects.SaveAsync(bundle, dlg.FileName);
-            DebugLog.Write($"[Project] Gespeichert: {dlg.FileName}");
+            _projectSession.MarkClean(dlg.FileName);
+            _autosave.AssociateMainFile(dlg.FileName);
+            await _autosave.FlushAsync();
+            DebugLog.Write($"[Project] Gespeichert: {dlg.FileName} (meshBytes={bundle.MeshBytes.Count}, materials={bundle.Materials.Count}, garments={bundle.GarmentInstances.Count})");
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Projekt speichern", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void SyncLegacyMaterialsIntoSession()
+    {
+        foreach (var kv in _characterSystem.Materials)
+        {
+            var mat = kv.Value;
+            var (r, g, b) = HexToRgb01(mat.Color);
+            _projectSession.UpsertMaterial(kv.Key, r, g, b, 1f, (float)mat.Metallic, (float)mat.Roughness);
+        }
+    }
+
+    private static (float r, float g, float b) HexToRgb01(string hex)
+    {
+        hex = (hex ?? "#cccccc").Trim().TrimStart('#');
+        if (hex.Length < 6) return (0.8f, 0.8f, 0.8f);
+        try
+        {
+            var rr = Convert.ToInt32(hex[..2], 16) / 255f;
+            var gg = Convert.ToInt32(hex.Substring(2, 2), 16) / 255f;
+            var bb = Convert.ToInt32(hex.Substring(4, 2), 16) / 255f;
+            return (rr, gg, bb);
+        }
+        catch
+        {
+            return (0.8f, 0.8f, 0.8f);
         }
     }
 
@@ -685,7 +945,7 @@ public partial class MainWindow : Window, ILocalizableView
                 "3DGod", "Generated", $"anny-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
             DebugLog.Write("[Anny] Erzeuge Human…");
             var glb = await _anny.GenerateGlbAsync(dest);
-            LoadPreview(glb);
+            OnAnnyPreviewReady(glb);
             DebugLog.Write($"[Anny] GLB geladen: {glb}");
         }
         catch (Exception ex)
@@ -697,16 +957,17 @@ public partial class MainWindow : Window, ILocalizableView
 
     private void MenuExportGlb_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_currentPreviewPath) || !File.Exists(_currentPreviewPath))
+        var src = GetExportSourceGlb();
+        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
         {
-            MessageBox.Show("Kein verifiziertes Viewport-GLB zum Export.", "Export GLB", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Kein Projekt-/Viewport-GLB zum Export.", "Export GLB", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         var dlg = new SaveFileDialog { Filter = "GLB|*.glb", FileName = "character.glb" };
         if (dlg.ShowDialog() != true) return;
         try
         {
-            GlbExportService.Export(_currentPreviewPath, dlg.FileName);
+            GlbExportService.Export(src, dlg.FileName);
             DebugLog.Write($"[Export] GLB geschrieben: {dlg.FileName}");
         }
         catch (Exception ex)

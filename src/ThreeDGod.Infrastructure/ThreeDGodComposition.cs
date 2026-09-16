@@ -31,6 +31,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<GarmentCodeService>();
         services.AddSingleton<IGarmentCodeService>(sp => sp.GetRequiredService<GarmentCodeService>());
         services.AddSingleton<IProjectService>(sp => new GodProjectArchive(sp.GetRequiredService<IDiagnosticService>()));
+        services.AddSingleton<ActiveProjectSession>();
         services.AddSingleton<AnnyPresetStore>();
         services.AddSingleton<IReferenceImageGenerationService, ReferenceImageService>();
         services.AddSingleton<IImageTo3DService, ImageTo3DService>();
@@ -72,6 +73,13 @@ public static class ThreeDGodComposition
                 "Recovery");
             return new AutosaveService(root);
         });
+        services.AddSingleton<AllowlistedAiEditExecutor>();
+        services.AddSingleton<ProductWorkflowService>(sp =>
+            new ProductWorkflowService(
+                sp.GetRequiredService<ActiveProjectSession>(),
+                sp.GetRequiredService<IProjectService>(),
+                sp.GetRequiredService<AllowlistedAiEditExecutor>(),
+                sp.GetRequiredService<AutosaveService>()));
         services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
         [
             new BackendManifest

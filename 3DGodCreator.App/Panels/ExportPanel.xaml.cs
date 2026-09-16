@@ -17,6 +17,7 @@ public partial class ExportPanel : UserControl, ILocalizableView
     private readonly string _basePath;
     private readonly Func<string> _currentPreview;
     private readonly IFbxExportService _fbxExport;
+    private readonly ActiveProjectSession? _session;
 
     private readonly IFeatureAvailabilityService _features;
 
@@ -24,21 +25,25 @@ public partial class ExportPanel : UserControl, ILocalizableView
         CharacterSystem cs,
         IFeatureAvailabilityService features,
         IFbxExportService fbxExport,
-        Func<string> currentPreview)
+        Func<string> currentPreview,
+        ActiveProjectSession? session = null)
     {
         InitializeComponent();
         _cs = cs;
         _features = features;
         _fbxExport = fbxExport;
         _currentPreview = currentPreview;
+        _session = session;
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
         BtnSavePreset.IsEnabled = _features.IsInvocable(FeatureIds.PresetSave);
         BtnExportFbx.IsEnabled = _features.IsInvocable(FeatureIds.ExportFbx);
-        BtnExportUnreal.IsEnabled = _features.IsInvocable(FeatureIds.ExportUnreal);
+        // Unreal editor import is NOT implemented — keep disabled; copy-handler remains honest below.
+        BtnExportUnreal.IsEnabled = false;
         BtnExportGlb.IsEnabled = _features.IsInvocable(FeatureIds.ExportGlb);
         WriteLog(_features.GetStatusMessage(FeatureIds.PresetSave), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportFbx), "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportGlb), "INFO");
+        WriteLog("UE5: Preflight + optional external smoke only. No in-app editor import.", "INFO");
         WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "INFO");
         ApplyLocalization();
     }
@@ -117,7 +122,14 @@ public partial class ExportPanel : UserControl, ILocalizableView
         var src = _currentPreview();
         if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
         {
-            WriteLog("Kein verifiziertes Viewport-GLB zum Export.", "WARN");
+            var work = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "ExportWork");
+            src = _session?.GetActiveMeshGlbPathOrMaterialize(work) ?? "";
+        }
+        if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
+        {
+            WriteLog("Kein Projekt-/Viewport-GLB zum Export.", "WARN");
             return;
         }
         var dlg = new SaveFileDialog
@@ -170,32 +182,15 @@ public partial class ExportPanel : UserControl, ILocalizableView
 
     private void BtnExportToUnreal_Click(object sender, RoutedEventArgs e)
     {
-        var name = TxtFilename.Text.Trim();
-        if (string.IsNullOrEmpty(name)) name = "my_character";
-        var dstDir = TxtUnrealPath.Text.Trim();
-        var srcFbx = Path.Combine(_basePath, "exports", $"{name}.fbx");
-
-        if (string.IsNullOrEmpty(dstDir) || !Directory.Exists(dstDir))
-        {
-            WriteLog("Ungültiger Unreal-Zielpfad.", "ERROR");
-            return;
-        }
-        if (!File.Exists(srcFbx))
-        {
-            WriteLog($"FBX nicht gefunden. Zuerst exportieren: {srcFbx}", "ERROR");
-            return;
-        }
-
-        try
-        {
-            var dstFbx = Path.Combine(dstDir, $"{name}.fbx");
-            File.Copy(srcFbx, dstFbx, overwrite: true);
-            WriteLog($"FBX nach Ordner kopiert (kein UE5-Pipeline): {dstFbx}", "INFO");
-            WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "WARN");
-        }
-        catch (Exception ex)
-        {
-            WriteLog($"Fehler beim Kopieren: {ex.Message}", "ERROR");
-        }
+        WriteLog("Export to Unreal is NotImplemented — file copy is NOT UE5 editor import.", "ERROR");
+        WriteLog(_features.GetStatusMessage(FeatureIds.ExportUnreal), "WARN");
+        WriteLog("Use FBX export (Blender-gated) + docs/scripts/ue5 external smoke when UE5 is installed.", "INFO");
+        MessageBox.Show(
+            "In-App „Export to Unreal“ is NotImplemented.\n\n" +
+            "Honest path: Export GLB/FBX → run UE5 automation scripts externally.\n" +
+            "Preflight checks ≠ editor import.",
+            "UE5",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 }

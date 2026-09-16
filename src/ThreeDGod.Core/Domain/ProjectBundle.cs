@@ -13,6 +13,8 @@ public sealed class ProjectBundle
     public List<ReferenceSet> ReferenceSets { get; set; } = [];
     public List<ReferenceImage> ReferenceImages { get; set; } = [];
     public Dictionary<Guid, byte[]> ReferenceImageBytes { get; set; } = [];
+    /// <summary>Embedded GLB payloads keyed by MeshAssetId (stored as assets/{id}/mesh.glb in the archive).</summary>
+    public Dictionary<Guid, byte[]> MeshBytes { get; set; } = [];
 }
 
 public interface IProjectMigration
