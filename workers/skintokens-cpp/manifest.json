@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "skintokens-cpp",
+  "displayName": "skin-tokens.cpp Auto-Rig",
+  "version": "0.1.0",
+  "licenseId": "apache-2.0",
+  "includedInBaseInstaller": false,
+  "capabilities": ["rig.auto", "rig.skintokens.cpp"],
+  "notes": "Apache-2.0 C++/GGML SkinTokens port (CPU/Vulkan). Models: LocalAI-io/SkinTokens-GGUF (MIT-labelled)."
+}

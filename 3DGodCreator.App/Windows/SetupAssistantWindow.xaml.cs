@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using ThreeDGod.Infrastructure;
 using ThreeDGod.Infrastructure.Components;
 
 namespace ThreeDGodCreator.App.Windows;
@@ -23,6 +26,13 @@ public partial class SetupAssistantWindow : Window
 
     private void Refresh()
     {
+        var hw = HardwareProfiler.Probe();
+        var diskGb = hw.DiskFreeBytes / (1024.0 * 1024 * 1024);
+        LblHardware.Text =
+            $"OS={Environment.OSVersion.VersionString}; CPU={hw.CpuCount} cores ({hw.CpuArchitecture}); " +
+            $"GPU={hw.GpuName} ({hw.GpuVendor}); CUDA={(hw.Cuda ? "yes" : "no")}; Vulkan={(hw.Vulkan ? "yes" : "no")}; " +
+            $"VRAM={hw.VramMb} MB; Disk free≈{diskGb:0.0} GB; ContentRoot={InstallLayout.ResolveContentRoot()}";
+
         var rows = new ObservableCollection<FeatureRow>();
         foreach (var status in SetupAssistantCatalog.Snapshot(_components))
         {
@@ -44,6 +54,23 @@ public partial class SetupAssistantWindow : Window
 
         FeatureList.ItemsSource = rows;
         LblStatus.Text = "Install ≠ usable: after Ready, use the matching App tab (Anny / AI / Clothing / Rigging). Skip is always safe.";
+    }
+
+    private void BtnOpenLogs_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(InstallLayout.LogsRoot);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = InstallLayout.LogsRoot,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            LblStatus.Text = $"Open logs failed: {ex.Message}";
+        }
     }
 
     private void BtnSkip_Click(object sender, RoutedEventArgs e)

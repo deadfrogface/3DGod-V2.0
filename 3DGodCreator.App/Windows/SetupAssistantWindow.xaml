@@ -8,16 +8,18 @@
         Foreground="White">
   <DockPanel Margin="16">
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button x:Name="BtnOpenLogs" Content="Open logs" Padding="12,6" Margin="0,0,8,0" Click="BtnOpenLogs_Click"/>
       <Button x:Name="BtnSkip" Content="Skip setup and open 3D God" Padding="12,6" Margin="0,0,8,0" Click="BtnSkip_Click"/>
       <Button x:Name="BtnRefresh" Content="Refresh" Padding="12,6" Margin="0,0,8,0" Click="BtnRefresh_Click"/>
       <Button x:Name="BtnClose" Content="Close" Padding="12,6" Click="BtnClose_Click"/>
     </StackPanel>
     <StackPanel>
       <TextBlock Text="Optional components" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,4"/>
+      <TextBlock x:Name="LblHardware" TextWrapping="Wrap" Foreground="#9cdcfe" Margin="0,0,0,8"/>
       <TextBlock TextWrapping="Wrap" Foreground="#bbbbbb" Margin="0,0,0,12"
                  Text="Install only what you need. Failures here never block the core app. Advanced backend names stay hidden unless you expand a row."/>
       <CheckBox x:Name="ChkAdvanced" Content="Show advanced backend names" Foreground="White" Margin="0,0,0,8" Checked="ChkAdvanced_Changed" Unchecked="ChkAdvanced_Changed"/>
-      <ListBox x:Name="FeatureList" Background="#2d2d2d" BorderThickness="0" Height="360">
+      <ListBox x:Name="FeatureList" Background="#2d2d2d" BorderThickness="0" Height="320">
         <ListBox.ItemTemplate>
           <DataTemplate>
             <Border Padding="8" Margin="0,0,0,6" Background="#333333">
@@ -39,6 +41,8 @@
                           Tag="{Binding ComponentId}" Click="BtnRepair_Click"/>
                   <Button Content="Remove" Margin="0,0,0,4" Padding="10,4" IsEnabled="{Binding CanRemove}"
                           Tag="{Binding ComponentId}" Click="BtnRemove_Click"/>
+                  <Button Content="Retry" Margin="0,0,0,4" Padding="10,4" IsEnabled="{Binding CanInstall}"
+                          Tag="{Binding ComponentId}" Click="BtnInstall_Click"/>
                   <Button Content="Diagnostics" Padding="10,4"
                           Tag="{Binding ComponentId}" Click="BtnDiagnostics_Click"/>
                 </StackPanel>

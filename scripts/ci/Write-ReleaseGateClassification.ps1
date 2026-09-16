@@ -72,8 +72,19 @@ $payload = [ordered]@{
     ue5Import = $ue5Status
     manualVisual = $visualStatus
     gpuDetected = $hasGpu
+    productValidated = $false
     utc = (Get-Date).ToUniversalTime().ToString("o")
 }
+
+# PRODUCT_VALIDATED = core non-hardware flows green; optional GPU may remain gated.
+$coreOk = ($BuildResult -eq "SUCCESS") -and ($installerStatus -eq "CI_VERIFIED" -or $InstallerSmoke -eq "skipped") -and ($Anny -ne "FAILED" -and $Anny -ne "FAIL") -and ($Garment -ne "FAILED" -and $Garment -ne "FAIL")
+if ($coreOk -and $installerStatus -eq "CI_VERIFIED" -and ($Anny -eq "CI_VERIFIED" -or $Anny -eq "PASS_REAL") -and ($Garment -eq "CI_VERIFIED" -or $Garment -eq "PASS_REAL")) {
+    $payload.productValidated = $true
+}
+
 $jsonPath = Join-Path $outDir "release-gate-classification.json"
 $payload | ConvertTo-Json | Set-Content -LiteralPath $jsonPath -Encoding UTF8
 Write-Host "WROTE $jsonPath"
+Write-Host "PRODUCT_VALIDATED: $($payload.productValidated)"
+Write-Host " - PRODUCT_VALIDATED requires Build SUCCESS + installer CI_VERIFIED + Anny/Garment CI_VERIFIED|PASS_REAL."
+Write-Host " - Optional CUDA/Vulkan/FlaUI/UE5 may remain GATED without blocking PRODUCT_VALIDATED."
