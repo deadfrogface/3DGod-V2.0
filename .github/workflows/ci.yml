@@ -347,7 +347,7 @@ jobs:
       startsWith(github.ref, 'refs/heads/cursor/') ||
       (github.event_name == 'pull_request' && (github.base_ref == 'main' || startsWith(github.base_ref, 'cursor/')))
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
     outputs:
       autoroot_status: ${{ steps.autoroot.outputs.autoroot_status }}
     steps:
@@ -357,45 +357,155 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Build + probe Auto-Rig CPU
+      - name: Cache skin-tokens.cpp build + GGUF
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
+          key: skintokens-cpp-43e885af-f16-v1-${{ runner.os }}
+      - name: Provision CLI + SkinTokens-GGUF F16
+        shell: pwsh
+        run: |
+          & "scripts/ci/Invoke-ProvisionSkinTokensCpp.ps1" -CacheDir "$env:RUNNER_TEMP\3dgod-skintokens-cpp-cache"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $cli = Join-Path $env:LOCALAPPDATA "3DGod\Components\skintokens-cpp\bin\skintokens-cli.exe"
+          if (-not (Test-Path $cli)) { throw "CLI missing after provision: $cli" }
+          $model = Join-Path $env:LOCALAPPDATA "3DGod\Models\skintokens-cpp\F16\tokenrig.gguf"
+          if (-not (Test-Path $model)) { throw "Model missing after provision: $model" }
+      - name: Build + REAL Auto-Rig CPU proof
         id: autoroot
         shell: pwsh
+        env:
+          THREEDGOD_CI_AUTOROOT: "1"
+          THREEDGOD_CI_ARTIFACT_DIR: artifacts/runtime/autoroot
         run: |
           New-Item -ItemType Directory -Force -Path "artifacts/runtime/autoroot" | Out-Null
           dotnet build "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release -v minimal
           if ($LASTEXITCODE -ne 0) { echo "autoroot_status=FAIL" >> $env:GITHUB_OUTPUT; exit $LASTEXITCODE }
-          # Selection logic must always pass; real CLI inference may Skip with GATED_NOT_INSTALLED.
           dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
-            --filter "FullyQualifiedName~AutoRigProviderSelectorTests|FullyQualifiedName~SkinTokensCppAutoRigTests" `
+            --filter "FullyQualifiedName~AutoRigProviderSelectorTests|FullyQualifiedName~SkinTokensCppAutoRigTests.CpuRig_WhenInstalled" `
             --logger "trx;LogFileName=autoroot.trx" `
             --logger "console;verbosity=normal" `
             --results-directory "artifacts/runtime/autoroot"
           if ($LASTEXITCODE -ne 0) {
             echo "autoroot_status=FAIL" >> $env:GITHUB_OUTPUT
+            Write-Host "::error::Auto-Rig CPU REAL proof FAILED (not soft-skip)"
             exit $LASTEXITCODE
           }
-          # Classify: if CLI missing, tests Skip → GATED; if real rig ran, PASS_REAL is recorded in trx.
-          $trx = Get-ChildItem "artifacts/runtime/autoroot" -Filter "*.trx" -Recurse | Select-Object -First 1
-          $txt = if ($trx) { Get-Content $trx.FullName -Raw } else { "" }
-          if ($txt -match "GATED_NOT_INSTALLED" -or $txt -match "resulttype=`"Skipped`"") {
-            echo "autoroot_status=GATED_EXTERNAL_RUNTIME" >> $env:GITHUB_OUTPUT
-            Write-Host "AUTOROOT=GATED_EXTERNAL_RUNTIME (CLI/model not on runner — not soft PASS)"
-          } else {
-            echo "autoroot_status=PASS_REAL" >> $env:GITHUB_OUTPUT
-            Write-Host "AUTOROOT=PASS_REAL"
+          if (-not (Test-Path "artifacts/runtime/autoroot/autoroot-cpu-proof.json")) {
+            echo "autoroot_status=FAIL" >> $env:GITHUB_OUTPUT
+            Write-Host "::error::autoroot-cpu-proof.json missing — inference did not record PASS_REAL evidence"
+            exit 2
           }
+          echo "autoroot_status=PASS_REAL" >> $env:GITHUB_OUTPUT
+          Write-Host "AUTOROOT=PASS_REAL"
+          Get-Content "artifacts/runtime/autoroot/autoroot-cpu-proof.json"
       - name: Upload Auto-Rig artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autoroot-cpu
-          path: artifacts/runtime/autoroot/
+          path: |
+            artifacts/runtime/autoroot/
+            workers/skintokens-cpp/dist/
+          if-no-files-found: warn
+          retention-days: 14
+
+  installed-product-e2e:
+    name: Installed Product E2E
+    needs: [build-and-test, clean-install-smoke, autoroot-cpu]
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      startsWith(github.ref, 'refs/heads/release/') ||
+      startsWith(github.ref, 'refs/heads/cursor/') ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'main' || startsWith(github.base_ref, 'cursor/')))
+    runs-on: windows-latest
+    timeout-minutes: 180
+    outputs:
+      installed_status: ${{ steps.e2e.outputs.installed_status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Cache skin-tokens.cpp build + GGUF
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
+          key: skintokens-cpp-43e885af-f16-v1-${{ runner.os }}
+      - name: Provision skin-tokens.cpp into LocalAppData
+        shell: pwsh
+        run: |
+          & "scripts/ci/Invoke-ProvisionSkinTokensCpp.ps1" -CacheDir "$env:RUNNER_TEMP\3dgod-skintokens-cpp-cache" -SkipIfPresent
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Pack + clean install (Velopack)
+        id: install
+        shell: pwsh
+        run: |
+          $ver = "2.0.0-e2e.${{ github.run_number }}"
+          $installRoot = Join-Path $env:RUNNER_TEMP "3dgod-installed-e2e"
+          & "scripts/ci/Invoke-CleanInstallSmoke.ps1" -Version $ver -Channel stable -InstallRoot $installRoot -SkipUninstall
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          echo "install_root=$installRoot" >> $env:GITHUB_OUTPUT
+      - name: Installed-product E2E (Anny/Garment/AutoRig/Save/Reopen/Compose)
+        id: e2e
+        shell: pwsh
+        env:
+          THREEDGOD_CI_INSTALLED_PRODUCT: "1"
+          THREEDGOD_CI_ARTIFACT_DIR: artifacts/runtime/installed-e2e
+          THREEDGOD_INSTALL_ROOT: ${{ steps.install.outputs.install_root }}
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/runtime/installed-e2e" | Out-Null
+          $root = $env:THREEDGOD_INSTALL_ROOT
+          $current = Join-Path $root "current"
+          if (-not (Test-Path (Join-Path $current "workers"))) { throw "Installed workers missing under $current" }
+          $env:THREEDGOD_CONTENT_ROOT = $current
+          Write-Host "THREEDGOD_CONTENT_ROOT=$env:THREEDGOD_CONTENT_ROOT"
+          # FlaUI: hosted Windows is non-interactive — record honest gate.
+          "GATED_INTERACTIVE_WINDOWS" | Set-Content "artifacts/runtime/installed-e2e/flaui-classification.txt"
+          Write-Host "FLAUI=GATED_INTERACTIVE_WINDOWS (hosted runner has no interactive desktop session)"
+          dotnet build "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release -v minimal
+          if ($LASTEXITCODE -ne 0) { echo "installed_status=FAIL" >> $env:GITHUB_OUTPUT; exit $LASTEXITCODE }
+          dotnet test "3DGodCreator.Core.Tests/3DGodCreator.Core.Tests.csproj" -c Release --no-build `
+            --filter "FullyQualifiedName~InstalledProductE2ETests" `
+            --logger "trx;LogFileName=installed-e2e.trx" `
+            --logger "console;verbosity=normal" `
+            --results-directory "artifacts/runtime/installed-e2e"
+          if ($LASTEXITCODE -ne 0) {
+            echo "installed_status=FAIL" >> $env:GITHUB_OUTPUT
+            Write-Host "::error::Installed product E2E FAILED"
+            exit $LASTEXITCODE
+          }
+          echo "installed_status=PASS_REAL" >> $env:GITHUB_OUTPUT
+          Write-Host "INSTALLED_PRODUCT_E2E=PASS_REAL"
+      - name: Uninstall smoke
+        if: always()
+        shell: pwsh
+        run: |
+          $root = "${{ steps.install.outputs.install_root }}"
+          if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path $root)) { Write-Host "No install root to uninstall"; exit 0 }
+          $update = Get-ChildItem -Path $root -Filter "Update.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($update) {
+            & $update.FullName uninstall --silent
+            Write-Host "Uninstall exit=$LASTEXITCODE"
+          } else {
+            Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue
+          }
+      - name: Upload installed E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installed-product-e2e
+          path: artifacts/runtime/installed-e2e/
           if-no-files-found: warn
           retention-days: 14
 
   release-gate-summary:
     name: Release Gate Summary
-    needs: [build-and-test, clean-install-smoke, runtime-integration, llamasharp-cpu, autoroot-cpu]
+    needs: [build-and-test, clean-install-smoke, runtime-integration, llamasharp-cpu, autoroot-cpu, installed-product-e2e]
     if: always()
     runs-on: windows-latest
     steps:
@@ -435,6 +545,18 @@ jobs:
             elseif ("${{ needs.llamasharp-cpu.result }}" -eq "failure") { $llama = "FAIL" }
             else { $llama = "unknown" }
           }
+          $autoroot = "${{ needs.autoroot-cpu.outputs.autoroot_status }}"
+          if ([string]::IsNullOrWhiteSpace($autoroot)) {
+            if ("${{ needs.autoroot-cpu.result }}" -eq "skipped") { $autoroot = "skipped" }
+            elseif ("${{ needs.autoroot-cpu.result }}" -eq "failure") { $autoroot = "FAIL" }
+            else { $autoroot = "unknown" }
+          }
+          $installed = "${{ needs.installed-product-e2e.outputs.installed_status }}"
+          if ([string]::IsNullOrWhiteSpace($installed)) {
+            if ("${{ needs.installed-product-e2e.result }}" -eq "skipped") { $installed = "skipped" }
+            elseif ("${{ needs.installed-product-e2e.result }}" -eq "failure") { $installed = "FAIL" }
+            else { $installed = "unknown" }
+          }
           $build = "${{ needs.build-and-test.outputs.build_result }}"
           if ([string]::IsNullOrWhiteSpace($build)) { $build = "${{ needs.build-and-test.result }}" }
           $buildClass = if ($build -eq "SUCCESS" -or $build -eq "success") { "PASS_REAL" } else { "FAIL" }
@@ -453,6 +575,8 @@ jobs:
             -InstallerSmoke $installer `
             -Anny $annyLegacy `
             -Garment $garmentLegacy `
+            -AutoRigCpu $autoroot `
+            -InstalledProduct $installed `
             -BuildResult $build
 
           & "scripts/ci/Write-OnlineRuntimeClassification.ps1" `
@@ -466,7 +590,7 @@ jobs:
             -Flux "GATED_HARDWARE (GH GPU larger runners require Team/Enterprise billing; use self-hosted labels gpu+cuda)" `
             -SkinTokens "GATED_HARDWARE (needs >=14GB VRAM CUDA; self-hosted gpu+cuda)" `
             -Ue5 "GATED_UE5 (Unreal not on GH-hosted; runtime-ue5.yml self-hosted)" `
-            -FlaUi "GATED_INTERACTIVE_DESKTOP (runtime-flaui.yml self-hosted interactive)" `
+            -FlaUi "GATED_INTERACTIVE_WINDOWS (runtime-flaui.yml self-hosted interactive; hosted = no desktop)" `
             -SaveLoad "PASS_REAL (unit job GodProjectArchiveTests)" `
             -Security "PASS_REAL (unit job SecurityHardeningTests)" `
             -Diagnostics "PASS_REAL (unit job WorkerSmartDiagnosticsTests/DiagnosticServiceTests)" `
@@ -479,12 +603,20 @@ jobs:
           Write-Host "  clean-install-smoke: ${{ needs.clean-install-smoke.result }}"
           Write-Host "  runtime-integration: ${{ needs.runtime-integration.result }}"
           Write-Host "  llamasharp-cpu: ${{ needs.llamasharp-cpu.result }}"
+          Write-Host "  autoroot-cpu: ${{ needs.autoroot-cpu.result }} ($autoroot)"
+          Write-Host "  installed-product-e2e: ${{ needs.installed-product-e2e.result }} ($installed)"
 
           $fail = $false
-          if ("${{ needs.build-and-test.result }}" -ne "success") { $fail = $true }
+          if ("${{ needs.build-and-test.result }}" -eq "failure") { $fail = $true }
           if ("${{ needs.clean-install-smoke.result }}" -eq "failure") { $fail = $true }
           if ("${{ needs.runtime-integration.result }}" -eq "failure") { $fail = $true }
           if ("${{ needs.llamasharp-cpu.result }}" -eq "failure") { $fail = $true }
+          if ("${{ needs.autoroot-cpu.result }}" -eq "failure") { $fail = $true }
+          if ("${{ needs.installed-product-e2e.result }}" -eq "failure") { $fail = $true }
+          $gate = Get-Content "artifacts/gate/release-gate-classification.json" -Raw | ConvertFrom-Json
+          if (-not $gate.productValidated) {
+            Write-Host "::warning::PRODUCT_VALIDATED is False — required core proofs incomplete"
+          }
           if ($fail) {
             Write-Host "::error::Release gate summary detected failing required jobs"
             exit 1

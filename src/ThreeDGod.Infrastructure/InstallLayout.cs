@@ -31,6 +31,10 @@ public static class InstallLayout
         if (!string.IsNullOrWhiteSpace(overrideRoot) && Directory.Exists(Path.Combine(overrideRoot, "workers")))
             return Path.GetFullPath(overrideRoot);
 
+        var env = Environment.GetEnvironmentVariable("THREEDGOD_CONTENT_ROOT");
+        if (!string.IsNullOrWhiteSpace(env) && Directory.Exists(Path.Combine(env, "workers")))
+            return Path.GetFullPath(env);
+
         var appWorkers = Path.Combine(AppBaseDirectory, "workers");
         if (Directory.Exists(appWorkers))
             return AppBaseDirectory;

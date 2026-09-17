@@ -10,16 +10,19 @@ A build may be labeled **PRODUCT_VALIDATED** only when all **core** (non-hardwar
 | Clean Windows installer smoke | Velopack Setup.exe install/launch/uninstall |
 | Anny CPU real | runtime-integration PASS_REAL |
 | GarmentCode + Fit real | runtime-integration PASS_REAL |
-| Project save/reopen + composed export | ProductWorkflow / RealClothing tests |
-| Auto-Rig provider architecture | AutoRigProviderSelectorTests PASS; CPU runtime PASS_REAL **or** honest GATED_EXTERNAL_RUNTIME |
+| Project save/reopen + composed export | ProductWorkflow / RealClothing / Installed E2E |
+| Auto-Rig CPU (skin-tokens.cpp) | **PASS_REAL** — CLI+GGUF provisioned and inference executed |
+| Installed-product E2E | **PASS_REAL** — Velopack install + component provision + core flows |
 
 Optional hardware features may remain gated without blocking PRODUCT_VALIDATED:
 
 - Auto-Rig Vulkan
 - Official SkinTokens CUDA
 - FLUX
-- FlaUI interactive visual
+- FlaUI interactive visual (`GATED_INTERACTIVE_WINDOWS` on hosted)
 - UE5 editor import
+
+**Not acceptable as “external gate”:** missing skin-tokens.cpp CLI/model that the product is responsible for installing/managing.
 
 ## Latest evaluated tip
 

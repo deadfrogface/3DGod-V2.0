@@ -120,6 +120,8 @@ public static class ThreeDGodComposition
         services.AddSingleton<IComponentDownloadService, ComponentDownloadService>();
         services.AddSingleton<IUvProvisioner>(sp =>
             new UvProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
+        services.AddSingleton<ISkinTokensCppProvisioner>(sp =>
+            new SkinTokensCppProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
         services.AddSingleton<IComponentManager>(sp =>
         {
             var modelsRoot = InstallLayout.ModelsRoot;
@@ -131,7 +133,8 @@ public static class ThreeDGodComposition
                 sp.GetRequiredService<IComponentManager>(),
                 sp.GetRequiredService<IUvProvisioner>(),
                 InstallLayout.ResolveContentRoot(),
-                sp.GetRequiredService<IComponentHealthCheckRunner>()));
+                sp.GetRequiredService<IComponentHealthCheckRunner>(),
+                sp.GetRequiredService<ISkinTokensCppProvisioner>()));
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();

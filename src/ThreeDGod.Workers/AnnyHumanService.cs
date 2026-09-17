@@ -85,10 +85,16 @@ public static class AnnyRuntime
 
     public static string FindRepoRoot()
     {
+        var env = Environment.GetEnvironmentVariable("THREEDGOD_CONTENT_ROOT");
+        if (!string.IsNullOrWhiteSpace(env) && Directory.Exists(Path.Combine(env, "workers")))
+            return Path.GetFullPath(env);
+
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "3DGodCreator.sln")))
+                return dir.FullName;
+            if (Directory.Exists(Path.Combine(dir.FullName, "workers", "anny")))
                 return dir.FullName;
             dir = dir.Parent;
         }
