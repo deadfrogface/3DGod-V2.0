@@ -1,0 +1,19 @@
+{
+  "manifestVersion": 1,
+  "componentId": "skintokens-cpp",
+  "displayName": "Auto-Rig (CPU / Vulkan)",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseAcceptedRequired": true,
+  "optional": true,
+  "featureId": "rig.auto",
+  "localSourceHint": "workers/skintokens-cpp",
+  "hardware": {
+    "minVramMb": 0,
+    "requiresCuda": false
+  },
+  "healthChecks": [
+    { "kind": "FileExists", "target": "README.md" }
+  ],
+  "notes": "Install ships CLI under Components/skintokens-cpp/bin; GGUF models under Models/skintokens-cpp/F16."
+}

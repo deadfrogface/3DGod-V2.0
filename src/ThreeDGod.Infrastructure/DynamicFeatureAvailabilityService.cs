@@ -24,6 +24,22 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.SkinTokens)
             return SkinTokensRuntime.Probe().Availability;
+        if (featureId == FeatureIds.RigAuto)
+        {
+            // Aggregate: any invocable Auto-Rig provider (CPU / Vulkan / CUDA).
+            var cppCpu = SkinTokensCppRuntime.Probe("cpu").Availability;
+            var cppVk = SkinTokensCppRuntime.Probe("vulkan").Availability;
+            var cuda = SkinTokensRuntime.Probe().Availability;
+            if (cppCpu is FeatureAvailability.Available or FeatureAvailability.Experimental
+                || cppVk is FeatureAvailability.Available or FeatureAvailability.Experimental
+                || cuda is FeatureAvailability.Available or FeatureAvailability.Experimental)
+                return FeatureAvailability.Experimental;
+            if (cppCpu == FeatureAvailability.UnsupportedHardware
+                || cppVk == FeatureAvailability.UnsupportedHardware
+                || cuda == FeatureAvailability.UnsupportedHardware)
+                return FeatureAvailability.UnsupportedHardware;
+            return FeatureAvailability.NotInstalled;
+        }
         if (featureId == FeatureIds.RigValidate)
             return FeatureAvailability.Available;
         if (featureId == FeatureIds.CreatureParts)
@@ -92,6 +108,19 @@ public sealed class DynamicFeatureAvailabilityService : IFeatureAvailabilityServ
             return "Available – in-process vertex-cluster remesh + spherical UVs. Not instant-meshes / xatlas.";
         if (featureId == FeatureIds.SkinTokens)
             return SkinTokensRuntime.Probe().Message;
+        if (featureId == FeatureIds.RigAuto)
+        {
+            var cppCpu = SkinTokensCppRuntime.Probe("cpu");
+            if (cppCpu.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+                return "Experimental – Auto-Rig via skin-tokens.cpp CPU (and Vulkan/CUDA when available). " + cppCpu.Message;
+            var cppVk = SkinTokensCppRuntime.Probe("vulkan");
+            if (cppVk.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+                return "Experimental – Auto-Rig via skin-tokens.cpp Vulkan. " + cppVk.Message;
+            var cuda = SkinTokensRuntime.Probe();
+            if (cuda.Availability is FeatureAvailability.Available or FeatureAvailability.Experimental)
+                return "Experimental – Auto-Rig via official SkinTokens CUDA. " + cuda.Message;
+            return "NotInstalled – No Auto-Rig provider ready. Install skin-tokens.cpp (CPU/Vulkan) or SkinTokens (CUDA) via Setup Assistant.";
+        }
         if (featureId == FeatureIds.RigValidate)
             return "Available – hierarchy/weight/bind validator and linear-blend test poses.";
         if (featureId == FeatureIds.CreatureParts)

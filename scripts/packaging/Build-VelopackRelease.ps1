@@ -11,13 +11,17 @@ param(
     [string]$PackId = "ThreeDGodCreator",
     [string]$VelopackToolVersion = "1.2.0",
     [switch]$SkipVpk,
-    [switch]$SelfContained
+    [switch]$SelfContained,
+    [switch]$FrameworkDependent
 )
 
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $publish = Join-Path $root "artifacts/publish/win-x64"
 $releases = Join-Path $root "artifacts/releases/$Channel"
+# Default self-contained for end-user installs; -FrameworkDependent opts out. -SelfContained kept for callers.
+if ($FrameworkDependent) { $SelfContained = $false }
+elseif (-not $PSBoundParameters.ContainsKey('SelfContained')) { $SelfContained = $true }
 
 Write-Host "== 3D God Velopack release =="
 Write-Host "Version: $Version  Channel: $Channel  PackId: $PackId  SelfContained: $SelfContained"
@@ -59,6 +63,25 @@ function Copy-Tree([string]$srcName) {
 Copy-Tree "assets"
 Copy-Tree "presets"
 Copy-Tree "blender_embed"
+
+# Ship worker project sources/locks (no .venv) so Setup Assistant can uv-sync without a git checkout.
+$workersSrc = Join-Path $root "workers"
+$workersDst = Join-Path $publish "workers"
+if (Test-Path $workersSrc) {
+    if (Test-Path $workersDst) { Remove-Item -Recurse -Force $workersDst }
+    New-Item -ItemType Directory -Force -Path $workersDst | Out-Null
+    Get-ChildItem $workersSrc -Directory | ForEach-Object {
+        $name = $_.Name
+        $dst = Join-Path $workersDst $name
+        New-Item -ItemType Directory -Force -Path $dst | Out-Null
+        Get-ChildItem $_.FullName -Force | Where-Object {
+            $_.Name -notin @(".venv", "upstream", "__pycache__", "models", "dist", "build")
+        } | ForEach-Object {
+            Copy-Item -Recurse -Force $_.FullName (Join-Path $dst $_.Name)
+        }
+        Write-Host "Copied workers/$name (excluding venv/models/build)"
+    }
+}
 
 if (-not (Test-Path (Join-Path $publish "3DGodCreator.App.exe"))) {
     Write-Error "Publish output missing 3DGodCreator.App.exe"

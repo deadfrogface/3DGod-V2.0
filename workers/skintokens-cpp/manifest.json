@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 1,
+  "workerId": "skintokens-cpp",
+  "displayName": "skin-tokens.cpp Auto-Rig (CPU / Vulkan)",
+  "status": "Experimental",
+  "packageVersion": "0.1.0",
+  "licenseId": "apache-2.0",
+  "licenseRef": "docs/productization/AUTORIG_PROVIDER_EVALUATION.md",
+  "includedInBaseInstaller": false,
+  "model": {
+    "checkpointHash": "LocalAI-io/SkinTokens-GGUF@F16",
+    "sizeBytes": 0,
+    "verified": false
+  },
+  "releasePackage": {
+    "format": "huggingface",
+    "downloadUrl": "https://huggingface.co/LocalAI-io/SkinTokens-GGUF",
+    "sha256": "pending-gguf-pin"
+  },
+  "requirements": {
+    "minVramMb": 0,
+    "requiresCuda": false,
+    "requiresUv": false,
+    "requiresBlender": false,
+    "notes": "WRAP localai-org/skin-tokens.cpp@43e885af (Apache-2.0). Models LocalAI-io/SkinTokens-GGUF (MIT-labelled). IMPLEMENTED_GATED_RUNTIME until CLI+GGUF present; Vulkan IMPLEMENTED_GATED_VULKAN_RUNTIME_PROOF."
+  }
+}

@@ -1,8 +1,8 @@
-# Installer / Update (PHASE 55 – Velopack)
+# Installer / Update (PHASE 55 – Velopack) — productization update
 
-Base installer ships **3D God Creator app + assets + presets + optional blender_embed stub only**.
+Base installer ships **3D God Creator app + assets + presets + worker scripts/locks (no multi-GB checkpoints)**.
 
-AI model checkpoints and Python worker venvs are **not** included in the base installer. They install later via ModelManager (PHASE 56).
+AI model checkpoints, Python venvs, skin-tokens.cpp CLI binaries, and GGUF bundles are **not** included in the base installer. They install later via Setup Assistant / UvProvisioner / ModelManager.
 
 ## Build release
 
@@ -10,6 +10,8 @@ AI model checkpoints and Python worker venvs are **not** included in the base in
 cd 3DGod-V2.0
 .\scripts\packaging\Build-VelopackRelease.ps1 -Version 2.0.0 -Channel stable
 ```
+
+Prefer **self-contained** publish so end users do not need the .NET SDK.
 
 Publish-only (no `vpk`):
 
@@ -26,16 +28,13 @@ Publish-only (no `vpk`):
 
 Artifacts land in `artifacts/releases/<channel>/`.
 
-## Clean VM gate — GATED_EXTERNAL_DEPENDENCY
+## Uninstall policy
 
-**Not verified on the dev/build machine in this phase.**
+- Uninstall removes application binaries and Start Menu / Desktop shortcuts.
+- **User `.3dgod` projects are never deleted.**
+- `%LocalAppData%/3DGod/Models` and `Components` caches may remain; optional cleanup via Setup Assistant Remove.
+- `%LocalAppData%/3DGod/Recovery` autosave snapshots are preserved unless the user clears them.
 
-Manual proof checklist:
+## Clean install gate
 
-1. Fresh Windows 10/11 x64 VM (no .NET SDK required if self-contained publish is enabled later).
-2. Run `Setup.exe` from `artifacts/releases/stable/`.
-3. Launch **3D God Creator** from Start Menu.
-4. Create a new project — must open without Python/Conda/Blender preinstalled.
-5. Confirm heavy workers show **NotInstalled** until ModelManager packages are added.
-
-Record result in `docs/audit/PHASE_55_REPORT.md` when executed.
+Hosted Windows CI runs `scripts/ci/Invoke-CleanInstallSmoke.ps1` (install → launch smoke → uninstall). Interactive FlaUI end-user flows remain `GATED_INTERACTIVE` without a self-hosted desktop runner.

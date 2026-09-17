@@ -85,9 +85,11 @@ public static class SetupAssistantCatalog
         {
             FeatureId = SetupFeatureId.AutomaticRigging,
             Title = "Automatic Rigging",
-            Description = "Install SkinTokens (GPU), then Rigging tab → Auto-Rig. Anny humans keep Anny rig profile.",
-            PrimaryComponentId = "skintokens",
-            AdvancedBackendName = "SkinTokens",
+            Description =
+                "Install skin-tokens.cpp (CPU/Vulkan) and/or SkinTokens (NVIDIA CUDA), then Rigging tab → Auto-Rig. " +
+                "Automatic picks Vulkan → CPU → CUDA. Anny humans keep Anny rig profile.",
+            PrimaryComponentId = "skintokens-cpp",
+            AdvancedBackendName = "skin-tokens.cpp + SkinTokens CUDA",
             Optional = true
         },
         new()
@@ -150,7 +152,7 @@ public static class SetupAssistantCatalog
             }
 
             if (!manifests.TryGetValue(id, out var manifest) &&
-                id is "triposr" or "flux" or "sf3d" or "skintokens" or "blender")
+                id is "triposr" or "flux" or "sf3d" or "skintokens" or "skintokens-cpp" or "blender")
             {
                 return new SetupFeatureStatus
                 {

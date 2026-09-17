@@ -30,6 +30,7 @@ Optional model backends (ModelManager only, never in base installer)
 - TripoSR — MIT checkpoint (CPU SUPPORTED_BUT_SLOW) — see MODEL_LICENSES.json
 - Qwen2.5-0.5B-Instruct GGUF Q4_K_M — Apache-2.0 @ 9217f5db… / SHA-256 74a4da8c… — LLamaSharp CPU
 - SkinTokens — MIT code + MIT HF weights @ 79736cad… (CUDA ≥14GB for PASS_REAL)
+- skin-tokens.cpp — Apache-2.0 (localai-org/skin-tokens.cpp@43e885af…); GGUF LocalAI-io/SkinTokens-GGUF (MIT-labelled); CPU/Vulkan Auto-Rig on-demand
 - TRELLIS / other gated backends — see MODEL_LICENSES.json
 
 Explicitly blocked from production release

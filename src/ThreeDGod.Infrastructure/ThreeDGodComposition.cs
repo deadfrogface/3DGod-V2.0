@@ -8,6 +8,7 @@ using ThreeDGod.Workers;
 using ThreeDGod.Persistence;
 using ThreeDGod.Physics;
 using ThreeDGod.Infrastructure.Components;
+using ThreeDGod.Infrastructure.AutoRig;
 using ThreeDGodCreator.Core;
 using ThreeDGodCreator.Core.Services;
 
@@ -43,9 +44,17 @@ public static class ThreeDGodComposition
         services.AddSingleton<ISkinWeightSolver, DistanceSkinWeightSolver>();
         services.AddSingleton<IImportService, NotInstalledImportService>();
         services.AddSingleton<IExportService, PreferSpecificExportService>();
-        services.AddSingleton<IAutoRigBackend, NotInstalledAutoRigBackend>();
-        services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigBackend>());
         services.AddSingleton<ISkinTokensRigService, SkinTokensRigService>();
+        services.AddSingleton<IAutoRigProvider, SkinTokensCppCpuAutoRigProvider>();
+        services.AddSingleton<IAutoRigProvider, SkinTokensCppVulkanAutoRigProvider>();
+        services.AddSingleton<IAutoRigProvider>(sp =>
+            new SkinTokensCudaAutoRigProvider(sp.GetRequiredService<ISkinTokensRigService>()));
+        services.AddSingleton<IAutoRigProviderSelector>(sp =>
+            new AutoRigProviderSelector(sp.GetServices<IAutoRigProvider>()));
+        services.AddSingleton<IAutoRigService>(sp =>
+            new AutoRigService(sp.GetRequiredService<IAutoRigProviderSelector>()));
+        services.AddSingleton<IAutoRigBackend>(sp => (IAutoRigBackend)sp.GetRequiredService<IAutoRigService>());
+        services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigService>());
         services.AddSingleton<IRigValidator, RigValidationService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();
         services.AddSingleton<ICreatureTextEditService, CreatureTextEditService>();
@@ -111,21 +120,21 @@ public static class ThreeDGodComposition
         services.AddSingleton<IComponentDownloadService, ComponentDownloadService>();
         services.AddSingleton<IUvProvisioner>(sp =>
             new UvProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
+        services.AddSingleton<ISkinTokensCppProvisioner>(sp =>
+            new SkinTokensCppProvisioner(sp.GetRequiredService<IComponentDownloadService>()));
         services.AddSingleton<IComponentManager>(sp =>
         {
-            var modelsRoot = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "3DGod",
-                "Models");
-            var repoRoot = AnnyRuntime.FindRepoRoot();
-            return ComponentManager.FromRepo(repoRoot, modelsRoot);
+            var modelsRoot = InstallLayout.ModelsRoot;
+            var contentRoot = InstallLayout.ResolveContentRoot();
+            return ComponentManager.FromRepo(contentRoot, modelsRoot);
         });
         services.AddSingleton<IWorkerUvComponentInstaller>(sp =>
             new WorkerUvComponentInstaller(
                 sp.GetRequiredService<IComponentManager>(),
                 sp.GetRequiredService<IUvProvisioner>(),
-                AnnyRuntime.FindRepoRoot(),
-                sp.GetRequiredService<IComponentHealthCheckRunner>()));
+                InstallLayout.ResolveContentRoot(),
+                sp.GetRequiredService<IComponentHealthCheckRunner>(),
+                sp.GetRequiredService<ISkinTokensCppProvisioner>()));
         services.AddSingleton<CommandStack>();
         services.AddSingleton<CharacterSystem>();
         services.AddSingleton<ICharacterModelService, CharacterModelServiceAdapter>();

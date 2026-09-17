@@ -4,7 +4,14 @@
     <StackPanel Margin="8">
         <TextBlock Text="Rigging &amp; Skeleton Setup" FontSize="16" Foreground="White" Margin="0,0,0,8"/>
         <TextBlock x:Name="AvailabilityLabel" Foreground="#f0c14b" Margin="0,0,0,8" TextWrapping="Wrap"/>
-        <Button x:Name="BtnAutoRig" Content="Auto-Rig erstellen" Padding="12,6" Margin="0,0,0,4" Click="BtnAutoRig_Click"/>
+        <TextBlock Text="Auto-Rig provider" Foreground="#ccc" Margin="0,0,0,4"/>
+        <ComboBox x:Name="CmbProvider" Margin="0,0,0,8" Padding="6,4">
+            <ComboBoxItem Content="Automatic" IsSelected="True" Tag="Automatic"/>
+            <ComboBoxItem Content="Vulkan (skin-tokens.cpp)" Tag="Vulkan"/>
+            <ComboBoxItem Content="CPU (skin-tokens.cpp)" Tag="Cpu"/>
+            <ComboBoxItem Content="NVIDIA CUDA (SkinTokens)" Tag="NvidiaCuda"/>
+        </ComboBox>
+        <Button x:Name="BtnAutoRig" Content="Auto-Rig" Padding="12,6" Margin="0,0,0,4" Click="BtnAutoRig_Click"/>
         <Button x:Name="BtnMetahuman" Content="Metahuman-kompatibles Rig exportieren" Padding="12,6" Click="BtnMetahuman_Click"/>
     </StackPanel>
 </UserControl>

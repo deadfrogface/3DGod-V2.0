@@ -53,7 +53,7 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly IGarmentFitService _garmentFit;
     private readonly IImageTo3DService _imageTo3D;
     private readonly IReferenceImageGenerationService _referenceImages;
-    private readonly ISkinTokensRigService _skinTokens;
+    private readonly IAutoRigService _autoRig;
     private readonly AllowlistedAiEditExecutor _aiEdits;
     private readonly ViewportSelectionService _viewportSelection;
     private readonly IFbxExportService _fbxExport;
@@ -79,7 +79,7 @@ public partial class MainWindow : Window, ILocalizableView
         IGarmentFitService garmentFit,
         IImageTo3DService imageTo3D,
         IReferenceImageGenerationService referenceImages,
-        ISkinTokensRigService skinTokens,
+        IAutoRigService autoRig,
         AllowlistedAiEditExecutor aiEdits,
         ViewportSelectionService viewportSelection,
         IFbxExportService fbxExport,
@@ -104,7 +104,7 @@ public partial class MainWindow : Window, ILocalizableView
         _garmentFit = garmentFit;
         _imageTo3D = imageTo3D;
         _referenceImages = referenceImages;
-        _skinTokens = skinTokens;
+        _autoRig = autoRig;
         _aiEdits = aiEdits;
         _viewportSelection = viewportSelection;
         _fbxExport = fbxExport;
@@ -160,7 +160,7 @@ public partial class MainWindow : Window, ILocalizableView
         PhysicsPanel.Content = new PhysicsPanel(_characterSystem, _features);
         MaterialPanel.Content = new MaterialEditorPanel(_characterSystem, _projectSession);
         PresetPanel.Content = new PresetBrowserPanel(_characterSystem);
-        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features, _skinTokens, _projectSession, LoadPreviewOrRefreshProjectScene);
+        RiggingPanel.Content = new RiggingPanel(_characterSystem, _features, _autoRig, _projectSession, LoadPreviewOrRefreshProjectScene);
         ExportPanel.Content = new ExportPanel(_characterSystem, _features, _fbxExport, GetExportSourceGlb, _projectSession);
         SettingsPanel.Content = new SettingsPanel(_characterSystem, _configService, _blenderService, this, _features, _components, _uvInstaller);
         AiPanel.Content = new AiPanel(_characterSystem, _features, _anny, LoadPreviewOrRefreshProjectScene, _assets, _imageTo3D, _referenceImages, _projectSession, _aiEdits, _commandStack);

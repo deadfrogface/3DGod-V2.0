@@ -39,9 +39,58 @@ public static class HardwareProfiler
             VramMb = int.TryParse(Environment.GetEnvironmentVariable("3DGOD_VRAM_MB"), out var envVram) ? envVram : vram,
             // CUDA evidence = nvidia-smi success or explicit override. Never infer from GPU name alone.
             Cuda = string.Equals(Environment.GetEnvironmentVariable("3DGOD_CUDA"), "1", StringComparison.Ordinal) || cuda,
-            Vulkan = string.Equals(Environment.GetEnvironmentVariable("3DGOD_VULKAN"), "1", StringComparison.Ordinal),
+            // Vulkan: real probe (vulkaninfo / loader) with optional env override for tests.
+            Vulkan = string.Equals(Environment.GetEnvironmentVariable("3DGOD_VULKAN"), "1", StringComparison.Ordinal)
+                     || ProbeVulkan(),
             DiskFreeBytes = drive?.AvailableFreeSpace ?? 0
         };
+    }
+
+    private static bool ProbeVulkan()
+    {
+        try
+        {
+            // Loader presence is evidence of a Vulkan runtime; not a guarantee of a usable device.
+            if (OperatingSystem.IsWindows())
+            {
+                var sys = Environment.SystemDirectory;
+                if (File.Exists(Path.Combine(sys, "vulkan-1.dll")))
+                    return true;
+            }
+            else
+            {
+                foreach (var lib in new[] { "libvulkan.so.1", "libvulkan.so" })
+                {
+                    if (File.Exists(Path.Combine("/usr/lib", lib))
+                        || File.Exists(Path.Combine("/usr/lib/x86_64-linux-gnu", lib))
+                        || File.Exists(Path.Combine("/lib/x86_64-linux-gnu", lib)))
+                        return true;
+                }
+            }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "vulkaninfo",
+                Arguments = "--summary",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = Process.Start(psi);
+            if (process is null)
+                return false;
+            if (!process.WaitForExit(2500))
+            {
+                try { process.Kill(true); } catch (InvalidOperationException) { }
+                return false;
+            }
+            return process.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static (bool Cuda, string GpuName, int VramMb, string? DriverVersion) ProbeNvidia()

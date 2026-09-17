@@ -62,6 +62,7 @@ public sealed class ComponentDownloadService : IComponentDownloadService, IDispo
         ArgumentNullException.ThrowIfNull(request);
         if (request.Url.Scheme is not ("http" or "https"))
             throw new InvalidOperationException("InvalidUrl – only http/https downloads are allowed.");
+        ComponentDownloadAllowlist.EnsureAllowed(request.Url);
 
         var dest = Path.GetFullPath(request.DestinationPath);
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);

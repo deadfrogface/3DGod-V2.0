@@ -33,11 +33,12 @@ public class Stage12Through19HonestyTests
             Assert.Contains("REJECTED", advanced.Message, StringComparison.OrdinalIgnoreCase);
 
             var skin = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.AutomaticRigging);
-            Assert.Equal("skintokens", skin.Feature.PrimaryComponentId);
-            var skinManifest = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "skintokens");
+            Assert.Equal("skintokens-cpp", skin.Feature.PrimaryComponentId);
+            var skinManifest = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "skintokens-cpp");
             Assert.False(string.IsNullOrWhiteSpace(skinManifest.LocalSourceHint));
             Assert.True(skin.CanInstall);
             Assert.DoesNotContain("GATED_LICENSE", skin.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(mgr.ListManifests(), m => m.ComponentId == "skintokens");
 
             var human = Assert.Single(snap, s => s.Feature.FeatureId == SetupFeatureId.HumanCreator);
             var anny = Assert.Single(mgr.ListManifests(), m => m.ComponentId == "anny");
