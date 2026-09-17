@@ -178,6 +178,19 @@ if (-not $cCompiler) {
 Write-Host "C_COMPILER=$cCompiler"
 Write-Host "CXX_COMPILER=$cxxCompiler"
 
+# Ensure Ninja is on PATH (VS ships one; otherwise download).
+if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+    $ninjaZip = Join-Path $CacheDir "ninja-win.zip"
+    $ninjaDir = Join-Path $CacheDir "ninja"
+    if (-not (Test-Path (Join-Path $ninjaDir "ninja.exe"))) {
+        New-Item -ItemType Directory -Force -Path $ninjaDir | Out-Null
+        & curl.exe -L --fail --retry 5 -o $ninjaZip "https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip"
+        if ($LASTEXITCODE -ne 0) { throw "ninja download failed" }
+        Expand-Archive -Force -Path $ninjaZip -DestinationPath $ninjaDir
+    }
+    $env:Path = "$ninjaDir;$env:Path"
+}
+
 $buildDir = Join-Path $CacheDir "build-release"
 $distDir = Join-Path $CacheDir "dist"
 if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
@@ -211,10 +224,9 @@ if (Test-Path $distDir) { Remove-Item -Recurse -Force $distDir }
 & cmake --install $buildDir --prefix $distDir
 if ($LASTEXITCODE -ne 0) { throw "cmake install failed" }
 
-$builtCli = Get-ChildItem -Path $distDir -Filter "skintokens-cli.exe" -Recurse | Select-Object -First 1
+$builtCli = Get-ChildItem -Path $distDir -Filter "skintokens-cli.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $builtCli) {
-    $builtCli = Get-ChildItem -Path $buildDir -Filter "skintokens-cli.exe" -Recurse |
-        Where-Object { $_.FullName -match '\\Release\\' } |
+    $builtCli = Get-ChildItem -Path $buildDir -Filter "skintokens-cli.exe" -Recurse -ErrorAction SilentlyContinue |
         Select-Object -First 1
 }
 if (-not $builtCli) { throw "skintokens-cli.exe not found after build" }
