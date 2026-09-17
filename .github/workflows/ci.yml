@@ -361,7 +361,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
-          key: skintokens-cpp-43e885af-f16-v3-${{ runner.os }}
+          key: skintokens-cpp-43e885af-f16-clangcl-v4-${{ runner.os }}
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -439,7 +439,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
-          key: skintokens-cpp-43e885af-f16-v3-${{ runner.os }}
+          key: skintokens-cpp-43e885af-f16-clangcl-v4-${{ runner.os }}
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
