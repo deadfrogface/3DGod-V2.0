@@ -28,10 +28,11 @@ Optional hardware features may remain gated without blocking PRODUCT_VALIDATED:
 
 | Field | Value |
 |-------|-------|
-| SHA | `0c3573a2bc83e957f0e0046d768a1ca664df8184` |
-| PR CI run | `35162936197` |
+| SHA | `b2bef15ca9ff490a430bc60cea655481933b05ef` (validation code tip `9155e37`) |
+| PR CI run | [`35169173164`](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35169173164) |
 | PRODUCT_VALIDATED | **True** |
-| Auto-Rig CPU job | `GATED_EXTERNAL_RUNTIME` (CLI/GGUF not on runner) |
+| Auto-Rig CPU | **PASS_REAL** (`autoroot-cpu-proof.json`, durationMs=134474) |
+| Installed Product E2E | **PASS_REAL** (`meshCount=2`, `garmentCount=1`) |
 
 ## Machine-readable
 
@@ -39,4 +40,4 @@ Optional hardware features may remain gated without blocking PRODUCT_VALIDATED:
 
 ## Human summary
 
-See CI job **Release Gate Summary** and [END_USER_VALIDATION_REPORT.md](END_USER_VALIDATION_REPORT.md).
+See CI job **Release Gate Summary**, [FINAL_VALIDATION_PR11.md](FINAL_VALIDATION_PR11.md), and [END_USER_VALIDATION_REPORT.md](END_USER_VALIDATION_REPORT.md).
