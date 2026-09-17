@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Branch | `cursor/productization-windows-b322` |
-| Tip SHA (evidence) | `b2bef15ca9ff490a430bc60cea655481933b05ef` (code tip `9155e37`; this docs tip) |
+| Tip SHA (evidence) | `9155e3722312df6fa08ecaf4d4c85cf9afb22331` (docs tip follows on same branch) |
 | Baseline main | `ae077bfa48a1f9690af223590b2a302af898da7e` |
 | PR | https://github.com/deadfrogface/3DGod-V2.0/pull/11 |
 | CI (PR) | run [`35169173164`](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35169173164) — **success** |

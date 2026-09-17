@@ -28,7 +28,7 @@ Optional hardware features may remain gated without blocking PRODUCT_VALIDATED:
 
 | Field | Value |
 |-------|-------|
-| SHA | `b2bef15ca9ff490a430bc60cea655481933b05ef` (validation code tip `9155e37`) |
+| SHA | `9155e3722312df6fa08ecaf4d4c85cf9afb22331` (docs tip follows on same branch) |
 | PR CI run | [`35169173164`](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35169173164) |
 | PRODUCT_VALIDATED | **True** |
 | Auto-Rig CPU | **PASS_REAL** (`autoroot-cpu-proof.json`, durationMs=134474) |

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Starting SHA | `f48800839e1354e9f51846c17fcc455276f0b872` |
-| Final SHA | `b2bef15ca9ff490a430bc60cea655481933b05ef` |
+| Final SHA | `75b823ff13bf8b0a3898db450d843524b6478d06` (evidence code `9155e3722312df6fa08ecaf4d4c85cf9afb22331`, CI `35169173164`) |
 | PR | https://github.com/deadfrogface/3DGod-V2.0/pull/11 |
 | Evidence CI (PR) | run [`35169173164`](https://github.com/deadfrogface/3DGod-V2.0/actions/runs/35169173164) — **7/7 jobs success** (14 checks) |
 | skin-tokens.cpp | `localai-org/skin-tokens.cpp@43e885af2eadee9c40aa85849b71528d1c958293` (Apache-2.0) |
