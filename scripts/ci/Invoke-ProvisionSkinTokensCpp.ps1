@@ -124,32 +124,103 @@ if (-not (Test-Path (Join-Path $vcpkgRoot "vcpkg.exe"))) {
 & (Join-Path $vcpkgRoot "vcpkg.exe") install nlohmann-json:x64-windows --disable-metrics
 if ($LASTEXITCODE -ne 0) { throw "vcpkg install nlohmann-json failed" }
 
+# Enter MSVC developer environment (GitHub windows-latest often needs this for VS generator).
+$vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+$vsPath = $null
+if (Test-Path $vswhere) {
+    $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+    if ($vsPath) {
+        Write-Host "VS_INSTALL=$vsPath"
+        $devShell = Join-Path $vsPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+        if (Test-Path $devShell) {
+            Import-Module $devShell
+            Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64"
+        } else {
+            $vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+            if (Test-Path $vcvars) {
+                cmd /c "`"$vcvars`" && set" | ForEach-Object {
+                    if ($_ -match '^(.*?)=(.*)$') {
+                        [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+                    }
+                }
+            }
+        }
+    }
+}
+if (-not (Get-Command cl -ErrorAction SilentlyContinue)) {
+    Write-Host "WARN: cl.exe not on PATH after VS setup — cmake may still find VS via generator instance"
+}
+
+# Prefer Ninja single-config when available (more reliable on GH runners than VS generator discovery).
+$ninja = Get-Command ninja -ErrorAction SilentlyContinue
+if (-not $ninja) {
+    $ninjaZip = Join-Path $CacheDir "ninja-win.zip"
+    $ninjaDir = Join-Path $CacheDir "ninja"
+    if (-not (Test-Path (Join-Path $ninjaDir "ninja.exe"))) {
+        New-Item -ItemType Directory -Force -Path $ninjaDir | Out-Null
+        & curl.exe -L --fail --retry 5 -o $ninjaZip "https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip"
+        if ($LASTEXITCODE -ne 0) { throw "ninja download failed" }
+        Expand-Archive -Force -Path $ninjaZip -DestinationPath $ninjaDir
+    }
+    $env:Path = "$ninjaDir;$env:Path"
+}
+
 $buildDir = Join-Path $CacheDir "build-release"
 $distDir = Join-Path $CacheDir "dist"
+if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
 $toolchain = Join-Path $vcpkgRoot "scripts\buildsystems\vcpkg.cmake"
 $cmakeArgs = @(
     "-S", $SourceDir,
     "-B", $buildDir,
-    "-G", "Visual Studio 17 2022",
-    "-A", "x64",
+    "-G", "Ninja",
+    "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_TOOLCHAIN_FILE=$toolchain",
+    "-DVCPKG_TARGET_TRIPLET=x64-windows",
     "-DSKINTOKENS_ENABLE_VULKAN=OFF",
     "-DSKINTOKENS_BUILD_TESTS=OFF",
     "-DSKINTOKENS_DYNAMIC_BACKENDS=ON",
     "-DSKINTOKENS_CPU_ALL_VARIANTS=OFF"
 )
+# Ensure C/CXX compilers are the MSVC ones when cl is available.
+if (Get-Command cl -ErrorAction SilentlyContinue) {
+    $cmakeArgs += @("-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl")
+}
 Write-Host "cmake $($cmakeArgs -join ' ')"
 & cmake @cmakeArgs
-if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
-
-& cmake --build $buildDir --config Release --parallel
-if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
-
-if (Test-Path $distDir) { Remove-Item -Recurse -Force $distDir }
-& cmake --install $buildDir --prefix $distDir --config Release
-if ($LASTEXITCODE -ne 0) { throw "cmake install failed" }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Ninja configure failed — falling back to Visual Studio generator with explicit instance"
+    if (-not $vsPath) { throw "cmake configure failed and no VS install found via vswhere" }
+    if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
+    New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
+    $cmakeArgs = @(
+        "-S", $SourceDir,
+        "-B", $buildDir,
+        "-G", "Visual Studio 17 2022",
+        "-A", "x64",
+        "-DCMAKE_GENERATOR_INSTANCE=$vsPath",
+        "-DCMAKE_TOOLCHAIN_FILE=$toolchain",
+        "-DVCPKG_TARGET_TRIPLET=x64-windows",
+        "-DSKINTOKENS_ENABLE_VULKAN=OFF",
+        "-DSKINTOKENS_BUILD_TESTS=OFF",
+        "-DSKINTOKENS_DYNAMIC_BACKENDS=ON",
+        "-DSKINTOKENS_CPU_ALL_VARIANTS=OFF"
+    )
+    & cmake @cmakeArgs
+    if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
+    & cmake --build $buildDir --config Release --parallel
+    if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
+    if (Test-Path $distDir) { Remove-Item -Recurse -Force $distDir }
+    & cmake --install $buildDir --prefix $distDir --config Release
+    if ($LASTEXITCODE -ne 0) { throw "cmake install failed" }
+} else {
+    & cmake --build $buildDir --parallel
+    if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
+    if (Test-Path $distDir) { Remove-Item -Recurse -Force $distDir }
+    & cmake --install $buildDir --prefix $distDir
+    if ($LASTEXITCODE -ne 0) { throw "cmake install failed" }
+}
 
 $builtCli = Get-ChildItem -Path $distDir -Filter "skintokens-cli.exe" -Recurse | Select-Object -First 1
 if (-not $builtCli) {

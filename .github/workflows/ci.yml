@@ -361,7 +361,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
-          key: skintokens-cpp-43e885af-f16-v1-${{ runner.os }}
+          key: skintokens-cpp-43e885af-f16-v2-${{ runner.os }}
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
       - name: Provision CLI + SkinTokens-GGUF F16
         shell: pwsh
         run: |
@@ -435,7 +439,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/3dgod-skintokens-cpp-cache
-          key: skintokens-cpp-43e885af-f16-v1-${{ runner.os }}
+          key: skintokens-cpp-43e885af-f16-v2-${{ runner.os }}
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
       - name: Provision skin-tokens.cpp into LocalAppData
         shell: pwsh
         run: |
