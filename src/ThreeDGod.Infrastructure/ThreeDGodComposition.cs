@@ -88,7 +88,8 @@ public static class ThreeDGodComposition
                 sp.GetRequiredService<ActiveProjectSession>(),
                 sp.GetRequiredService<IProjectService>(),
                 sp.GetRequiredService<AllowlistedAiEditExecutor>(),
-                sp.GetRequiredService<AutosaveService>()));
+                sp.GetRequiredService<AutosaveService>(),
+                creatures: sp.GetRequiredService<ICreatureAssembly>()));
         services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
         [
             new BackendManifest
