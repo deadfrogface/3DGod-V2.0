@@ -6,8 +6,9 @@ namespace ThreeDGod.Infrastructure;
 
 /// <summary>
 /// Applies MakeHuman MHCLO proxy mappings to an hm08/makehuman body without invoking AGPL code.
-/// Supports direct vertex mappings and the documented 3-vertex barycentric mapping rows.
-/// Unsupported directives fail closed rather than silently producing a badly fitted asset.
+/// Supports direct vertex mappings, 3-vertex barycentric mapping rows and x/y/z reference scaling.
+/// Coordinates stay in the MakeHuman/Anny y-up space; Blender-specific Y/Z conversion is intentionally not applied.
+/// Unsupported vertex rows fail closed rather than silently producing a badly fitted asset.
 /// </summary>
 public sealed class MhcloFittingService
 {
@@ -20,6 +21,7 @@ public sealed class MhcloFittingService
         var (body, _) = MeshCompare.ReadMesh(bodyGlb);
         var asset = ObjImporter.ImportObj(assetObj);
         var mappings = Parse(mhcloPath);
+        var scale = ComputeScale(mhcloPath, body);
         if (mappings.Count != asset.Positions.Count)
             throw new InvalidDataException($"MHCLO mapping count {mappings.Count} does not match OBJ vertex count {asset.Positions.Count}.");
 
@@ -30,12 +32,12 @@ public sealed class MhcloFittingService
             if (m.DirectVertex is int direct)
             {
                 RequireIndex(direct, body.Count);
-                p = body[direct] + m.Offset;
+                p = body[direct] + Vector3.Multiply(m.Offset, scale);
             }
             else
             {
                 RequireIndex(m.V0, body.Count); RequireIndex(m.V1, body.Count); RequireIndex(m.V2, body.Count);
-                p = body[m.V0] * m.W0 + body[m.V1] * m.W1 + body[m.V2] * m.W2 + m.Offset;
+                p = body[m.V0] * m.W0 + body[m.V1] * m.W1 + body[m.V2] * m.W2 + Vector3.Multiply(m.Offset, scale);
             }
             if (!float.IsFinite(p.X) || !float.IsFinite(p.Y) || !float.IsFinite(p.Z))
                 throw new InvalidDataException("MHCLO fitting produced a non-finite vertex.");
@@ -60,6 +62,35 @@ public sealed class MhcloFittingService
         return Directory.EnumerateFiles(dir, "*.mhclo", SearchOption.TopDirectoryOnly)
             .FirstOrDefault(p => string.Equals(Path.GetFileNameWithoutExtension(p), stem, StringComparison.OrdinalIgnoreCase))
             ?? Directory.EnumerateFiles(dir, "*.mhclo", SearchOption.TopDirectoryOnly).FirstOrDefault();
+    }
+
+    internal static Vector3 ComputeScale(string path, IReadOnlyList<Vector3> body)
+    {
+        var result = Vector3.One;
+        foreach (var raw in File.ReadLines(path))
+        {
+            var p = raw.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length < 4 || p[0] is not ("x_scale" or "y_scale" or "z_scale")) continue;
+            if (!int.TryParse(p[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var a)
+                || !int.TryParse(p[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out var b))
+                throw new InvalidDataException("Malformed MHCLO scale vertex indices.");
+            RequireIndex(a, body.Count); RequireIndex(b, body.Count);
+            var reference = float.Parse(p[3], NumberStyles.Float, CultureInfo.InvariantCulture);
+            if (!float.IsFinite(reference) || MathF.Abs(reference) < 1e-6f)
+                throw new InvalidDataException("Malformed MHCLO reference scale.");
+            var axisDistance = p[0] switch
+            {
+                "x_scale" => MathF.Abs(body[a].X - body[b].X),
+                "y_scale" => MathF.Abs(body[a].Y - body[b].Y),
+                _ => MathF.Abs(body[a].Z - body[b].Z)
+            };
+            var factor = axisDistance / MathF.Abs(reference);
+            if (!float.IsFinite(factor) || factor <= 0) factor = 1f;
+            if (p[0] == "x_scale") result.X = factor;
+            else if (p[0] == "y_scale") result.Y = factor;
+            else result.Z = factor;
+        }
+        return result;
     }
 
     internal static IReadOnlyList<MhcloVertexMap> Parse(string path)
