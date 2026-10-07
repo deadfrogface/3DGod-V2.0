@@ -69,6 +69,22 @@
                         <TextBlock Text="Morph strength" Foreground="White" Margin="0,8,0,0"/>
                         <Slider x:Name="CreatorCreatureMorphWeight" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.1"/>
                         <Button x:Name="BtnApplyCreatureMorph" Content="Apply CC0 Creature Morph" Margin="0,8,0,0" Padding="9" Click="ApplyCc0CreatureMorph_Click"/>
+                        <Separator Margin="0,14,0,10"/>
+                        <TextBlock Text="AI-first edit" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="Uses the same authoritative morph/material/creature state as the manual controls."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,6"/>
+                        <TextBox x:Name="CreatorPrompt" MinHeight="54" TextWrapping="Wrap" AcceptsReturn="True"
+                                 ToolTip="Example: bigger and darker skin; horns; rat head"/>
+                        <UniformGrid Columns="2" Margin="0,7,0,0">
+                            <Button x:Name="BtnCreatorApplyPrompt" Content="Apply edit" Margin="2" Padding="8" Click="CharacterPrompt_Click"/>
+                            <Button x:Name="BtnCreatorFreeform" Content="Create freeform" Margin="2" Padding="8" Click="CharacterFreeform_Click"/>
+                        </UniformGrid>
+                        <TextBlock Text="Workflow" Foreground="#ddd" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <UniformGrid Columns="3">
+                            <Button Content="Rig" Margin="2" Padding="7" Click="CharacterOpenRig_Click"/>
+                            <Button Content="Clothing" Margin="2" Padding="7" Click="CharacterOpenClothing_Click"/>
+                            <Button Content="Export" Margin="2" Padding="7" Click="CharacterOpenExport_Click"/>
+                        </UniformGrid>
                         <TextBlock x:Name="CreatorStatus" Text="Ready" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
