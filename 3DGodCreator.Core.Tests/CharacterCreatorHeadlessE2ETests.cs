@@ -54,7 +54,7 @@ public sealed class CharacterCreatorHeadlessE2ETests
             var body = scene.First(x => x.Name.Contains("orc-body", StringComparison.OrdinalIgnoreCase)).GlbPath;
             var rig = RigValidator.ValidateGlb(body, requireHumanoid: true);
             Assert.True(rig.Passed, string.Join("; ", rig.Failures.Select(x => x.Code)));
-            var pose = TestPoseEvaluator.Evaluate(body, "arm");
+            var pose = TestPoseEvaluator.Evaluate(body, TestPoseKind.Arms);
             Assert.True(pose.Moved);
 
             var composed = reopenedWorkflow.ExportActiveGlb(Path.Combine(root, "orc-composed.glb"));
