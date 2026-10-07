@@ -64,6 +64,11 @@
                         <TextBlock Text="Verified CC0 packs only. Downloads once, then works locally. hm08 morph targets are never applied directly to Anny without retargeting."
                                    Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
                         <Button x:Name="BtnInstallCc0Assets" Content="Install CC0 Creature Assets" Padding="9" Click="InstallCc0CreatureAssets_Click"/>
+                        <TextBlock Text="CC0 Creature morph" Foreground="White" Margin="0,12,0,0"/>
+                        <ComboBox x:Name="CreatorCreatureMorph" Margin="0,4,0,0" SelectionChanged="CreatorCreatureMorph_SelectionChanged"/>
+                        <TextBlock Text="Morph strength" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorCreatureMorphWeight" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.1"/>
+                        <Button x:Name="BtnApplyCreatureMorph" Content="Apply CC0 Creature Morph" Margin="0,8,0,0" Padding="9" Click="ApplyCc0CreatureMorph_Click"/>
                         <TextBlock x:Name="CreatorStatus" Text="Ready" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
