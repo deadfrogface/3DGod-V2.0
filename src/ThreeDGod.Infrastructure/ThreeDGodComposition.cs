@@ -91,7 +91,9 @@ public static class ThreeDGodComposition
                 sp.GetRequiredService<IProjectService>(),
                 sp.GetRequiredService<AllowlistedAiEditExecutor>(),
                 sp.GetRequiredService<AutosaveService>(),
-                creatures: sp.GetRequiredService<ICreatureAssembly>()));
+                creatures: sp.GetRequiredService<ICreatureAssembly>(),
+                creatureEdits: sp.GetRequiredService<ICreatureTextEditService>(),
+                freeform: sp.GetRequiredService<IFreeformCharacterPipeline>()));
         services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
         [
             new BackendManifest
