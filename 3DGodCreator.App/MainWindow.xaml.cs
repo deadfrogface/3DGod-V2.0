@@ -59,6 +59,9 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
     private readonly IComponentManager _components;
+    private readonly ICreatureAssembly _creatureAssembly;
+    private readonly ProductWorkflowService _productWorkflow;
+    private bool _syncingCreatorUi;
     private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
     private ProblemsPanel? _problemsPanel;
@@ -84,6 +87,8 @@ public partial class MainWindow : Window, ILocalizableView
         ViewportSelectionService viewportSelection,
         IFbxExportService fbxExport,
         IComponentManager components,
+        ICreatureAssembly creatureAssembly,
+        ProductWorkflowService productWorkflow,
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
@@ -109,6 +114,8 @@ public partial class MainWindow : Window, ILocalizableView
         _viewportSelection = viewportSelection;
         _fbxExport = fbxExport;
         _components = components;
+        _creatureAssembly = creatureAssembly;
+        _productWorkflow = productWorkflow;
         _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
@@ -838,6 +845,111 @@ public partial class MainWindow : Window, ILocalizableView
             var hex = $"#{(int)(mat.BaseColorFactor.R * 255):X2}{(int)(mat.BaseColorFactor.G * 255):X2}{(int)(mat.BaseColorFactor.B * 255):X2}";
             _characterSystem.SetMaterialPbr(mat.Name, hex, mat.RoughnessFactor, mat.MetallicFactor);
         }
+    }
+
+    private async void CharacterHuman_Click(object sender, RoutedEventArgs e)
+    {
+        _productWorkflow.NewHumanProject("Human");
+        if (_annyInspector is not null)
+            await _annyInspector.ApplyStateAsync(new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" }, generate: false);
+        SyncCreatorControlsFromProject();
+        CreatorStatus.Text = "Human base selected. Generate to create the Anny mesh.";
+        ShowPlaceholder();
+    }
+
+    private void CharacterOrc_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _productWorkflow.NewOrcProject("Orc");
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = "Orc project loaded: body + ears + tusks. CC0 asset replacement is provider-gated; no procedural part is labeled CC0.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Orc unavailable: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Orc: " + ex.Message);
+        }
+    }
+
+    private void CharacterRat_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _productWorkflow.NewRatProject("Humanoid Rat");
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = "Rat project loaded: body + muzzle + ears + tail.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Rat unavailable: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Rat: " + ex.Message);
+        }
+    }
+
+    private void CreatorMorph_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingCreatorUi || sender is not System.Windows.Controls.Slider slider || slider.Tag is not string key)
+            return;
+        var character = _projectSession.ActiveCharacter;
+        if (character is null)
+            return;
+
+        var state = character.ParametricHumanState
+            ?? new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" };
+        var clone = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
+        if (key is "muscle" or "weight")
+            clone.PhenotypeParameters[key] = (float)slider.Value;
+        else
+            clone.LocalShapeParameters[key] = (float)slider.Value;
+        _projectSession.SetAnnyState(clone);
+        _autosave.MarkDirty(_projectSession.Snapshot());
+        CreatorStatus.Text = $"{key} = {slider.Value:0.00} · Apply / Regenerate to rebuild geometry";
+    }
+
+    private async void CharacterRegenerate_Click(object sender, RoutedEventArgs e)
+    {
+        var state = _projectSession.ActiveCharacter?.ParametricHumanState;
+        if (state is null || _annyInspector is null)
+        {
+            CreatorStatus.Text = "No Anny-backed character is active.";
+            return;
+        }
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            CreatorStatus.Text = "Anny runtime is not ready. Open Setup Assistant.";
+            return;
+        }
+
+        try
+        {
+            CreatorStatus.Text = "Generating…";
+            await _annyInspector.ApplyStateAsync(state, generate: true);
+            CreatorStatus.Text = "Character regenerated from authoritative morph state.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Generation failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Regenerate: " + ex.Message);
+        }
+    }
+
+    private void SyncCreatorControlsFromProject()
+    {
+        if (CreatorMuscle is null) return;
+        _syncingCreatorUi = true;
+        try
+        {
+            var state = _projectSession.ActiveCharacter?.ParametricHumanState;
+            CreatorMuscle.Value = state?.PhenotypeParameters.GetValueOrDefault("muscle", 0.5f) ?? 0.5f;
+            CreatorWeight.Value = state?.PhenotypeParameters.GetValueOrDefault("weight", 0.5f) ?? 0.5f;
+            CreatorJaw.Value = state?.LocalShapeParameters.GetValueOrDefault("jaw_width", 0f) ?? 0f;
+            CreatorBrow.Value = state?.LocalShapeParameters.GetValueOrDefault("brow_ridge", 0f) ?? 0f;
+            CreatorNose.Value = state?.LocalShapeParameters.GetValueOrDefault("nose_width", 0f) ?? 0f;
+        }
+        finally { _syncingCreatorUi = false; }
     }
 
     private async void MenuNewProject_Click(object sender, RoutedEventArgs e)
