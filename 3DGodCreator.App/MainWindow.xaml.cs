@@ -130,6 +130,7 @@ public partial class MainWindow : Window, ILocalizableView
         _characterSystem.SliderSyncCallback = RefreshSliders;
 
         LoadPanels();
+        RefreshCc0CreatureMorphs();
         _debugConsole = (DebugConsole)DebugConsoleHost.Content;
         _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedIndex = 9;
         DebugLog.OnMessage += msg => Dispatcher.Invoke(() => _debugConsole?.Log(msg));
@@ -881,6 +882,73 @@ public partial class MainWindow : Window, ILocalizableView
         }
     }
 
+    private void RefreshCc0CreatureMorphs()
+    {
+        if (CreatorCreatureMorph is null) return;
+        var files = _cc0Assets.ListAnimalTargets();
+        CreatorCreatureMorph.ItemsSource = files;
+        CreatorCreatureMorph.DisplayMemberPath = "";
+        if (files.Count > 0 && CreatorCreatureMorph.SelectedIndex < 0)
+            CreatorCreatureMorph.SelectedIndex = 0;
+    }
+
+    private void CreatorCreatureMorph_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (CreatorCreatureMorph.SelectedItem is string path)
+            CreatorStatus.Text = $"CC0 morph: {Path.GetFileNameWithoutExtension(path)} · exact MakeHuman topology";
+    }
+
+    private async void ApplyCc0CreatureMorph_Click(object sender, RoutedEventArgs e)
+    {
+        if (CreatorCreatureMorph.SelectedItem is not string targetPath || !File.Exists(targetPath))
+        {
+            CreatorStatus.Text = "Install/select an Animal 01 CC0 morph first.";
+            return;
+        }
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            CreatorStatus.Text = "Anny runtime is required for exact MakeHuman-topology creature morphs.";
+            return;
+        }
+
+        try
+        {
+            BtnApplyCreatureMorph.IsEnabled = false;
+            CreatorStatus.Text = "Applying exact CC0 target on Anny makehuman topology…";
+            var current = _projectSession.ActiveCharacter?.ParametricHumanState
+                ?? new ParametricHumanState { BackendId = "anny" };
+            var request = AnnyHumanService.FromState(current);
+            var dest = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", "CreatureMorphs",
+                $"{Path.GetFileNameWithoutExtension(targetPath)}-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+            var glb = await _anny.GenerateGlbAsync(dest, new AnnyGenerateRequest
+            {
+                Topology = "makehuman",
+                MakeHumanTargets = [new MakeHumanTargetRequest(targetPath, (float)CreatorCreatureMorphWeight.Value)],
+                Phenotypes = request.Phenotypes,
+                LocalChanges = request.LocalChanges,
+                FacialActions = request.FacialActions
+            });
+
+            var next = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(current));
+            next.TopologyProfile = "makehuman";
+            next.BackendId = "anny";
+            next.LocalShapeParameters["cc0:" + Path.GetFileNameWithoutExtension(targetPath)] = (float)CreatorCreatureMorphWeight.Value;
+            _projectSession.SetAnnyState(next, markDirty: false);
+            _projectSession.SetActiveMeshFromGlbFile(glb, "creature-body");
+            _autosave.MarkDirty(_projectSession.Snapshot());
+            RefreshViewportFromProject();
+            CreatorStatus.Text = $"Applied {Path.GetFileNameWithoutExtension(targetPath)} at {CreatorCreatureMorphWeight.Value:0.00} using exact MakeHuman vertex indices.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Creature morph failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0Morph] " + ex);
+        }
+        finally { BtnApplyCreatureMorph.IsEnabled = true; }
+    }
+
     private async void InstallCc0CreatureAssets_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -889,6 +957,7 @@ public partial class MainWindow : Window, ILocalizableView
             CreatorStatus.Text = "Downloading verified CC0 MakeHuman creature packs…";
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Bodyparts01);
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
+            RefreshCc0CreatureMorphs();
 
             if (string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase)
                 && _cc0Replacement.CanReplaceOrc)
