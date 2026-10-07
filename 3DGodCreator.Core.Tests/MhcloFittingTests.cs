@@ -52,4 +52,19 @@ public sealed class MhcloFittingTests
         }
         finally { try { Directory.Delete(root, true); } catch { } }
     }
+
+    [Fact]
+    public void MetadataAfterVerts_DoesNotDiscardFollowingRealMappings()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".mhclo");
+        try
+        {
+            File.WriteAllText(path, "verts 0\nmaterial eyelashes04.mhmat\n14742\n14743\n14744\n");
+            var maps = MhcloFittingService.Parse(path);
+            Assert.Equal(3, maps.Count);
+            Assert.Equal(14742, maps[0].DirectVertex);
+        }
+        finally { try { File.Delete(path); } catch { } }
+    }
+
 }
