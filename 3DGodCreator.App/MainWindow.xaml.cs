@@ -131,6 +131,7 @@ public partial class MainWindow : Window, ILocalizableView
 
         LoadPanels();
         RefreshCc0CreatureMorphs();
+        RefreshCc0MeshAssets();
         _debugConsole = (DebugConsole)DebugConsoleHost.Content;
         _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedItem = TabSettings;
         DebugLog.OnMessage += msg => Dispatcher.Invoke(() => _debugConsole?.Log(msg));
@@ -1008,6 +1009,59 @@ public partial class MainWindow : Window, ILocalizableView
     private void CharacterOpenClothing_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabClothing;
     private void CharacterOpenExport_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabExport;
 
+    private void RefreshCc0MeshAssets()
+    {
+        if (CreatorCc0Mesh is null) return;
+        var files = _cc0Assets.ListMeshObjs(
+            Cc0CreatureAssetPackService.Bodyparts01,
+            Cc0CreatureAssetPackService.Hair01,
+            Cc0CreatureAssetPackService.Equipment01);
+        CreatorCc0Mesh.ItemsSource = files;
+        if (files.Count > 0 && CreatorCc0Mesh.SelectedIndex < 0)
+            CreatorCc0Mesh.SelectedIndex = 0;
+    }
+
+    private void AttachCc0Mesh_Click(object sender, RoutedEventArgs e)
+    {
+        if (CreatorCc0Mesh.SelectedItem is not string obj || !File.Exists(obj))
+        {
+            CreatorStatus.Text = "Install/select a CC0 mesh asset first.";
+            return;
+        }
+        try
+        {
+            var lower = obj.ToLowerInvariant();
+            var type = lower.Contains("hair") ? AttachmentType.Hair
+                : lower.Contains("equipment") || lower.Contains("sword") || lower.Contains("hammer") || lower.Contains("bow") || lower.Contains("dagger")
+                    ? AttachmentType.Weapon
+                    : AttachmentType.Horn;
+            var root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", "CC0");
+            Directory.CreateDirectory(root);
+            var glb = Path.Combine(root, Path.GetFileNameWithoutExtension(obj) + ".glb");
+            _cc0Assets.ConvertObjAssetToGlb(obj, glb);
+            _projectSession.AddAttachmentFromGlb(glb, Path.GetFileNameWithoutExtension(obj), type,
+                new GeneratedAssetMetadata
+                {
+                    BackendId = "makehuman-community",
+                    BackendVersion = "asset-pack",
+                    ModelId = Path.GetFileNameWithoutExtension(obj),
+                    ModelVersion = "cc0-pack",
+                    Prompt = "Imported verified CC0 mesh asset",
+                    LicenseProfileId = "CC0-1.0"
+                });
+            _autosave.MarkDirty(_projectSession.Snapshot());
+            RefreshViewportFromProject();
+            CreatorStatus.Text = $"Attached CC0 {type}: {Path.GetFileNameWithoutExtension(obj)}";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "CC0 attachment failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0Attachment] " + ex);
+        }
+    }
+
     private void RefreshCc0CreatureMorphs()
     {
         if (CreatorCreatureMorph is null) return;
@@ -1083,7 +1137,10 @@ public partial class MainWindow : Window, ILocalizableView
             CreatorStatus.Text = "Downloading verified CC0 MakeHuman creature packs…";
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Bodyparts01);
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Equipment01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Hair01);
             RefreshCc0CreatureMorphs();
+            RefreshCc0MeshAssets();
 
             if (string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase)
                 && _cc0Replacement.CanReplaceOrc)
