@@ -971,6 +971,39 @@ public partial class MainWindow : Window, ILocalizableView
         finally { BtnCreatorFreeform.IsEnabled = true; }
     }
 
+    private async void CharacterAttachment_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Describe the attachment/gear in the prompt box first.";
+            return;
+        }
+        if (CreatorAttachmentType.SelectedItem is not System.Windows.Controls.ComboBoxItem item
+            || item.Tag is not string typeName
+            || !Enum.TryParse<AttachmentType>(typeName, out var type))
+        {
+            CreatorStatus.Text = "Select a valid attachment type.";
+            return;
+        }
+
+        try
+        {
+            BtnCreatorAttachment.IsEnabled = false;
+            CreatorStatus.Text = $"Generating {type}…";
+            var asset = await _assets.GenerateAsync(prompt);
+            _productWorkflow.AddAttachment(asset, type);
+            RefreshViewportFromProject();
+            CreatorStatus.Text = $"{type} attached via {asset.Provenance.BackendId}.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = $"Attachment unavailable/failed: {ex.Message}";
+            DebugLog.Write("[CharacterCreator][Attachment] " + ex);
+        }
+        finally { BtnCreatorAttachment.IsEnabled = true; }
+    }
+
     private void CharacterOpenRig_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabRigging;
     private void CharacterOpenClothing_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabClothing;
     private void CharacterOpenExport_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabExport;
