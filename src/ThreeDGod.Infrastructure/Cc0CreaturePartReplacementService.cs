@@ -67,10 +67,12 @@ public sealed class Cc0CreaturePartReplacementService
             RigBinding = "head",
             GenerationProvenance = new GeneratedAssetMetadata
             {
-                Provider = "makehuman-community",
-                ModelOrVersion = "bodyparts01",
-                PromptOrSource = "culturalibre_minotaur_horns",
-                License = "CC0-1.0"
+                BackendId = "makehuman-community",
+                BackendVersion = "asset-pack",
+                ModelId = "bodyparts01/culturalibre_minotaur_horns",
+                ModelVersion = "cc0-pack",
+                Prompt = "Imported verified CC0 creature part",
+                LicenseProfileId = "CC0-1.0"
             }
         });
 
