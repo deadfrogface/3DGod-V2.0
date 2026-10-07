@@ -146,6 +146,14 @@ public sealed class ProductWorkflowService
         NotifyAutosave();
     }
 
+    public AttachmentInstance AddAttachment(LibraryAsset asset, AttachmentType type)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        var attachment = _session.AddAttachmentFromGlb(asset.GlbPath, asset.Name, type, asset.Provenance);
+        NotifyAutosave();
+        return attachment;
+    }
+
     public void AddFittedGarment(string fittedGlb, string presetName, ClippingReport? report = null)
     {
         _session.AddFittedGarment(fittedGlb, presetName, report);
