@@ -1040,6 +1040,9 @@ public partial class MainWindow : Window, ILocalizableView
         try
         {
             var lower = obj.ToLowerInvariant();
+            var isGarment = lower.Contains("shirts01") || lower.Contains("suits02")
+                || lower.Contains("shirt") || lower.Contains("suit") || lower.Contains("armor")
+                || lower.Contains("tunic") || lower.Contains("robe");
             var type = lower.Contains("hair") ? AttachmentType.Hair
                 : lower.Contains("equipment") || lower.Contains("sword") || lower.Contains("hammer") || lower.Contains("bow") || lower.Contains("dagger")
                     ? AttachmentType.Weapon
@@ -1060,11 +1063,10 @@ public partial class MainWindow : Window, ILocalizableView
             }
             else
             {
+                if (mhclo is not null && (isGarment || type is AttachmentType.Hair or AttachmentType.Horn))
+                    throw new InvalidOperationException("This MHCLO asset requires an active exact MakeHuman-topology body before it can be fitted.");
                 _cc0Assets.ConvertObjAssetToGlb(obj, glb);
             }
-            var isGarment = lower.Contains("shirts01") || lower.Contains("suits02")
-                || lower.Contains("shirt") || lower.Contains("suit") || lower.Contains("armor")
-                || lower.Contains("tunic") || lower.Contains("robe");
             if (isGarment)
             {
                 _productWorkflow.AddFittedGarment(glb, Path.GetFileNameWithoutExtension(obj));
