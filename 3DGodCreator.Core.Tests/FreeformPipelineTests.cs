@@ -72,9 +72,10 @@ public class FreeformPipelineTests
     }
 
     [Theory]
-    [InlineData("frog humanoid", "frog", true, 0)]
-    [InlineData("reptile humanoid", "reptile", true, 1)]
-    public async Task CatalogHumanoids_AreRealRiggedFreeformProjects(string prompt, string family, bool biped, int tails)
+    [InlineData("frog humanoid", "frog", true, 0, 0)]
+    [InlineData("reptile humanoid", "reptile", true, 1, 0)]
+    [InlineData("four arms humanoid", "multiarm", true, 0, 2)]
+    public async Task CatalogHumanoids_AreRealRiggedFreeformProjects(string prompt, string family, bool biped, int tails, int extraLimbs)
     {
         var root = Path.Combine(Path.GetTempPath(), "freeform-family-" + Guid.NewGuid().ToString("N"));
         try
@@ -86,6 +87,7 @@ public class FreeformPipelineTests
             Assert.Equal(family, character.CreatureState!.BaseFamily);
             Assert.Equal(biped, character.CreatureState.BodyPlan.IsBiped);
             Assert.Equal(tails, character.CreatureState.BodyPlan.TailCount);
+            Assert.Equal(extraLimbs, character.CreatureState.BodyPlan.ExtraLimbCount);
             var mesh = bundle.Meshes.Single(m => character.MeshSet.MeshAssetIds.Contains(m.MeshAssetId));
             Assert.True(mesh.HasSkin);
             Assert.True(mesh.VertexCount > 20);
