@@ -45,6 +45,22 @@ public sealed class Cc0CreatureAssetPackService
         "mhclo/hm08",
         ["cortu_short_messy_hair", "culturalibre_hair_01", "learning_anime_hair", "toigo_blunt_bob"]);
 
+    public static readonly Cc0AssetPack Shirts01 = new(
+        "makehuman-shirts01",
+        new Uri("https://files2.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip"),
+        "CC0-1.0",
+        "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+        "mhclo/hm08",
+        ["elvs_crude_t-shirt_male", "joepal_crude_t-shirt_female", "namuhekam_male_polo_shirt", "toigo_fisherman_sweater"]);
+
+    public static readonly Cc0AssetPack Suits02 = new(
+        "makehuman-suits02",
+        new Uri("https://files2.makehumancommunity.org/asset_packs/suits02/suits02_cc0.zip"),
+        "CC0-1.0",
+        "https://static.makehumancommunity.org/assets/assetpacks/suits02.html",
+        "mhclo/hm08",
+        ["matcreator_mc-scifi-armor_guardian", "matcreator_mc-scifi-armor_helios", "matcreator_mc-scifi-armor_jupiter7", "rehmanpolanski_viking_tunic"]);
+
     private readonly HttpClient _http;
     private readonly string _root;
 
