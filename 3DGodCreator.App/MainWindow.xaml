@@ -59,6 +59,11 @@
                         <TextBlock Text="Nose width" Foreground="White" Margin="0,8,0,0"/>
                         <Slider x:Name="CreatorNose" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="nose_width"/>
                         <Button x:Name="BtnCreatorRegenerate" Content="Apply / Regenerate Character" Margin="0,16,0,4" Padding="10" Click="CharacterRegenerate_Click"/>
+                        <Separator Margin="0,12,0,10"/>
+                        <TextBlock Text="Creature asset library" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="Verified CC0 packs only. Downloads once, then works locally. hm08 morph targets are never applied directly to Anny without retargeting."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
+                        <Button x:Name="BtnInstallCc0Assets" Content="Install CC0 Creature Assets" Padding="9" Click="InstallCc0CreatureAssets_Click"/>
                         <TextBlock x:Name="CreatorStatus" Text="Ready" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
