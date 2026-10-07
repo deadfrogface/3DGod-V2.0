@@ -44,7 +44,7 @@ def _to_numpy(value):
     return np.asarray(value)
 
 
-_MODEL = None
+_MODELS = {}
 
 
 def load_anny():
@@ -59,17 +59,23 @@ def load_anny():
     return anny
 
 
-def get_model(anny):
-    global _MODEL
-    if _MODEL is None:
+def get_model(anny, topology="anny"):
+    if topology not in ("anny", "makehuman"):
+        raise RuntimeError(f"UnsupportedTopology – only free anny/makehuman topologies are allowed, got {topology!r}")
+    if topology not in _MODELS:
         real_out = sys.stdout
         sys.stdout = sys.stderr
         try:
-            # Default Anny topology only. Never topology="smplx".
-            _MODEL = anny.Anny(phenotypes="all", local_changes="default", facial_actions="all")
+            # Commercial-safe paths only. Never topology="smplx".
+            _MODELS[topology] = anny.Anny(
+                phenotypes="all",
+                local_changes="default",
+                facial_actions="all",
+                topology=topology,
+            )
         finally:
             sys.stdout = real_out
-    return _MODEL
+    return _MODELS[topology]
 
 
 def _pick(keys, values):
@@ -99,10 +105,44 @@ def catalog(anny):
     }
 
 
+def _apply_makehuman_targets(verts, targets):
+    if not targets:
+        return verts
+    result = verts.copy()
+    for item in targets:
+        path = Path(item.get("path") or "")
+        weight = float(item.get("weight", 0.0))
+        if not path.is_file():
+            raise RuntimeError(f"TargetMissing – {path}")
+        if path.suffix not in (".target", ".ptarget"):
+            raise RuntimeError(f"TargetFormat – only plain .target/.ptarget files are accepted: {path}")
+        with path.open("r", encoding="utf-8", errors="strict") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split()
+                if len(parts) != 4:
+                    raise RuntimeError(f"TargetFormat – malformed line in {path.name}")
+                idx = int(parts[0])
+                if idx < 0 or idx >= len(result):
+                    raise RuntimeError(
+                        f"TargetTopologyMismatch – vertex {idx} exceeds makehuman topology ({len(result)} vertices)"
+                    )
+                result[idx, 0] += float(parts[1]) * weight
+                result[idx, 1] += float(parts[2]) * weight
+                result[idx, 2] += float(parts[3]) * weight
+    return result
+
+
 def generate_obj(anny, params, dest: Path):
     import torch
 
-    model = get_model(anny)
+    topology = params.get("topology") or "anny"
+    targets = params.get("makehumanTargets") or []
+    if targets and topology != "makehuman":
+        raise RuntimeError("TargetTopologyMismatch – MakeHuman .target files require topology='makehuman'.")
+    model = get_model(anny, topology)
     phenotypes = _pick(getattr(model, "phenotype_labels", []) or [], params.get("phenotypes") or {})
     local = _pick(getattr(model, "local_change_labels", []) or [], params.get("localChanges") or {})
     face = _pick(getattr(model, "facial_action_labels", []) or [], params.get("facialActions") or {})
@@ -124,6 +164,7 @@ def generate_obj(anny, params, dest: Path):
         raise RuntimeError("Anny produced no vertices.")
     if verts.ndim == 3:
         verts = verts[0]
+    verts = _apply_makehuman_targets(verts, targets)
     faces = _to_numpy(model.faces)
     if faces is None or len(faces) == 0:
         raise RuntimeError("Anny produced no faces.")
