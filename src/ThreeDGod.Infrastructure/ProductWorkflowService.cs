@@ -16,19 +16,22 @@ public sealed class ProductWorkflowService
     private readonly AutosaveService? _autosave;
     private readonly AllowlistedAiEditExecutor _edits;
     private readonly string _workRoot;
+    private readonly ICreatureAssembly? _creatures;
 
     public ProductWorkflowService(
         ActiveProjectSession session,
         IProjectService projects,
         AllowlistedAiEditExecutor edits,
         AutosaveService? autosave = null,
-        string? workRoot = null)
+        string? workRoot = null,
+        ICreatureAssembly? creatures = null)
     {
         _session = session;
         _projects = projects;
         _edits = edits;
         _autosave = autosave;
         _workRoot = workRoot ?? Path.Combine(Path.GetTempPath(), "3dgod-product-workflow");
+        _creatures = creatures;
         Directory.CreateDirectory(_workRoot);
     }
 
@@ -37,6 +40,41 @@ public sealed class ProductWorkflowService
     public void NewHumanProject(string name = "Human")
     {
         _session.NewProject(name);
+        _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public void NewOrcProject(string name = "Orc")
+    {
+        CreateCreatureProject(name, static (builder, bundle, root) => builder.CreateOrc(bundle, root));
+    }
+
+    public void NewRatProject(string name = "Humanoid Rat")
+    {
+        CreateCreatureProject(name, static (builder, bundle, root) => builder.CreateRat(bundle, root));
+    }
+
+    private void CreateCreatureProject(
+        string name,
+        Func<ICreatureAssembly, ProjectBundle, string, CharacterDocument> factory)
+    {
+        if (_creatures is null)
+            throw new InvalidOperationException("Creature assembly service is not configured.");
+
+        var bundle = new ProjectBundle
+        {
+            Project = new ProjectDocument
+            {
+                Name = name,
+                AppVersionCreated = "2.0.0",
+                AppVersionLastSaved = "2.0.0"
+            }
+        };
+        var root = Path.Combine(_workRoot, "creature-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var character = factory(_creatures, bundle, root);
+        character.Name = name;
+        _session.LoadCreatedCreature(bundle, character.CharacterId);
         _autosave?.AssociateMainFile(null);
         NotifyAutosave();
     }
