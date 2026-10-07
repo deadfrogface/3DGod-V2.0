@@ -79,6 +79,17 @@
                             <Button x:Name="BtnCreatorApplyPrompt" Content="Apply edit" Margin="2" Padding="8" Click="CharacterPrompt_Click"/>
                             <Button x:Name="BtnCreatorFreeform" Content="Create freeform" Margin="2" Padding="8" Click="CharacterFreeform_Click"/>
                         </UniformGrid>
+                        <TextBlock Text="Attachment / gear" Foreground="#ddd" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <ComboBox x:Name="CreatorAttachmentType" SelectedIndex="0">
+                            <ComboBoxItem Content="Necklace" Tag="Necklace"/>
+                            <ComboBoxItem Content="Earring" Tag="Earring"/>
+                            <ComboBoxItem Content="Hair" Tag="Hair"/>
+                            <ComboBoxItem Content="Beard" Tag="Beard"/>
+                            <ComboBoxItem Content="Weapon" Tag="Weapon"/>
+                            <ComboBoxItem Content="Horn" Tag="Horn"/>
+                            <ComboBoxItem Content="Tail" Tag="Tail"/>
+                        </ComboBox>
+                        <Button x:Name="BtnCreatorAttachment" Content="Generate / attach from prompt" Margin="0,7,0,0" Padding="8" Click="CharacterAttachment_Click"/>
                         <TextBlock Text="Workflow" Foreground="#ddd" FontWeight="SemiBold" Margin="0,12,0,4"/>
                         <UniformGrid Columns="3">
                             <Button Content="Rig" Margin="2" Padding="7" Click="CharacterOpenRig_Click"/>
