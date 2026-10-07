@@ -1,5 +1,6 @@
 using System.Numerics;
 using ThreeDGod.Application;
+using ThreeDGod.AI;
 using ThreeDGod.Core.Domain;
 using ThreeDGod.Export;
 using ThreeDGod.Infrastructure;
