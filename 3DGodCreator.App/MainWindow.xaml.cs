@@ -1216,7 +1216,35 @@ public partial class MainWindow : Window, ILocalizableView
         try
         {
             CreatorStatus.Text = "Generating…";
-            await _annyInspector.ApplyStateAsync(state, generate: true);
+            var cc0Morphs = state.LocalShapeParameters
+                .Where(x => x.Key.StartsWith("cc0:", StringComparison.OrdinalIgnoreCase) && MathF.Abs(x.Value) > 0.0001f)
+                .Select(x => new { Name = x.Key[4..], Weight = x.Value, Path = _cc0Assets.FindAnimalTarget(x.Key[4..]) })
+                .ToArray();
+
+            if (string.Equals(state.TopologyProfile, "makehuman", StringComparison.OrdinalIgnoreCase) && cc0Morphs.Length > 0)
+            {
+                if (cc0Morphs.Any(x => string.IsNullOrWhiteSpace(x.Path)))
+                    throw new InvalidOperationException("A saved CC0 morph target is not installed on this machine.");
+                var baseRequest = AnnyHumanService.FromState(state);
+                var dest = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "3DGod", "Generated", "CreatureMorphs", $"regenerated-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+                var glb = await _anny.GenerateGlbAsync(dest, new AnnyGenerateRequest
+                {
+                    Topology = "makehuman",
+                    MakeHumanTargets = cc0Morphs.Select(x => new MakeHumanTargetRequest(x.Path!, x.Weight)).ToArray(),
+                    Phenotypes = baseRequest.Phenotypes,
+                    LocalChanges = baseRequest.LocalChanges,
+                    FacialActions = baseRequest.FacialActions
+                });
+                _projectSession.SetActiveMeshFromGlbFile(glb, "creature-body");
+                _autosave.MarkDirty(_projectSession.Snapshot());
+                RefreshViewportFromProject();
+            }
+            else
+            {
+                await _annyInspector.ApplyStateAsync(state, generate: true);
+            }
             CreatorStatus.Text = "Character regenerated from authoritative morph state.";
         }
         catch (Exception ex)
