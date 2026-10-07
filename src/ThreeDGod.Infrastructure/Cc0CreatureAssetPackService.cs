@@ -80,6 +80,23 @@ public sealed class Cc0CreatureAssetPackService
         return destination;
     }
 
+    public IReadOnlyList<string> ListAnimalTargets()
+    {
+        var root = Path.Combine(_root, Animal01.Id);
+        if (!Directory.Exists(root)) return [];
+        return Directory.EnumerateFiles(root, "*.target", SearchOption.AllDirectories)
+            .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    public string? FindAnimalTarget(params string[] nameFragments)
+    {
+        var targets = ListAnimalTargets();
+        return targets.FirstOrDefault(path =>
+            nameFragments.All(fragment =>
+                Path.GetFileNameWithoutExtension(path).Contains(fragment, StringComparison.OrdinalIgnoreCase)));
+    }
+
     public string? FindObj(string assetName)
     {
         if (!Directory.Exists(_root)) return null;
