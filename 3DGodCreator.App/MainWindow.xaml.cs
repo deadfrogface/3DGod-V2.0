@@ -1062,19 +1062,30 @@ public partial class MainWindow : Window, ILocalizableView
             {
                 _cc0Assets.ConvertObjAssetToGlb(obj, glb);
             }
-            _projectSession.AddAttachmentFromGlb(glb, Path.GetFileNameWithoutExtension(obj), type,
-                new GeneratedAssetMetadata
-                {
-                    BackendId = "makehuman-community",
-                    BackendVersion = "asset-pack",
-                    ModelId = Path.GetFileNameWithoutExtension(obj),
-                    ModelVersion = "cc0-pack",
-                    Prompt = "Imported verified CC0 mesh asset",
-                    LicenseProfileId = "CC0-1.0"
-                });
+            var isGarment = lower.Contains("shirts01") || lower.Contains("suits02")
+                || lower.Contains("shirt") || lower.Contains("suit") || lower.Contains("armor")
+                || lower.Contains("tunic") || lower.Contains("robe");
+            if (isGarment)
+            {
+                _productWorkflow.AddFittedGarment(glb, Path.GetFileNameWithoutExtension(obj));
+                CreatorStatus.Text = $"Fitted CC0 garment: {Path.GetFileNameWithoutExtension(obj)}";
+            }
+            else
+            {
+                _projectSession.AddAttachmentFromGlb(glb, Path.GetFileNameWithoutExtension(obj), type,
+                    new GeneratedAssetMetadata
+                    {
+                        BackendId = "makehuman-community",
+                        BackendVersion = "asset-pack",
+                        ModelId = Path.GetFileNameWithoutExtension(obj),
+                        ModelVersion = "cc0-pack",
+                        Prompt = "Imported verified CC0 mesh asset",
+                        LicenseProfileId = "CC0-1.0"
+                    });
+                CreatorStatus.Text = $"Attached CC0 {type}: {Path.GetFileNameWithoutExtension(obj)}";
+            }
             _autosave.MarkDirty(_projectSession.Snapshot());
             RefreshViewportFromProject();
-            CreatorStatus.Text = $"Attached CC0 {type}: {Path.GetFileNameWithoutExtension(obj)}";
         }
         catch (Exception ex)
         {
