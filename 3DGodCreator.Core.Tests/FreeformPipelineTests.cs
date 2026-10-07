@@ -70,4 +70,26 @@ public class FreeformPipelineTests
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData("frog humanoid", "frog", true, 0)]
+    [InlineData("reptile humanoid", "reptile", true, 1)]
+    public async Task CatalogHumanoids_AreRealRiggedFreeformProjects(string prompt, string family, bool biped, int tails)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "freeform-family-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var bundle = new ProjectBundle { Project = new ProjectDocument { Name = prompt } };
+            var pipeline = new FreeformPipeline(new ReferenceImageService(), new ImageTo3DService());
+            var character = await pipeline.RunAsync(prompt, bundle, Path.Combine(root, "work"));
+            Assert.Equal(CharacterKind.FreeformCreature, character.CharacterKind);
+            Assert.Equal(family, character.CreatureState!.BaseFamily);
+            Assert.Equal(biped, character.CreatureState.BodyPlan.IsBiped);
+            Assert.Equal(tails, character.CreatureState.BodyPlan.TailCount);
+            var mesh = bundle.Meshes.Single(m => character.MeshSet.MeshAssetIds.Contains(m.MeshAssetId));
+            Assert.True(mesh.HasSkin);
+            Assert.True(mesh.VertexCount > 20);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
 }
