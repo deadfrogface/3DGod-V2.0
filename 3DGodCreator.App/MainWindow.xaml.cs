@@ -914,12 +914,15 @@ public partial class MainWindow : Window, ILocalizableView
             foreach (var parsed in plans)
             {
                 AiEditExecutionResult result;
-                if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart")
+                if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart" or "creature.removePart")
                 {
                     // Execute the exact parsed creature operation without reparsing the full descriptive prompt.
-                    var command = parsed.Operation == "creature.addPart" && parsed.Args.GetValueOrDefault("slot") == "horn"
-                        ? "add horns"
-                        : prompt;
+                    var command = parsed.Operation switch
+                    {
+                        "creature.addPart" when parsed.Args.GetValueOrDefault("slot") == "horn" => "add horns",
+                        "creature.removePart" when parsed.Args.GetValueOrDefault("slot") == "horn" => "remove horns",
+                        _ => prompt
+                    };
                     await _productWorkflow.ApplyCreatureEditAsync(command, _commandStack);
                     result = new AiEditExecutionResult(true, "Executed", parsed.Operation ?? "creature.edit",
                         "Creature catalog edit applied.");
