@@ -61,7 +61,7 @@
                         <Button x:Name="BtnCreatorRegenerate" Content="Apply / Regenerate Character" Margin="0,16,0,4" Padding="10" Click="CharacterRegenerate_Click"/>
                         <Separator Margin="0,12,0,10"/>
                         <TextBlock Text="Creature asset library" Foreground="#ddd" FontWeight="SemiBold"/>
-                        <TextBlock Text="Verified CC0 packs only. Downloads once, then works locally. hm08 morph targets are never applied directly to Anny without retargeting."
+                        <TextBlock Text="Verified CC0 packs only. Downloads once, then works locally. hm08 targets use Anny's exact MakeHuman topology; mesh assets keep CC0 provenance."
                                    Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
                         <Button x:Name="BtnInstallCc0Assets" Content="Install CC0 Creature Assets" Padding="9" Click="InstallCc0CreatureAssets_Click"/>
                         <TextBlock Text="CC0 mesh assets (horns / hair / weapons)" Foreground="White" Margin="0,12,0,0"/>
