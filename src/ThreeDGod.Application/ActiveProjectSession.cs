@@ -285,6 +285,16 @@ public sealed class ActiveProjectSession
                 parts.Add(("garment", mid, name));
             }
 
+            foreach (var attachment in _bundle.Attachments.Where(a => a.CharacterId == character.CharacterId))
+            {
+                var mid = attachment.AssetId;
+                if (mid == Guid.Empty || parts.Any(p => p.MeshAssetId == mid))
+                    continue;
+                var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == mid);
+                var name = string.IsNullOrWhiteSpace(mesh?.Name) ? attachment.AttachmentType.ToString() : mesh!.Name;
+                parts.Add(("attachment", mid, name));
+            }
+
             return parts;
         }
     }
@@ -435,6 +445,45 @@ public sealed class ActiveProjectSession
             _dirty = true;
         }
         RaiseChanged();
+    }
+
+    public AttachmentInstance AddAttachmentFromGlb(
+        string glbPath,
+        string name,
+        AttachmentType type,
+        GeneratedAssetMetadata? provenance = null)
+    {
+        if (string.IsNullOrWhiteSpace(glbPath) || !File.Exists(glbPath))
+            throw new FileNotFoundException("Attachment GLB not found.", glbPath);
+
+        var bytes = File.ReadAllBytes(glbPath);
+        AttachmentInstance attachment;
+        lock (_gate)
+        {
+            var character = RequireActiveCharacter();
+            var mesh = new MeshAsset
+            {
+                Name = string.IsNullOrWhiteSpace(name) ? type.ToString() : name,
+                SourceFormat = "glb",
+                SourceHash = ArchivePathRulesSha256(bytes),
+                ValidationState = "attachment"
+            };
+            mesh.CanonicalGlbPath = $"assets/{mesh.MeshAssetId:D}/mesh.glb";
+            if (provenance is not null)
+                mesh.GeneratedMetadata = provenance;
+            _bundle.MeshBytes[mesh.MeshAssetId] = bytes;
+            _bundle.Meshes.Add(mesh);
+            _bundle.Project.AssetIds.Add(mesh.MeshAssetId);
+
+            attachment = AttachmentSockets.Attach(character.CharacterId, mesh.MeshAssetId, type);
+            _bundle.Attachments.Add(attachment);
+            character.AttachmentInstanceIds.Add(attachment.AttachmentId);
+            character.EditRevision++;
+            Touch(character);
+            _dirty = true;
+        }
+        RaiseChanged();
+        return attachment;
     }
 
     public void SetActiveRigFromGlb(string riggedGlbPath, string backendId)
