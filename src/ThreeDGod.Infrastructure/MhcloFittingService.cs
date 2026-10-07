@@ -93,7 +93,7 @@ public sealed class MhcloFittingService
         return result;
     }
 
-    internal static IReadOnlyList<MhcloVertexMap> Parse(string path)
+    public static IReadOnlyList<MhcloVertexMap> Parse(string path)
     {
         var maps = new List<MhcloVertexMap>();
         var inVerts = false;
@@ -152,7 +152,7 @@ public sealed class MhcloFittingService
 
 public sealed record MhcloFitResult(string FittedGlb, int VertexCount, int TriangleCount, int MappingCount);
 
-internal sealed record MhcloVertexMap(int? DirectVertex, int V0, int V1, int V2, float W0, float W1, float W2, Vector3 Offset)
+public sealed record MhcloVertexMap(int? DirectVertex, int V0, int V1, int V2, float W0, float W1, float W2, Vector3 Offset)
 {
     public static MhcloVertexMap Direct(int v) => new(v, 0, 0, 0, 0, 0, 0, Vector3.Zero);
     public static MhcloVertexMap Bary(int a, int b, int c, float wa, float wb, float wc, Vector3 offset) =>
