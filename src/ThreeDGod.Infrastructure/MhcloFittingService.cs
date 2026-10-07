@@ -103,7 +103,17 @@ public sealed class MhcloFittingService
             if (line.Length == 0 || line.StartsWith('#')) continue;
             if (line.StartsWith("verts", StringComparison.OrdinalIgnoreCase)) { inVerts = true; continue; }
             if (!inVerts) continue;
-            if (char.IsLetter(line[0])) break;
+            if (char.IsLetter(line[0]))
+            {
+                var key = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)[0].ToLowerInvariant();
+                // Some real MakeHuman system assets contain metadata (notably material)
+                // after "verts 0" and then continue the vertex mapping section.
+                if (key is "material" or "obj_file" or "z_depth" or "max_pole" or "tag")
+                    continue;
+                if (key is "weights" or "delete_verts")
+                    break;
+                throw new InvalidDataException("Unsupported directive inside MHCLO vertex mapping: " + key);
+            }
 
             var p = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             if (p.Length == 1 && int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var direct))
