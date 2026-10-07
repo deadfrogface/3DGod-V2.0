@@ -132,7 +132,7 @@ public partial class MainWindow : Window, ILocalizableView
         LoadPanels();
         RefreshCc0CreatureMorphs();
         _debugConsole = (DebugConsole)DebugConsoleHost.Content;
-        _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedIndex = 9;
+        _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedItem = TabSettings;
         DebugLog.OnMessage += msg => Dispatcher.Invoke(() => _debugConsole?.Log(msg));
 
         // Run project readiness check - logs to error_log.txt and Debug console
@@ -881,6 +881,76 @@ public partial class MainWindow : Window, ILocalizableView
             DebugLog.Write("[CharacterCreator] Orc: " + ex.Message);
         }
     }
+
+    private async void CharacterPrompt_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Enter a character edit first.";
+            return;
+        }
+
+        try
+        {
+            BtnCreatorApplyPrompt.IsEnabled = false;
+            AiEditExecutionResult result;
+            var parsed = ThreeDGod.AI.DeterministicAiParser.Parse(prompt);
+            if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart")
+            {
+                await _productWorkflow.ApplyCreatureEditAsync(prompt, _commandStack);
+                result = new AiEditExecutionResult(true, "Executed", parsed.Operation ?? "creature.edit",
+                    "Creature catalog edit applied to the active project.");
+            }
+            else
+            {
+                result = await _aiEdits.ExecutePlanAsync(parsed, _commandStack);
+            }
+
+            CreatorStatus.Text = $"{result.Status}: {result.Message}";
+            if (result.Ok)
+            {
+                SyncCreatorControlsFromProject();
+                RefreshViewportFromProject();
+                _autosave.MarkDirty(_projectSession.Snapshot());
+            }
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Edit failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][Prompt] " + ex);
+        }
+        finally { BtnCreatorApplyPrompt.IsEnabled = true; }
+    }
+
+    private async void CharacterFreeform_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Enter a freeform creature prompt first.";
+            return;
+        }
+        try
+        {
+            BtnCreatorFreeform.IsEnabled = false;
+            CreatorStatus.Text = "Building freeform creature…";
+            await _productWorkflow.NewFreeformProjectAsync(prompt);
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = "Freeform creature created. Backend provenance is stored in the project.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Freeform unavailable/failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][Freeform] " + ex);
+        }
+        finally { BtnCreatorFreeform.IsEnabled = true; }
+    }
+
+    private void CharacterOpenRig_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabRigging;
+    private void CharacterOpenClothing_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabClothing;
+    private void CharacterOpenExport_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabExport;
 
     private void RefreshCc0CreatureMorphs()
     {
