@@ -1098,6 +1098,20 @@ public partial class MainWindow : Window, ILocalizableView
             var current = _projectSession.ActiveCharacter?.ParametricHumanState
                 ?? new ParametricHumanState { BackendId = "anny" };
             var request = AnnyHumanService.FromState(current);
+            var next = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(current));
+            next.TopologyProfile = "makehuman";
+            next.BackendId = "anny";
+            next.LocalShapeParameters["cc0:" + Path.GetFileNameWithoutExtension(targetPath)] = (float)CreatorCreatureMorphWeight.Value;
+
+            var targetStack = next.LocalShapeParameters
+                .Where(x => x.Key.StartsWith("cc0:", StringComparison.OrdinalIgnoreCase) && MathF.Abs(x.Value) > 0.0001f)
+                .Select(x =>
+                {
+                    var path = _cc0Assets.FindAnimalTarget(x.Key[4..])
+                        ?? throw new InvalidOperationException($"Installed target missing: {x.Key[4..]}");
+                    return new MakeHumanTargetRequest(path, x.Value);
+                })
+                .ToArray();
             var dest = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "3DGod", "Generated", "CreatureMorphs",
@@ -1105,16 +1119,11 @@ public partial class MainWindow : Window, ILocalizableView
             var glb = await _anny.GenerateGlbAsync(dest, new AnnyGenerateRequest
             {
                 Topology = "makehuman",
-                MakeHumanTargets = [new MakeHumanTargetRequest(targetPath, (float)CreatorCreatureMorphWeight.Value)],
+                MakeHumanTargets = targetStack,
                 Phenotypes = request.Phenotypes,
                 LocalChanges = request.LocalChanges,
                 FacialActions = request.FacialActions
             });
-
-            var next = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(current));
-            next.TopologyProfile = "makehuman";
-            next.BackendId = "anny";
-            next.LocalShapeParameters["cc0:" + Path.GetFileNameWithoutExtension(targetPath)] = (float)CreatorCreatureMorphWeight.Value;
             _projectSession.SetAnnyState(next, markDirty: false);
             _projectSession.SetActiveMeshFromGlbFile(glb, "creature-body");
             _autosave.MarkDirty(_projectSession.Snapshot());
