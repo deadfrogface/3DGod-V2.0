@@ -48,7 +48,8 @@ public sealed class Cc0CreatureMorphTests
         Assert.Contains("topology != \"makehuman\"", worker);
         Assert.Contains("_apply_makehuman_targets", worker);
         Assert.Contains("TargetTopologyMismatch", worker);
-        Assert.DoesNotContain("topology=\"smplx\"", worker);
+        Assert.DoesNotContain("topology = \"smplx\"", worker);
+        Assert.Contains("topology not in (\"anny\", \"makehuman\")", worker);
     }
 
     private static string FindRepoRoot()
