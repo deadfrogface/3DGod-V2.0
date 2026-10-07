@@ -45,7 +45,7 @@ public sealed class AllowlistedAiEditExecutor
         return plan.Operation switch
         {
             "morph.height" => ExecuteHeightDelta(plan, stack, 0.1f),
-            "parameter.delta" when IsHeightKey(plan) => ExecuteHeightDelta(plan, stack, ReadDelta(plan, 0.15f)),
+            "parameter.delta" => ExecuteParameterDelta(plan, stack),
             "material.pbr" or "material.recolor" => ExecuteMaterial(plan),
             "attachment.remove" or "attachment.add" => Task.FromResult(new AiEditExecutionResult(
                 false,
@@ -66,16 +66,62 @@ public sealed class AllowlistedAiEditExecutor
         };
     }
 
-    private static bool IsHeightKey(AiEditPlan plan) =>
-        !plan.Args.TryGetValue("key", out var key) ||
-        string.Equals(key, "height", StringComparison.OrdinalIgnoreCase);
-
     private static float ReadDelta(AiEditPlan plan, float fallback)
     {
         if (plan.Args.TryGetValue("delta", out var deltaText) &&
             float.TryParse(deltaText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
             return parsed;
         return fallback;
+    }
+
+    private Task<AiEditExecutionResult> ExecuteParameterDelta(AiEditPlan plan, CommandStack? stack)
+    {
+        var key = plan.Args.GetValueOrDefault("key")?.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+            return Task.FromResult(new AiEditExecutionResult(false, "Invalid", plan.Operation ?? "parameter.delta", "Missing allowlisted parameter key."));
+
+        if (string.Equals(key, "height", StringComparison.OrdinalIgnoreCase))
+            return ExecuteHeightDelta(plan, stack, ReadDelta(plan, 0.15f));
+
+        // These keys map to the same authoritative Anny state used by manual character controls.
+        // Unknown keys are refused rather than silently inventing a backend mapping.
+        var phenotypeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "muscle", "weight", "proportions", "age"
+        };
+        var localShapeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "jaw_width", "brow_ridge", "nose_width", "shoulder_width", "arm_length", "leg_length"
+        };
+
+        var character = _session.ActiveCharacter ?? throw new InvalidOperationException("No active character.");
+        var state = character.ParametricHumanState
+            ?? new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" };
+        var nextState = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
+        var delta = ReadDelta(plan, 0.15f);
+
+        if (phenotypeKeys.Contains(key))
+        {
+            var old = state.PhenotypeParameters.GetValueOrDefault(key, 0.5f);
+            var next = Math.Clamp(old + delta, 0f, 1f);
+            nextState.PhenotypeParameters[key] = next;
+            _session.SetAnnyState(nextState);
+            return Task.FromResult(new AiEditExecutionResult(true, "Executed", plan.Operation ?? "parameter.delta",
+                $"{key} {old:0.###} → {next:0.###} (Anny phenotype)."));
+        }
+
+        if (localShapeKeys.Contains(key))
+        {
+            var old = state.LocalShapeParameters.GetValueOrDefault(key, 0f);
+            var next = Math.Clamp(old + delta, -1f, 1f);
+            nextState.LocalShapeParameters[key] = next;
+            _session.SetAnnyState(nextState);
+            return Task.FromResult(new AiEditExecutionResult(true, "Executed", plan.Operation ?? "parameter.delta",
+                $"{key} {old:0.###} → {next:0.###} (Anny local shape)."));
+        }
+
+        return Task.FromResult(new AiEditExecutionResult(false, "Unsupported", plan.Operation ?? "parameter.delta",
+            $"Parameter '{key}' has no validated Character Creator mapping."));
     }
 
     private Task<AiEditExecutionResult> ExecuteHeightDelta(AiEditPlan plan, CommandStack? stack, float delta)
@@ -160,6 +206,13 @@ public sealed class AllowlistedAiEditExecutor
             cr = 0.75f;
             cg = 0.12f;
             cb = 0.12f;
+        }
+        else if (color.Contains("green", StringComparison.OrdinalIgnoreCase) ||
+                 color.Contains("orc", StringComparison.OrdinalIgnoreCase))
+        {
+            cr = 0.28f;
+            cg = 0.42f;
+            cb = 0.22f;
         }
         else if (color.Contains("dark", StringComparison.OrdinalIgnoreCase))
         {
