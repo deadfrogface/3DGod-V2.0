@@ -38,6 +38,8 @@ public sealed class Cc0CreatureMorphTests
         Assert.Contains("Retarget/bake", ex.Message);
         Cc0CreatureAssetPackService.AssertTargetCompatibleWithTopology(
             Cc0CreatureAssetPackService.Animal01, "hm08");
+        Cc0CreatureAssetPackService.AssertTargetCompatibleWithTopology(
+            Cc0CreatureAssetPackService.Animal01, "makehuman");
     }
 
     [Fact]
