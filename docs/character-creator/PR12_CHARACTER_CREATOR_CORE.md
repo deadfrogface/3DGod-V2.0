@@ -42,3 +42,28 @@ Planned reuse audits:
 ## Hard rule
 
 AI does not directly mutate meshes. AI produces validated edit intent that is applied through the same CharacterCreatorService used by manual controls. Generative geometry remains a separate explicit operation.
+
+
+## Repository audit correction
+
+The implementation audit found that the authoritative domain already contains the core structures PR12 needs:
+`CharacterDocument.CharacterKind`, `MorphState`, `ParametricHumanState`, `CreatureState`, `BodyPartSlot`, `AttachmentInstance`, and real `CreatureAssembly.CreateOrc/CreateRat` paths.
+
+Therefore PR12 does **not** introduce a second CharacterDefinition model. The temporary parallel model was removed. All new Character Creator work must extend the existing `ThreeDGod.Core.Domain` + `ActiveProjectSession` path.
+
+### Implemented in this slice
+
+- `AllowlistedAiEditExecutor.parameter.delta` now routes validated body keys into the authoritative Anny state.
+- phenotype allow-list: muscle, weight, proportions, age (+ existing height path)
+- local-shape allow-list: jaw_width, brow_ridge, nose_width, shoulder_width, arm_length, leg_length
+- unknown morphs are rejected rather than invented.
+- green/orc material intent routes through the existing project material state.
+- tests prove edits land in `ActiveProjectSession`, not a parallel state object.
+
+### Next vertical slice
+
+1. expose the existing Orc/Rat creature assembly through `ActiveProjectSession` without replacing the project.
+2. replace procedural placeholder ears/tusks/horns with audited CC0 assets where topology/fit permits.
+3. materialize all creature scene parts in the viewport.
+4. persist creature edits and attachments through .3dgod.
+5. route attachment.add/remove to the same authoritative project state.
