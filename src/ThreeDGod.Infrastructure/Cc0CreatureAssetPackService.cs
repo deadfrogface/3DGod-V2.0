@@ -134,7 +134,7 @@ public sealed class Cc0CreatureAssetPackService
 
     public string ConvertObjAssetToGlb(string assetName, string destinationGlb)
     {
-        var obj = FindObj(assetName)
+        var obj = File.Exists(assetName) ? assetName : FindObj(assetName)
             ?? throw new FileNotFoundException($"CC0 asset '{assetName}' is not installed.");
         return TriangleMeshExport.ObjToGlb(obj, destinationGlb);
     }
