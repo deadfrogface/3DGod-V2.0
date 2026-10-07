@@ -58,6 +58,57 @@ public class CiRuntimeIntegrationTests
     }
 
     [SkippableFact(Timeout = 900000)]
+    public async Task Anny_MakeHumanTopology_ExternalTargetMovesExactVertex()
+    {
+        RequireIntegrationOrGate("Anny MakeHuman CC0 target");
+
+        var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
+        Assert.False(
+            probe.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled,
+            "Anny runtime missing while CI integration requested. Blocker: " + probe.Message);
+
+        await using var svc = new AnnyHumanService(new WorkerProcessHost());
+        var baseline = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-base-" + Guid.NewGuid().ToString("N") + ".glb");
+        var morphed = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-morph-" + Guid.NewGuid().ToString("N") + ".glb");
+        var target = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-" + Guid.NewGuid().ToString("N") + ".target");
+        try
+        {
+            var req = new AnnyGenerateRequest { Topology = "makehuman" };
+            await svc.GenerateGlbAsync(baseline, req);
+            var before = MeshCompare.ReadPositions(baseline);
+            Assert.True(before.Count > 100, "Expected real Anny MakeHuman topology.");
+
+            // Synthetic sparse target exercises the exact same parser/index path as an installed
+            // CC0 MakeHuman target without relying on a network asset pack in CI.
+            File.WriteAllText(target, "42 0.125 0 0\n");
+            await svc.GenerateGlbAsync(morphed, new AnnyGenerateRequest
+            {
+                Topology = "makehuman",
+                MakeHumanTargets = [new MakeHumanTargetRequest(target, 1f)]
+            });
+            var after = MeshCompare.ReadPositions(morphed);
+            Assert.Equal(before.Count, after.Count);
+
+            var moved = after[42] - before[42];
+            Assert.True(MathF.Abs(moved.X) > 0.10f, $"Expected vertex 42 X delta from target; got {moved}.");
+            Assert.True(MathF.Abs(moved.Y) < 0.001f && MathF.Abs(moved.Z) < 0.001f,
+                $"Sparse target unexpectedly changed Y/Z of vertex 42: {moved}.");
+
+            var artDir = Path.Combine(
+                Environment.GetEnvironmentVariable(CiOnlineRuntimeProofTests.ArtifactDirEnv)
+                ?? Path.Combine(RepoPaths.FindRepoRoot(), "artifacts", "runtime"),
+                "anny");
+            Directory.CreateDirectory(artDir);
+            File.Copy(morphed, Path.Combine(artDir, "anny-makehuman-target.glb"), overwrite: true);
+        }
+        finally
+        {
+            foreach (var p in new[] { baseline, morphed, target, Path.ChangeExtension(baseline, ".obj"), Path.ChangeExtension(morphed, ".obj") })
+                if (File.Exists(p)) File.Delete(p);
+        }
+    }
+
+    [SkippableFact(Timeout = 900000)]
     public async Task Anny_HeightTallerDelta_IsNonUniformMeshChange()
     {
         RequireIntegrationOrGate("Anny height morph");
