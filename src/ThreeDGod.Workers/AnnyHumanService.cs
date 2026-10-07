@@ -112,8 +112,12 @@ public sealed class AnnyCatalog
     public int Count => PhenotypeKeys.Count + LocalChangeKeys.Count + FacialActionKeys.Count;
 }
 
+public sealed record MakeHumanTargetRequest(string Path, float Weight);
+
 public sealed class AnnyGenerateRequest
 {
+    public string Topology { get; init; } = "anny";
+    public IReadOnlyList<MakeHumanTargetRequest> MakeHumanTargets { get; init; } = [];
     public IReadOnlyDictionary<string, float> Phenotypes { get; init; } = new Dictionary<string, float>();
     public IReadOnlyDictionary<string, float> LocalChanges { get; init; } = new Dictionary<string, float>();
     public IReadOnlyDictionary<string, float> FacialActions { get; init; } = new Dictionary<string, float>();
@@ -164,6 +168,8 @@ public sealed class AnnyHumanService : IDisposable, IAsyncDisposable
             var payload = JsonSerializer.Serialize(new
             {
                 objPath,
+                topology = request.Topology,
+                makehumanTargets = request.MakeHumanTargets.Select(x => new { path = x.Path, weight = x.Weight }).ToArray(),
                 phenotypes = request.Phenotypes,
                 localChanges = request.LocalChanges,
                 facialActions = request.FacialActions
