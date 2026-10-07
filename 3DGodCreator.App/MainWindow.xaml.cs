@@ -61,6 +61,7 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly IComponentManager _components;
     private readonly ICreatureAssembly _creatureAssembly;
     private readonly ProductWorkflowService _productWorkflow;
+    private readonly Cc0CreatureAssetPackService _cc0Assets;
     private bool _syncingCreatorUi;
     private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
@@ -89,6 +90,7 @@ public partial class MainWindow : Window, ILocalizableView
         IComponentManager components,
         ICreatureAssembly creatureAssembly,
         ProductWorkflowService productWorkflow,
+        Cc0CreatureAssetPackService cc0Assets,
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
@@ -116,6 +118,7 @@ public partial class MainWindow : Window, ILocalizableView
         _components = components;
         _creatureAssembly = creatureAssembly;
         _productWorkflow = productWorkflow;
+        _cc0Assets = cc0Assets;
         _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
@@ -864,13 +867,33 @@ public partial class MainWindow : Window, ILocalizableView
             _productWorkflow.NewOrcProject("Orc");
             SyncCreatorControlsFromProject();
             RefreshViewportFromProject();
-            CreatorStatus.Text = "Orc project loaded: body + ears + tusks. CC0 asset replacement is provider-gated; no procedural part is labeled CC0.";
+            CreatorStatus.Text = _cc0Assets.IsInstalled(Cc0CreatureAssetPackService.Bodyparts01)
+                ? "Orc loaded. Verified CC0 Bodyparts 01 is installed; CC0 horn replacement is available."
+                : "Orc loaded. Install verified CC0 creature assets below to replace procedural placeholders.";
         }
         catch (Exception ex)
         {
             CreatorStatus.Text = "Orc unavailable: " + ex.Message;
             DebugLog.Write("[CharacterCreator] Orc: " + ex.Message);
         }
+    }
+
+    private async void InstallCc0CreatureAssets_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            BtnInstallCc0Assets.IsEnabled = false;
+            CreatorStatus.Text = "Downloading verified CC0 MakeHuman creature packs…";
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Bodyparts01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
+            CreatorStatus.Text = "CC0 packs installed locally. Bodyparts 01 can be converted from OBJ; Animal 01 morph targets are retained for later hm08→Anny retargeting and are NOT falsely applied to Anny.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "CC0 install failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0] " + ex);
+        }
+        finally { BtnInstallCc0Assets.IsEnabled = true; }
     }
 
     private void CharacterRat_Click(object sender, RoutedEventArgs e)
