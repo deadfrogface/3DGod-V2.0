@@ -63,6 +63,7 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly ProductWorkflowService _productWorkflow;
     private readonly Cc0CreatureAssetPackService _cc0Assets;
     private readonly Cc0CreaturePartReplacementService _cc0Replacement;
+    private readonly MhcloFittingService _mhcloFit;
     private bool _syncingCreatorUi;
     private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
@@ -93,6 +94,7 @@ public partial class MainWindow : Window, ILocalizableView
         ProductWorkflowService productWorkflow,
         Cc0CreatureAssetPackService cc0Assets,
         Cc0CreaturePartReplacementService cc0Replacement,
+        MhcloFittingService mhcloFit,
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
@@ -122,6 +124,7 @@ public partial class MainWindow : Window, ILocalizableView
         _productWorkflow = productWorkflow;
         _cc0Assets = cc0Assets;
         _cc0Replacement = cc0Replacement;
+        _mhcloFit = mhcloFit;
         _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
@@ -1044,7 +1047,19 @@ public partial class MainWindow : Window, ILocalizableView
                 "3DGod", "Generated", "CC0");
             Directory.CreateDirectory(root);
             var glb = Path.Combine(root, Path.GetFileNameWithoutExtension(obj) + ".glb");
-            _cc0Assets.ConvertObjAssetToGlb(obj, glb);
+            var mhclo = MhcloFittingService.FindMhcloForObj(obj);
+            var topology = _projectSession.ActiveCharacter?.ParametricHumanState?.TopologyProfile;
+            if (mhclo is not null && string.Equals(topology, "makehuman", StringComparison.OrdinalIgnoreCase))
+            {
+                var bodyRoot = Path.Combine(root, "body");
+                var body = _projectSession.GetActiveMeshGlbPathOrMaterialize(bodyRoot)
+                    ?? throw new InvalidOperationException("No active MakeHuman body mesh is available for MHCLO fitting.");
+                _mhcloFit.Fit(body, obj, mhclo, glb);
+            }
+            else
+            {
+                _cc0Assets.ConvertObjAssetToGlb(obj, glb);
+            }
             _projectSession.AddAttachmentFromGlb(glb, Path.GetFileNameWithoutExtension(obj), type,
                 new GeneratedAssetMetadata
                 {
