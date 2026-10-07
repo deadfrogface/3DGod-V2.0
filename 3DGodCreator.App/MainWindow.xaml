@@ -33,6 +33,36 @@
             <ColumnDefinition Width="2*" MinWidth="400"/>
         </Grid.ColumnDefinitions>
         <TabControl x:Name="Tabs" Grid.Row="0" Grid.Column="0" Background="#2d2d2d" BorderThickness="0">
+            <TabItem x:Name="TabCharacter" Header="Character">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="CHARACTER CREATOR" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="Human, humanoid creature or freeform character. Manual controls and AI edit the same project state."
+                                   Foreground="#aaa" TextWrapping="Wrap" Margin="0,6,0,16"/>
+                        <TextBlock Text="Base" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <UniformGrid Columns="3" Margin="0,6,0,14">
+                            <Button x:Name="BtnCharacterHuman" Content="Human" Margin="2" Padding="8" Click="CharacterHuman_Click"/>
+                            <Button x:Name="BtnCharacterOrc" Content="Orc" Margin="2" Padding="8" Click="CharacterOrc_Click"/>
+                            <Button x:Name="BtnCharacterRat" Content="Rat" Margin="2" Padding="8" Click="CharacterRat_Click"/>
+                        </UniformGrid>
+                        <TextBlock Text="Body / face" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="These controls write to the authoritative Anny state; regeneration uses the same values."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
+                        <TextBlock Text="Muscle" Foreground="White"/>
+                        <Slider x:Name="CreatorMuscle" Minimum="0" Maximum="1" Value="0.5" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="muscle"/>
+                        <TextBlock Text="Weight" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorWeight" Minimum="0" Maximum="1" Value="0.5" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="weight"/>
+                        <TextBlock Text="Jaw width" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorJaw" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="jaw_width"/>
+                        <TextBlock Text="Brow ridge" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorBrow" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="brow_ridge"/>
+                        <TextBlock Text="Nose width" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorNose" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="nose_width"/>
+                        <Button x:Name="BtnCreatorRegenerate" Content="Apply / Regenerate Character" Margin="0,16,0,4" Padding="10" Click="CharacterRegenerate_Click"/>
+                        <TextBlock x:Name="CreatorStatus" Text="Ready" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <TabItem x:Name="TabAnny" Header="Anny">
                 <ContentControl x:Name="AnnyPanel"/>
             </TabItem>
