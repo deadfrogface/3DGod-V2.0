@@ -1022,7 +1022,9 @@ public partial class MainWindow : Window, ILocalizableView
         var files = _cc0Assets.ListMeshObjs(
             Cc0CreatureAssetPackService.Bodyparts01,
             Cc0CreatureAssetPackService.Hair01,
-            Cc0CreatureAssetPackService.Equipment01);
+            Cc0CreatureAssetPackService.Equipment01,
+            Cc0CreatureAssetPackService.Shirts01,
+            Cc0CreatureAssetPackService.Suits02);
         CreatorCc0Mesh.ItemsSource = files;
         if (files.Count > 0 && CreatorCc0Mesh.SelectedIndex < 0)
             CreatorCc0Mesh.SelectedIndex = 0;
@@ -1167,6 +1169,8 @@ public partial class MainWindow : Window, ILocalizableView
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Equipment01);
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Hair01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Shirts01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Suits02);
             RefreshCc0CreatureMorphs();
             RefreshCc0MeshAssets();
 
