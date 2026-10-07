@@ -47,13 +47,13 @@ public static class DeterministicAiParser
 
         if (Has(p, "muskul", "muscular", "kräftig", "kraeftig"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "muscle", "delta", "0.35"));
-        if (Has(p, "breiter kiefer", "wide jaw", "broad jaw"))
+        if (Has(p, "breiter kiefer", "breitem kiefer", "breiten kiefer", "wide jaw", "broad jaw"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "jaw_width", "delta", "0.35"));
         if (Has(p, "breite schultern", "wide shoulders", "broad shoulders"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "shoulder_width", "delta", "0.3"));
         if (Has(p, "groß", "gross", "tall", "large"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.2"));
-        if (Has(p, "grüne haut", "gruene haut", "green skin", "dunkelgrün", "dunkelgruen"))
+        if (Has(p, "grüne haut", "grüner haut", "gruenen haut", "gruene haut", "green skin", "dunkelgrün", "dunkelgruen"))
             plans.Add(Plan("valid", "material.recolor", "deterministic", "color", "orc-green"));
         if (Has(p, "horn", "hörner", "horner"))
             plans.Add(Plan("valid", "creature.addPart", "deterministic", "slot", "horn", "family", "catalog", "op", "AddCreaturePart"));
