@@ -894,21 +894,44 @@ public partial class MainWindow : Window, ILocalizableView
         try
         {
             BtnCreatorApplyPrompt.IsEnabled = false;
-            AiEditExecutionResult result;
-            var parsed = ThreeDGod.AI.DeterministicAiParser.Parse(prompt);
-            if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart")
+            var normalized = prompt.ToLowerInvariant();
+            if (normalized.Contains("orc") || normalized.Contains("ork"))
             {
-                await _productWorkflow.ApplyCreatureEditAsync(prompt, _commandStack);
-                result = new AiEditExecutionResult(true, "Executed", parsed.Operation ?? "creature.edit",
-                    "Creature catalog edit applied to the active project.");
+                if (!string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase))
+                    _productWorkflow.NewOrcProject("Orc");
             }
-            else
+            else if (normalized.Contains("rat") || normalized.Contains("ratte"))
             {
-                result = await _aiEdits.ExecutePlanAsync(parsed, _commandStack);
+                if (!string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "rat", StringComparison.OrdinalIgnoreCase))
+                    _productWorkflow.NewRatProject("Humanoid Rat");
             }
 
-            CreatorStatus.Text = $"{result.Status}: {result.Message}";
-            if (result.Ok)
+            var plans = ThreeDGod.AI.DeterministicAiParser.ParseComposite(prompt);
+            var messages = new List<string>();
+            var anyExecuted = false;
+            foreach (var parsed in plans)
+            {
+                AiEditExecutionResult result;
+                if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart")
+                {
+                    // Execute the exact parsed creature operation without reparsing the full descriptive prompt.
+                    var command = parsed.Operation == "creature.addPart" && parsed.Args.GetValueOrDefault("slot") == "horn"
+                        ? "add horns"
+                        : prompt;
+                    await _productWorkflow.ApplyCreatureEditAsync(command, _commandStack);
+                    result = new AiEditExecutionResult(true, "Executed", parsed.Operation ?? "creature.edit",
+                        "Creature catalog edit applied.");
+                }
+                else
+                {
+                    result = await _aiEdits.ExecutePlanAsync(parsed, _commandStack);
+                }
+                anyExecuted |= result.Ok;
+                messages.Add($"{result.Operation}: {result.Status}");
+            }
+
+            CreatorStatus.Text = string.Join(" · ", messages);
+            if (anyExecuted)
             {
                 SyncCreatorControlsFromProject();
                 RefreshViewportFromProject();
