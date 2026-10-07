@@ -57,6 +57,7 @@ public static class ThreeDGodComposition
         services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigService>());
         services.AddSingleton<IRigValidator, RigValidationService>();
         services.AddSingleton<Cc0CreatureAssetPackService>();
+        services.AddSingleton<Cc0CreaturePartReplacementService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();
         services.AddSingleton<ICreatureTextEditService, CreatureTextEditService>();
         services.AddSingleton<IFreeformCharacterPipeline, FreeformPipeline>();
