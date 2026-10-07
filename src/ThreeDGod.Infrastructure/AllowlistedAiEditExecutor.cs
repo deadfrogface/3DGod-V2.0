@@ -178,18 +178,20 @@ public sealed class AllowlistedAiEditExecutor
 
         if (stack is not null)
         {
-            _ = stack.ExecuteAsync(new PropertyChangeCommand(
+            return ExecuteStateCommandAsync(
+                stack,
                 character.CharacterId,
                 "anny.height",
                 old,
                 next,
                 value =>
                 {
-                    var s = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(newState));
+                    var s = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
                     s.PhenotypeParameters[key] = Convert.ToSingle(value);
                     _session.SetAnnyState(s);
                 },
-                "ai.morph.height"));
+                plan.Operation ?? "morph.height",
+                $"height {old:0.###} → {next:0.###} (Anny phenotype, not uniform scale).");
         }
 
         _session.SetAnnyState(newState);
