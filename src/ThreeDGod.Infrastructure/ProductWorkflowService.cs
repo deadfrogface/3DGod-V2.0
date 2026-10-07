@@ -1,5 +1,6 @@
 using ThreeDGod.Application;
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Core.Editing;
 using ThreeDGod.Export;
 using ThreeDGod.Persistence;
 
