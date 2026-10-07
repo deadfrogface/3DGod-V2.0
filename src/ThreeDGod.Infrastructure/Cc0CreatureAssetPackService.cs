@@ -29,6 +29,22 @@ public sealed class Cc0CreatureAssetPackService
         "hm08-target",
         ["culturalibre_faun_face", "elvs_piggy_nose1", "jaldmic_donkey_head", "jaldmic_equinus_headv2", "titleknown_catgirl_ears"]);
 
+    public static readonly Cc0AssetPack Equipment01 = new(
+        "makehuman-equipment01",
+        new Uri("https://files2.makehumancommunity.org/asset_packs/equipment01/equipment01_cc0.zip"),
+        "CC0-1.0",
+        "https://static.makehumancommunity.org/assets/assetpacks/equipment01.html",
+        "mhclo/hm08",
+        ["culturalibre_war_hammer", "culturalibre_wooden_bow", "joepal_crude_sword", "o4saken_dagger"]);
+
+    public static readonly Cc0AssetPack Hair01 = new(
+        "makehuman-hair01",
+        new Uri("https://files2.makehumancommunity.org/asset_packs/hair01/hair01_cc0.zip"),
+        "CC0-1.0",
+        "https://static.makehumancommunity.org/assets/assetpacks/hair01.html",
+        "mhclo/hm08",
+        ["cortu_short_messy_hair", "culturalibre_hair_01", "learning_anime_hair", "toigo_blunt_bob"]);
+
     private readonly HttpClient _http;
     private readonly string _root;
 
@@ -95,6 +111,18 @@ public sealed class Cc0CreatureAssetPackService
         return targets.FirstOrDefault(path =>
             nameFragments.All(fragment =>
                 Path.GetFileNameWithoutExtension(path).Contains(fragment, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    public IReadOnlyList<string> ListMeshObjs(params Cc0AssetPack[] packs)
+    {
+        var result = new List<string>();
+        foreach (var pack in packs)
+        {
+            var root = Path.Combine(_root, pack.Id);
+            if (!Directory.Exists(root)) continue;
+            result.AddRange(Directory.EnumerateFiles(root, "*.obj", SearchOption.AllDirectories));
+        }
+        return result.OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     public string? FindObj(string assetName)
