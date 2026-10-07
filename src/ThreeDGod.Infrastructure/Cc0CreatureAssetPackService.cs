@@ -142,7 +142,8 @@ public sealed class Cc0CreatureAssetPackService
     public static void AssertTargetCompatibleWithTopology(Cc0AssetPack pack, string targetTopology)
     {
         if (pack.Topology.Contains("hm08", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(targetTopology, "hm08", StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(targetTopology, "hm08", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(targetTopology, "makehuman", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 $"Asset pack '{pack.Id}' contains hm08 topology-bound morph data and cannot be applied directly to '{targetTopology}'. Retarget/bake is required.");
     }
