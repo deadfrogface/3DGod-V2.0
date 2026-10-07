@@ -12,6 +12,7 @@
             <ComboBoxItem Content="NVIDIA CUDA (SkinTokens)" Tag="NvidiaCuda"/>
         </ComboBox>
         <Button x:Name="BtnAutoRig" Content="Auto-Rig" Padding="12,6" Margin="0,0,0,4" Click="BtnAutoRig_Click"/>
+        <Button x:Name="BtnValidatePoses" Content="Validate rig + test poses" Padding="12,6" Margin="0,0,0,4" Click="BtnValidatePoses_Click"/>
         <Button x:Name="BtnMetahuman" Content="Metahuman-kompatibles Rig exportieren" Padding="12,6" Click="BtnMetahuman_Click"/>
     </StackPanel>
 </UserControl>
