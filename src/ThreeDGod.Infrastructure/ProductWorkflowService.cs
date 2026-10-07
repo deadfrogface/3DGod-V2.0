@@ -17,6 +17,8 @@ public sealed class ProductWorkflowService
     private readonly AllowlistedAiEditExecutor _edits;
     private readonly string _workRoot;
     private readonly ICreatureAssembly? _creatures;
+    private readonly ICreatureTextEditService? _creatureEdits;
+    private readonly IFreeformCharacterPipeline? _freeform;
 
     public ProductWorkflowService(
         ActiveProjectSession session,
@@ -24,7 +26,9 @@ public sealed class ProductWorkflowService
         AllowlistedAiEditExecutor edits,
         AutosaveService? autosave = null,
         string? workRoot = null,
-        ICreatureAssembly? creatures = null)
+        ICreatureAssembly? creatures = null,
+        ICreatureTextEditService? creatureEdits = null,
+        IFreeformCharacterPipeline? freeform = null)
     {
         _session = session;
         _projects = projects;
@@ -32,6 +36,8 @@ public sealed class ProductWorkflowService
         _autosave = autosave;
         _workRoot = workRoot ?? Path.Combine(Path.GetTempPath(), "3dgod-product-workflow");
         _creatures = creatures;
+        _creatureEdits = creatureEdits;
+        _freeform = freeform;
         Directory.CreateDirectory(_workRoot);
     }
 
@@ -76,6 +82,43 @@ public sealed class ProductWorkflowService
         character.Name = name;
         _session.LoadCreatedCreature(bundle, character.CharacterId);
         _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public async Task NewFreeformProjectAsync(string prompt, CancellationToken cancellationToken = default)
+    {
+        if (_freeform is null)
+            throw new InvalidOperationException("Freeform character pipeline is not configured.");
+        var bundle = new ProjectBundle
+        {
+            Project = new ProjectDocument
+            {
+                Name = string.IsNullOrWhiteSpace(prompt) ? "Freeform Creature" : prompt.Trim(),
+                AppVersionCreated = "2.0.0",
+                AppVersionLastSaved = "2.0.0"
+            }
+        };
+        var root = Path.Combine(_workRoot, "freeform-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var character = await _freeform.RunAsync(prompt, bundle, root, cancellationToken).ConfigureAwait(false);
+        _session.LoadCreatedCreature(bundle, character.CharacterId);
+        _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public async Task ApplyCreatureEditAsync(string prompt, CommandStack stack, CancellationToken cancellationToken = default)
+    {
+        if (_creatureEdits is null)
+            throw new InvalidOperationException("Creature edit service is not configured.");
+        var snapshot = _session.Snapshot();
+        var character = snapshot.Characters.FirstOrDefault(x => x.CharacterId == _session.ActiveCharacter?.CharacterId)
+            ?? throw new InvalidOperationException("No active creature.");
+        if (character.CreatureState is null)
+            throw new InvalidOperationException("Active character is not a creature.");
+        var root = Path.Combine(_workRoot, "creature-edit-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await _creatureEdits.ApplyAsync(prompt, snapshot, character, root, stack, cancellationToken).ConfigureAwait(false);
+        _session.LoadCreatedCreature(snapshot, character.CharacterId, _session.ProjectPath);
         NotifyAutosave();
     }
 
