@@ -35,12 +35,16 @@ public sealed class Cc0CreaturePartReplacementService
         if (doc.VertexCount < 8 || doc.TriangleCount < 8)
             throw new InvalidDataException("Converted CC0 horn asset did not contain a usable mesh.");
 
-        // Remove only development-generated modular parts from this creature.
-        var oldIds = character.CreatureState!.ExtraBodyParts
+        // Replace Horn only. Never delete ears/tusks/tails or already licensed/imported parts.
+        // A previous implementation cleared ExtraBodyParts wholesale, which made a horn upgrade destructive.
+        var hornParts = character.CreatureState!.ExtraBodyParts
+            .Where(x => x.SemanticType == SemanticBodyPartType.Horn)
+            .ToArray();
+        var oldIds = hornParts
             .Where(x => x.MeshAssetId.HasValue)
             .Select(x => x.MeshAssetId!.Value)
             .ToHashSet();
-        character.CreatureState.ExtraBodyParts.Clear();
+        character.CreatureState.ExtraBodyParts.RemoveAll(x => x.SemanticType == SemanticBodyPartType.Horn);
         character.MeshSet.MeshAssetIds.RemoveAll(oldIds.Contains);
         snapshot.Meshes.RemoveAll(m => oldIds.Contains(m.MeshAssetId));
         foreach (var id in oldIds) snapshot.MeshBytes.Remove(id);
