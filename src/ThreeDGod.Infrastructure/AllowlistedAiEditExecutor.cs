@@ -105,6 +105,18 @@ public sealed class AllowlistedAiEditExecutor
             var old = state.PhenotypeParameters.GetValueOrDefault(key, 0.5f);
             var next = Math.Clamp(old + delta, 0f, 1f);
             nextState.PhenotypeParameters[key] = next;
+            if (stack is not null)
+            {
+                return ExecuteStateCommandAsync(stack, character.CharacterId, $"anny.phenotype.{key}", old, next,
+                    value =>
+                    {
+                        var s = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
+                        s.PhenotypeParameters[key] = Convert.ToSingle(value);
+                        _session.SetAnnyState(s);
+                    },
+                    plan.Operation ?? "parameter.delta",
+                    $"{key} {old:0.###} → {next:0.###} (Anny phenotype).");
+            }
             _session.SetAnnyState(nextState);
             return Task.FromResult(new AiEditExecutionResult(true, "Executed", plan.Operation ?? "parameter.delta",
                 $"{key} {old:0.###} → {next:0.###} (Anny phenotype)."));
@@ -115,6 +127,18 @@ public sealed class AllowlistedAiEditExecutor
             var old = state.LocalShapeParameters.GetValueOrDefault(key, 0f);
             var next = Math.Clamp(old + delta, -1f, 1f);
             nextState.LocalShapeParameters[key] = next;
+            if (stack is not null)
+            {
+                return ExecuteStateCommandAsync(stack, character.CharacterId, $"anny.local.{key}", old, next,
+                    value =>
+                    {
+                        var s = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
+                        s.LocalShapeParameters[key] = Convert.ToSingle(value);
+                        _session.SetAnnyState(s);
+                    },
+                    plan.Operation ?? "parameter.delta",
+                    $"{key} {old:0.###} → {next:0.###} (Anny local shape).");
+            }
             _session.SetAnnyState(nextState);
             return Task.FromResult(new AiEditExecutionResult(true, "Executed", plan.Operation ?? "parameter.delta",
                 $"{key} {old:0.###} → {next:0.###} (Anny local shape)."));
@@ -122,6 +146,21 @@ public sealed class AllowlistedAiEditExecutor
 
         return Task.FromResult(new AiEditExecutionResult(false, "Unsupported", plan.Operation ?? "parameter.delta",
             $"Parameter '{key}' has no validated Character Creator mapping."));
+    }
+
+    private static async Task<AiEditExecutionResult> ExecuteStateCommandAsync(
+        CommandStack stack,
+        Guid characterId,
+        string property,
+        float oldValue,
+        float newValue,
+        Action<object?> apply,
+        string operation,
+        string message)
+    {
+        await stack.ExecuteAsync(new PropertyChangeCommand(
+            characterId, property, oldValue, newValue, apply, "ai.character.parameter")).ConfigureAwait(false);
+        return new AiEditExecutionResult(true, "Executed", operation, message);
     }
 
     private Task<AiEditExecutionResult> ExecuteHeightDelta(AiEditPlan plan, CommandStack? stack, float delta)
