@@ -853,6 +853,7 @@ public partial class MainWindow : Window, ILocalizableView
             var hex = $"#{(int)(mat.BaseColorFactor.R * 255):X2}{(int)(mat.BaseColorFactor.G * 255):X2}{(int)(mat.BaseColorFactor.B * 255):X2}";
             _characterSystem.SetMaterialPbr(mat.Name, hex, mat.RoughnessFactor, mat.MetallicFactor);
         }
+        SyncCreatorControlsFromProject();
     }
 
     private async void CharacterHuman_Click(object sender, RoutedEventArgs e)
