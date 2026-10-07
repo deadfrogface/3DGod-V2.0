@@ -56,6 +56,7 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
             {
                 "frog" => BuildFrogHumanoid(),
                 "reptile" => BuildReptileHumanoid(),
+                "multiarm" => BuildMultiArmHumanoid(),
                 _ => BuildDragon()
             };
             var sourceGlb = Path.Combine(workRoot, "source.glb");
@@ -110,7 +111,7 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
 
             var character = new CharacterDocument
             {
-                Name = family switch { "frog" => "Frog Humanoid", "reptile" => "Reptile Humanoid", _ => "Kleiner Drache" },
+                Name = family switch { "frog" => "Frog Humanoid", "reptile" => "Reptile Humanoid", "multiarm" => "Four-Armed Humanoid", _ => "Kleiner Drache" },
                 CharacterKind = CharacterKind.FreeformCreature,
                 SourceRepresentation = SourceRepresentation.GeneratedMesh,
                 CreatureState = new CreatureState
@@ -120,12 +121,14 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
                     RigStrategy = "authored-freeform",
                     BodyPlan = new BodyPlan
                     {
-                        IsBiped = family is "frog" or "reptile",
+                        IsBiped = family is "frog" or "reptile" or "multiarm",
                         TailCount = family is "dragon" or "reptile" ? 1 : 0,
+                        ExtraLimbCount = family == "multiarm" ? 2 : 0,
                         SemanticLimbDescriptors = family switch
                         {
                             "frog" => ["freeform", "biped", "head", "long-legs"],
                             "reptile" => ["freeform", "biped", "tail", "head"],
+                            "multiarm" => ["freeform", "biped", "four-arms", "head"],
                             _ => ["freeform", "tail", "head"]
                         },
                         CustomTags = mapped.Values.Distinct().ToList()
@@ -144,7 +147,8 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
     {
         var p = prompt.Trim().ToLowerInvariant();
         return p.Contains("drache") || p.Contains("dragon") || p.Contains("freeform")
-            || p.Contains("frog") || p.Contains("frosch") || p.Contains("reptil") || p.Contains("reptile");
+            || p.Contains("frog") || p.Contains("frosch") || p.Contains("reptil") || p.Contains("reptile")
+            || p.Contains("four arms") || p.Contains("extra arms") || p.Contains("vier arme") || p.Contains("zusätzliche arme") || p.Contains("zusaetzliche arme");
     }
 
     public static string DetectCatalogFamily(string prompt)
@@ -152,6 +156,7 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
         var p = prompt.Trim().ToLowerInvariant();
         if (p.Contains("frog") || p.Contains("frosch")) return "frog";
         if (p.Contains("reptil") || p.Contains("reptile")) return "reptile";
+        if (p.Contains("four arms") || p.Contains("extra arms") || p.Contains("vier arme") || p.Contains("zusätzliche arme") || p.Contains("zusaetzliche arme")) return "multiarm";
         return "dragon";
     }
 
@@ -180,6 +185,20 @@ public sealed class FreeformPipeline : IFreeformCharacterPipeline
         b.AddCone(new Vector3(-0.2f, 1.42f, 0), new Vector3(-0.58f, 1.05f, 0), 0.055f, 10);
         b.AddCone(new Vector3(0.2f, 1.42f, 0), new Vector3(0.58f, 1.05f, 0), 0.055f, 10);
         b.AddTorus(new Vector3(0, 0.95f, -0.22f), Vector3.UnitX, 0.22f, 0.035f, 20, 10);
+        return (b.Positions, b.Indices);
+    }
+
+    public static (List<Vector3> Positions, List<int> Indices) BuildMultiArmHumanoid()
+    {
+        var b = new MeshBuilder3D();
+        b.AddSphere(new Vector3(0, 1.25f, 0), 0.24f, 24, 16);
+        b.AddSphere(new Vector3(0, 1.67f, 0), 0.15f, 20, 14);
+        b.AddCone(new Vector3(-0.12f, 1.12f, 0), new Vector3(-0.18f, 0.28f, 0), 0.075f, 12);
+        b.AddCone(new Vector3(0.12f, 1.12f, 0), new Vector3(0.18f, 0.28f, 0), 0.075f, 12);
+        b.AddCone(new Vector3(-0.2f, 1.48f, 0), new Vector3(-0.62f, 1.08f, 0), 0.055f, 10);
+        b.AddCone(new Vector3(0.2f, 1.48f, 0), new Vector3(0.62f, 1.08f, 0), 0.055f, 10);
+        b.AddCone(new Vector3(-0.2f, 1.32f, 0.02f), new Vector3(-0.62f, 0.86f, 0.08f), 0.05f, 10);
+        b.AddCone(new Vector3(0.2f, 1.32f, 0.02f), new Vector3(0.62f, 0.86f, 0.08f), 0.05f, 10);
         return (b.Positions, b.Indices);
     }
 
