@@ -62,6 +62,7 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly ICreatureAssembly _creatureAssembly;
     private readonly ProductWorkflowService _productWorkflow;
     private readonly Cc0CreatureAssetPackService _cc0Assets;
+    private readonly Cc0CreaturePartReplacementService _cc0Replacement;
     private bool _syncingCreatorUi;
     private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
@@ -91,6 +92,7 @@ public partial class MainWindow : Window, ILocalizableView
         ICreatureAssembly creatureAssembly,
         ProductWorkflowService productWorkflow,
         Cc0CreatureAssetPackService cc0Assets,
+        Cc0CreaturePartReplacementService cc0Replacement,
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
@@ -119,6 +121,7 @@ public partial class MainWindow : Window, ILocalizableView
         _creatureAssembly = creatureAssembly;
         _productWorkflow = productWorkflow;
         _cc0Assets = cc0Assets;
+        _cc0Replacement = cc0Replacement;
         _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
@@ -886,7 +889,19 @@ public partial class MainWindow : Window, ILocalizableView
             CreatorStatus.Text = "Downloading verified CC0 MakeHuman creature packs…";
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Bodyparts01);
             await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
-            CreatorStatus.Text = "CC0 packs installed locally. Bodyparts 01 can be converted from OBJ; Animal 01 morph targets are retained for later hm08→Anny retargeting and are NOT falsely applied to Anny.";
+
+            if (string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase)
+                && _cc0Replacement.CanReplaceOrc)
+            {
+                var work = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "3DGod", "Generated", "CC0");
+                _cc0Replacement.ReplaceOrcDevelopmentParts(_projectSession, work);
+                RefreshViewportFromProject();
+                CreatorStatus.Text = "CC0 packs installed. Orc development primitives were removed and replaced with the real CC0 culturalibre Minotaur Horns mesh.";
+            }
+            else
+            {
+                CreatorStatus.Text = "CC0 packs installed locally. Animal 01 hm08 morph targets are retained for a real retarget/bake step and are NOT falsely applied to Anny.";
+            }
         }
         catch (Exception ex)
         {
