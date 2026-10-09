@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ThreeDGod.Application;
+using ThreeDGod.Rigging;
 using ThreeDGodCreator.Core;
 
 namespace ThreeDGodCreator.App.Panels;
@@ -104,6 +105,46 @@ public partial class RiggingPanel : UserControl
         finally
         {
             RefreshAvailabilityUi();
+        }
+    }
+
+    private void BtnValidatePoses_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var work = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "RigValidation");
+            var src = _session.GetActiveMeshGlbPathOrMaterialize(work);
+            if (string.IsNullOrWhiteSpace(src) || !File.Exists(src))
+                throw new InvalidOperationException("No active mesh to validate.");
+
+            var report = RigValidator.ValidateGlb(src, requireHumanoid: false);
+            if (!report.Passed)
+            {
+                AvailabilityLabel.Text = "Rig validation failed: " +
+                    string.Join("; ", report.Failures.Select(x => x.Code));
+                return;
+            }
+
+            var available = TestPoseEvaluator.PoseJoints
+                .Where(x => report.JointNames.Contains(x.Value, StringComparer.OrdinalIgnoreCase))
+                .Select(x => TestPoseEvaluator.Evaluate(src, x.Key))
+                .ToArray();
+            if (available.Length == 0)
+            {
+                AvailabilityLabel.Text = "Rig structure valid, but no known semantic test-pose joints were found.";
+                return;
+            }
+
+            var failed = available.Where(x => !x.Moved).ToArray();
+            AvailabilityLabel.Text = failed.Length == 0
+                ? "Rig valid · poses moved: " + string.Join(", ", available.Select(x => x.Pose))
+                : "Rig valid, pose failures: " + string.Join(", ", failed.Select(x => x.Pose));
+        }
+        catch (Exception ex)
+        {
+            AvailabilityLabel.Text = "Rig/pose validation failed: " + ex.Message;
         }
     }
 

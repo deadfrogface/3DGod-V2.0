@@ -58,13 +58,15 @@ public sealed class CreatureTextEditService : ICreatureTextEditService
         if (plan.Status != "valid")
             throw new InvalidOperationException(plan.Reason ?? "Unsupported – prompt is not a creature edit.");
         var op = plan.Operation;
-        if (op is not ("creature.replacePart" or "creature.addPart" or "creature.swapPart"))
-            throw new InvalidOperationException("Unsupported – not a ReplaceBodyPart/AddCreaturePart plan.");
+        if (op is not ("creature.replacePart" or "creature.addPart" or "creature.swapPart" or "creature.removePart"))
+            throw new InvalidOperationException("Unsupported – not an allowlisted creature part plan.");
 
         var state = character.CreatureState ?? throw new InvalidOperationException("Character has no CreatureState.");
         var slot = plan.Args.GetValueOrDefault("slot", "");
         var family = plan.Args.GetValueOrDefault("family", "catalog");
-        var created = CreaturePartCatalog.Create(bundle, meshRoot, slot, family);
+        var created = op == "creature.removePart"
+            ? Array.Empty<BodyPartSlot>()
+            : CreaturePartCatalog.Create(bundle, meshRoot, slot, family);
         var removeTypes = RemoveTypesFor(slot, op);
         var kept = state.ExtraBodyParts.Where(p => !removeTypes.Contains(p.SemanticType)).ToList();
         if (op == "creature.addPart")

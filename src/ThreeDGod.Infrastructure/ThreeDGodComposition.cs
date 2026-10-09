@@ -56,6 +56,9 @@ public static class ThreeDGodComposition
         services.AddSingleton<IAutoRigBackend>(sp => (IAutoRigBackend)sp.GetRequiredService<IAutoRigService>());
         services.AddSingleton<IRiggingService>(sp => (IRiggingService)sp.GetRequiredService<IAutoRigService>());
         services.AddSingleton<IRigValidator, RigValidationService>();
+        services.AddSingleton<Cc0CreatureAssetPackService>();
+        services.AddSingleton<MhcloFittingService>();
+        services.AddSingleton<Cc0CreaturePartReplacementService>();
         services.AddSingleton<ICreatureAssembly, CreatureAssembly>();
         services.AddSingleton<ICreatureTextEditService, CreatureTextEditService>();
         services.AddSingleton<IFreeformCharacterPipeline, FreeformPipeline>();
@@ -88,7 +91,10 @@ public static class ThreeDGodComposition
                 sp.GetRequiredService<ActiveProjectSession>(),
                 sp.GetRequiredService<IProjectService>(),
                 sp.GetRequiredService<AllowlistedAiEditExecutor>(),
-                sp.GetRequiredService<AutosaveService>()));
+                sp.GetRequiredService<AutosaveService>(),
+                creatures: sp.GetRequiredService<ICreatureAssembly>(),
+                creatureEdits: sp.GetRequiredService<ICreatureTextEditService>(),
+                freeform: sp.GetRequiredService<IFreeformCharacterPipeline>()));
         services.AddSingleton<IBackendRegistry>(_ => new BackendRegistry(
         [
             new BackendManifest

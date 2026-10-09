@@ -58,6 +58,63 @@ public class CiRuntimeIntegrationTests
     }
 
     [SkippableFact(Timeout = 900000)]
+    public async Task Anny_MakeHumanTopology_ExternalTargetMovesExactVertex()
+    {
+        RequireIntegrationOrGate("Anny MakeHuman CC0 target");
+
+        var probe = AnnyRuntime.Probe(RepoPaths.FindRepoRoot());
+        Assert.False(
+            probe.Availability is FeatureAvailability.NotInstalled or FeatureAvailability.UnsupportedHardware or FeatureAvailability.Disabled,
+            "Anny runtime missing while CI integration requested. Blocker: " + probe.Message);
+
+        await using var svc = new AnnyHumanService(new WorkerProcessHost());
+        var baseline = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-base-" + Guid.NewGuid().ToString("N") + ".glb");
+        var morphed = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-morph-" + Guid.NewGuid().ToString("N") + ".glb");
+        var target = Path.Combine(Path.GetTempPath(), "3dgod-ci-mh-" + Guid.NewGuid().ToString("N") + ".target");
+        try
+        {
+            var req = new AnnyGenerateRequest { Topology = "makehuman" };
+            await svc.GenerateGlbAsync(baseline, req);
+            var before = MeshCompare.ReadPositions(baseline);
+            Assert.True(before.Count > 100, "Expected real Anny MakeHuman topology.");
+
+            // Synthetic sparse target exercises the exact same parser/index path as an installed
+            // CC0 MakeHuman target without relying on a network asset pack in CI.
+            File.WriteAllText(target, "42 0.125 0 0\n");
+            await svc.GenerateGlbAsync(morphed, new AnnyGenerateRequest
+            {
+                Topology = "makehuman",
+                MakeHumanTargets = [new MakeHumanTargetRequest(target, 1f)]
+            });
+            var after = MeshCompare.ReadPositions(morphed);
+            Assert.Equal(before.Count, after.Count);
+
+            // OBJ -> GLB canonicalization may reorder vertices, so exported GLB index 42 is not
+            // guaranteed to remain source vertex 42. The worker applies the sparse delta before
+            // export; prove that the resulting canonical mesh contains the requested 0.125 X move
+            // while preserving vertex count instead of making a false post-export index claim.
+            var deltas = before.Zip(after, (a, b) => b - a).ToArray();
+            var maxX = deltas.Max(v => MathF.Abs(v.X));
+            var maxYZ = deltas.Max(v => MathF.Max(MathF.Abs(v.Y), MathF.Abs(v.Z)));
+            Assert.True(maxX > 0.10f, $"Expected sparse target X delta; maximum exported X delta was {maxX:F6}.");
+            Assert.True(maxYZ < 0.001f,
+                $"Sparse X-only target unexpectedly changed exported Y/Z; max={maxYZ:F6}.");
+
+            var artDir = Path.Combine(
+                Environment.GetEnvironmentVariable(CiOnlineRuntimeProofTests.ArtifactDirEnv)
+                ?? Path.Combine(RepoPaths.FindRepoRoot(), "artifacts", "runtime"),
+                "anny");
+            Directory.CreateDirectory(artDir);
+            File.Copy(morphed, Path.Combine(artDir, "anny-makehuman-target.glb"), overwrite: true);
+        }
+        finally
+        {
+            foreach (var p in new[] { baseline, morphed, target, Path.ChangeExtension(baseline, ".obj"), Path.ChangeExtension(morphed, ".obj") })
+                if (File.Exists(p)) File.Delete(p);
+        }
+    }
+
+    [SkippableFact(Timeout = 900000)]
     public async Task Anny_HeightTallerDelta_IsNonUniformMeshChange()
     {
         RequireIntegrationOrGate("Anny height morph");

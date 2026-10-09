@@ -59,6 +59,12 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
     private readonly IComponentManager _components;
+    private readonly ICreatureAssembly _creatureAssembly;
+    private readonly ProductWorkflowService _productWorkflow;
+    private readonly Cc0CreatureAssetPackService _cc0Assets;
+    private readonly Cc0CreaturePartReplacementService _cc0Replacement;
+    private readonly MhcloFittingService _mhcloFit;
+    private bool _syncingCreatorUi;
     private readonly IWorkerUvComponentInstaller? _uvInstaller;
     private AnnyInspectorPanel? _annyInspector;
     private ProblemsPanel? _problemsPanel;
@@ -84,6 +90,11 @@ public partial class MainWindow : Window, ILocalizableView
         ViewportSelectionService viewportSelection,
         IFbxExportService fbxExport,
         IComponentManager components,
+        ICreatureAssembly creatureAssembly,
+        ProductWorkflowService productWorkflow,
+        Cc0CreatureAssetPackService cc0Assets,
+        Cc0CreaturePartReplacementService cc0Replacement,
+        MhcloFittingService mhcloFit,
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
@@ -109,6 +120,11 @@ public partial class MainWindow : Window, ILocalizableView
         _viewportSelection = viewportSelection;
         _fbxExport = fbxExport;
         _components = components;
+        _creatureAssembly = creatureAssembly;
+        _productWorkflow = productWorkflow;
+        _cc0Assets = cc0Assets;
+        _cc0Replacement = cc0Replacement;
+        _mhcloFit = mhcloFit;
         _uvInstaller = uvInstaller;
         _viewportSession = new HelixViewportSession(_viewportSelection);
         _viewportSession.BindSelectionChanged(UpdateSelectionInspector);
@@ -117,8 +133,10 @@ public partial class MainWindow : Window, ILocalizableView
         _characterSystem.SliderSyncCallback = RefreshSliders;
 
         LoadPanels();
+        RefreshCc0CreatureMorphs();
+        RefreshCc0MeshAssets();
         _debugConsole = (DebugConsole)DebugConsoleHost.Content;
-        _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedIndex = 9;
+        _debugConsole.OnOpenSettingsRequested = () => Tabs.SelectedItem = TabSettings;
         DebugLog.OnMessage += msg => Dispatcher.Invoke(() => _debugConsole?.Log(msg));
 
         // Run project readiness check - logs to error_log.txt and Debug console
@@ -838,6 +856,463 @@ public partial class MainWindow : Window, ILocalizableView
             var hex = $"#{(int)(mat.BaseColorFactor.R * 255):X2}{(int)(mat.BaseColorFactor.G * 255):X2}{(int)(mat.BaseColorFactor.B * 255):X2}";
             _characterSystem.SetMaterialPbr(mat.Name, hex, mat.RoughnessFactor, mat.MetallicFactor);
         }
+        SyncCreatorControlsFromProject();
+    }
+
+    private async void CharacterHuman_Click(object sender, RoutedEventArgs e)
+    {
+        _productWorkflow.NewHumanProject("Human");
+        if (_annyInspector is not null)
+            await _annyInspector.ApplyStateAsync(new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" }, generate: false);
+        SyncCreatorControlsFromProject();
+        CreatorStatus.Text = "Human base selected. Generate to create the Anny mesh.";
+        ShowPlaceholder();
+    }
+
+    private void CharacterOrc_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _productWorkflow.NewOrcProject("Orc");
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = _cc0Assets.IsInstalled(Cc0CreatureAssetPackService.Bodyparts01)
+                ? "Orc loaded. Verified CC0 Bodyparts 01 is installed; CC0 horn replacement is available."
+                : "Orc loaded. Install verified CC0 creature assets below to replace procedural placeholders.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Orc unavailable: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Orc: " + ex.Message);
+        }
+    }
+
+    private async void CharacterPrompt_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Enter a character edit first.";
+            return;
+        }
+
+        try
+        {
+            BtnCreatorApplyPrompt.IsEnabled = false;
+            var normalized = prompt.ToLowerInvariant();
+            if (normalized.Contains("orc") || normalized.Contains("ork"))
+            {
+                if (!string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase))
+                    _productWorkflow.NewOrcProject("Orc");
+            }
+            else if (normalized.Contains("rat") || normalized.Contains("ratte"))
+            {
+                if (!string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "rat", StringComparison.OrdinalIgnoreCase))
+                    _productWorkflow.NewRatProject("Humanoid Rat");
+            }
+
+            var plans = ThreeDGod.AI.DeterministicAiParser.ParseComposite(prompt);
+            var messages = new List<string>();
+            var anyExecuted = false;
+            foreach (var parsed in plans)
+            {
+                AiEditExecutionResult result;
+                if (parsed.Operation is "creature.replacePart" or "creature.addPart" or "creature.swapPart" or "creature.removePart")
+                {
+                    // Execute the exact parsed creature operation without reparsing the full descriptive prompt.
+                    var command = parsed.Operation switch
+                    {
+                        "creature.addPart" when parsed.Args.GetValueOrDefault("slot") == "horn" => "add horns",
+                        "creature.removePart" when parsed.Args.GetValueOrDefault("slot") == "horn" => "remove horns",
+                        _ => prompt
+                    };
+                    await _productWorkflow.ApplyCreatureEditAsync(command, _commandStack);
+                    result = new AiEditExecutionResult(true, "Executed", parsed.Operation ?? "creature.edit",
+                        "Creature catalog edit applied.");
+                }
+                else
+                {
+                    result = await _aiEdits.ExecutePlanAsync(parsed, _commandStack);
+                }
+                anyExecuted |= result.Ok;
+                messages.Add($"{result.Operation}: {result.Status}");
+            }
+
+            CreatorStatus.Text = string.Join(" · ", messages);
+            if (anyExecuted)
+            {
+                SyncCreatorControlsFromProject();
+                RefreshViewportFromProject();
+                _autosave.MarkDirty(_projectSession.Snapshot());
+            }
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Edit failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][Prompt] " + ex);
+        }
+        finally { BtnCreatorApplyPrompt.IsEnabled = true; }
+    }
+
+    private async void CharacterFreeform_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Enter a freeform creature prompt first.";
+            return;
+        }
+        try
+        {
+            BtnCreatorFreeform.IsEnabled = false;
+            CreatorStatus.Text = "Building freeform creature…";
+            await _productWorkflow.NewFreeformProjectAsync(prompt);
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = "Freeform creature created. Backend provenance is stored in the project.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Freeform unavailable/failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][Freeform] " + ex);
+        }
+        finally { BtnCreatorFreeform.IsEnabled = true; }
+    }
+
+    private async void CharacterAttachment_Click(object sender, RoutedEventArgs e)
+    {
+        var prompt = CreatorPrompt.Text.Trim();
+        if (prompt.Length == 0)
+        {
+            CreatorStatus.Text = "Describe the attachment/gear in the prompt box first.";
+            return;
+        }
+        if (CreatorAttachmentType.SelectedItem is not System.Windows.Controls.ComboBoxItem item
+            || item.Tag is not string typeName
+            || !Enum.TryParse<AttachmentType>(typeName, out var type))
+        {
+            CreatorStatus.Text = "Select a valid attachment type.";
+            return;
+        }
+
+        try
+        {
+            BtnCreatorAttachment.IsEnabled = false;
+            CreatorStatus.Text = $"Generating {type}…";
+            var asset = await _assets.GenerateAsync(prompt);
+            _productWorkflow.AddAttachment(asset, type);
+            RefreshViewportFromProject();
+            CreatorStatus.Text = $"{type} attached via {asset.Provenance.BackendId}.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = $"Attachment unavailable/failed: {ex.Message}";
+            DebugLog.Write("[CharacterCreator][Attachment] " + ex);
+        }
+        finally { BtnCreatorAttachment.IsEnabled = true; }
+    }
+
+    private void CharacterOpenRig_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabRigging;
+    private void CharacterOpenClothing_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabClothing;
+    private void CharacterOpenExport_Click(object sender, RoutedEventArgs e) => Tabs.SelectedItem = TabExport;
+
+    private void RefreshCc0MeshAssets()
+    {
+        if (CreatorCc0Mesh is null) return;
+        var files = _cc0Assets.ListMeshObjs(
+            Cc0CreatureAssetPackService.Bodyparts01,
+            Cc0CreatureAssetPackService.Hair01,
+            Cc0CreatureAssetPackService.Equipment01,
+            Cc0CreatureAssetPackService.Shirts01,
+            Cc0CreatureAssetPackService.Suits02);
+        CreatorCc0Mesh.ItemsSource = files;
+        if (files.Count > 0 && CreatorCc0Mesh.SelectedIndex < 0)
+            CreatorCc0Mesh.SelectedIndex = 0;
+    }
+
+    private void AttachCc0Mesh_Click(object sender, RoutedEventArgs e)
+    {
+        if (CreatorCc0Mesh.SelectedItem is not string obj || !File.Exists(obj))
+        {
+            CreatorStatus.Text = "Install/select a CC0 mesh asset first.";
+            return;
+        }
+        try
+        {
+            var lower = obj.ToLowerInvariant();
+            var isGarment = lower.Contains("shirts01") || lower.Contains("suits02")
+                || lower.Contains("shirt") || lower.Contains("suit") || lower.Contains("armor")
+                || lower.Contains("tunic") || lower.Contains("robe");
+            var type = lower.Contains("hair") ? AttachmentType.Hair
+                : lower.Contains("equipment") || lower.Contains("sword") || lower.Contains("hammer") || lower.Contains("bow") || lower.Contains("dagger")
+                    ? AttachmentType.Weapon
+                    : AttachmentType.Horn;
+            var root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", "CC0");
+            Directory.CreateDirectory(root);
+            var glb = Path.Combine(root, Path.GetFileNameWithoutExtension(obj) + ".glb");
+            var mhclo = MhcloFittingService.FindMhcloForObj(obj);
+            var topology = _projectSession.ActiveCharacter?.ParametricHumanState?.TopologyProfile;
+            if (mhclo is not null && string.Equals(topology, "makehuman", StringComparison.OrdinalIgnoreCase))
+            {
+                var bodyRoot = Path.Combine(root, "body");
+                var body = _projectSession.GetActiveMeshGlbPathOrMaterialize(bodyRoot)
+                    ?? throw new InvalidOperationException("No active MakeHuman body mesh is available for MHCLO fitting.");
+                _mhcloFit.Fit(body, obj, mhclo, glb);
+            }
+            else
+            {
+                if (mhclo is not null && (isGarment || type is AttachmentType.Hair or AttachmentType.Horn))
+                    throw new InvalidOperationException("This MHCLO asset requires an active exact MakeHuman-topology body before it can be fitted.");
+                _cc0Assets.ConvertObjAssetToGlb(obj, glb);
+            }
+            if (isGarment)
+            {
+                _productWorkflow.AddFittedGarment(glb, Path.GetFileNameWithoutExtension(obj));
+                CreatorStatus.Text = $"Fitted CC0 garment: {Path.GetFileNameWithoutExtension(obj)}";
+            }
+            else
+            {
+                _projectSession.AddAttachmentFromGlb(glb, Path.GetFileNameWithoutExtension(obj), type,
+                    new GeneratedAssetMetadata
+                    {
+                        BackendId = "makehuman-community",
+                        BackendVersion = "asset-pack",
+                        ModelId = Path.GetFileNameWithoutExtension(obj),
+                        ModelVersion = "cc0-pack",
+                        Prompt = "Imported verified CC0 mesh asset",
+                        LicenseProfileId = "CC0-1.0"
+                    });
+                CreatorStatus.Text = $"Attached CC0 {type}: {Path.GetFileNameWithoutExtension(obj)}";
+            }
+            _autosave.MarkDirty(_projectSession.Snapshot());
+            RefreshViewportFromProject();
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "CC0 attachment failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0Attachment] " + ex);
+        }
+    }
+
+    private void RefreshCc0CreatureMorphs()
+    {
+        if (CreatorCreatureMorph is null) return;
+        var files = _cc0Assets.ListAnimalTargets();
+        CreatorCreatureMorph.ItemsSource = files;
+        CreatorCreatureMorph.DisplayMemberPath = "";
+        if (files.Count > 0 && CreatorCreatureMorph.SelectedIndex < 0)
+            CreatorCreatureMorph.SelectedIndex = 0;
+    }
+
+    private void CreatorCreatureMorph_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (CreatorCreatureMorph.SelectedItem is string path)
+            CreatorStatus.Text = $"CC0 morph: {Path.GetFileNameWithoutExtension(path)} · exact MakeHuman topology";
+    }
+
+    private async void ApplyCc0CreatureMorph_Click(object sender, RoutedEventArgs e)
+    {
+        if (CreatorCreatureMorph.SelectedItem is not string targetPath || !File.Exists(targetPath))
+        {
+            CreatorStatus.Text = "Install/select an Animal 01 CC0 morph first.";
+            return;
+        }
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            CreatorStatus.Text = "Anny runtime is required for exact MakeHuman-topology creature morphs.";
+            return;
+        }
+
+        try
+        {
+            BtnApplyCreatureMorph.IsEnabled = false;
+            CreatorStatus.Text = "Applying exact CC0 target on Anny makehuman topology…";
+            var current = _projectSession.ActiveCharacter?.ParametricHumanState
+                ?? new ParametricHumanState { BackendId = "anny" };
+            var request = AnnyHumanService.FromState(current);
+            var next = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(current));
+            next.TopologyProfile = "makehuman";
+            next.BackendId = "anny";
+            next.LocalShapeParameters["cc0:" + Path.GetFileNameWithoutExtension(targetPath)] = (float)CreatorCreatureMorphWeight.Value;
+
+            var targetStack = next.LocalShapeParameters
+                .Where(x => x.Key.StartsWith("cc0:", StringComparison.OrdinalIgnoreCase) && MathF.Abs(x.Value) > 0.0001f)
+                .Select(x =>
+                {
+                    var path = _cc0Assets.FindAnimalTarget(x.Key[4..])
+                        ?? throw new InvalidOperationException($"Installed target missing: {x.Key[4..]}");
+                    return new MakeHumanTargetRequest(path, x.Value);
+                })
+                .ToArray();
+            var dest = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "3DGod", "Generated", "CreatureMorphs",
+                $"{Path.GetFileNameWithoutExtension(targetPath)}-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+            var glb = await _anny.GenerateGlbAsync(dest, new AnnyGenerateRequest
+            {
+                Topology = "makehuman",
+                MakeHumanTargets = targetStack,
+                Phenotypes = request.Phenotypes,
+                LocalChanges = request.LocalChanges,
+                FacialActions = request.FacialActions
+            });
+            _projectSession.SetAnnyState(next, markDirty: false);
+            _projectSession.SetActiveMeshFromGlbFile(glb, "creature-body");
+            _autosave.MarkDirty(_projectSession.Snapshot());
+            RefreshViewportFromProject();
+            CreatorStatus.Text = $"Applied {Path.GetFileNameWithoutExtension(targetPath)} at {CreatorCreatureMorphWeight.Value:0.00} using exact MakeHuman vertex indices.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Creature morph failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0Morph] " + ex);
+        }
+        finally { BtnApplyCreatureMorph.IsEnabled = true; }
+    }
+
+    private async void InstallCc0CreatureAssets_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            BtnInstallCc0Assets.IsEnabled = false;
+            CreatorStatus.Text = "Downloading verified CC0 MakeHuman creature packs…";
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Bodyparts01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Animal01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Equipment01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Hair01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Shirts01);
+            await _cc0Assets.InstallAsync(Cc0CreatureAssetPackService.Suits02);
+            RefreshCc0CreatureMorphs();
+            RefreshCc0MeshAssets();
+
+            if (string.Equals(_projectSession.ActiveCharacter?.CreatureState?.BaseFamily, "orc", StringComparison.OrdinalIgnoreCase)
+                && _cc0Replacement.CanReplaceOrc)
+            {
+                var work = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "3DGod", "Generated", "CC0");
+                _cc0Replacement.ReplaceOrcDevelopmentParts(_projectSession, work);
+                RefreshViewportFromProject();
+                CreatorStatus.Text = "CC0 packs installed. Orc development primitives were removed and replaced with the real CC0 culturalibre Minotaur Horns mesh.";
+            }
+            else
+            {
+                CreatorStatus.Text = "CC0 packs installed locally. Animal 01 hm08 morph targets are retained for a real retarget/bake step and are NOT falsely applied to Anny.";
+            }
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "CC0 install failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator][CC0] " + ex);
+        }
+        finally { BtnInstallCc0Assets.IsEnabled = true; }
+    }
+
+    private void CharacterRat_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _productWorkflow.NewRatProject("Humanoid Rat");
+            SyncCreatorControlsFromProject();
+            RefreshViewportFromProject();
+            CreatorStatus.Text = "Rat project loaded: body + muzzle + ears + tail.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Rat unavailable: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Rat: " + ex.Message);
+        }
+    }
+
+    private void CreatorMorph_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingCreatorUi || sender is not System.Windows.Controls.Slider slider || slider.Tag is not string key)
+            return;
+        var character = _projectSession.ActiveCharacter;
+        if (character is null)
+            return;
+
+        var state = character.ParametricHumanState
+            ?? new ParametricHumanState { BackendId = "anny", TopologyProfile = "anny", RigProfile = "anny" };
+        var clone = DomainJson.Deserialize<ParametricHumanState>(DomainJson.Serialize(state));
+        if (key is "muscle" or "weight")
+            clone.PhenotypeParameters[key] = (float)slider.Value;
+        else
+            clone.LocalShapeParameters[key] = (float)slider.Value;
+        _projectSession.SetAnnyState(clone);
+        _autosave.MarkDirty(_projectSession.Snapshot());
+        CreatorStatus.Text = $"{key} = {slider.Value:0.00} · Apply / Regenerate to rebuild geometry";
+    }
+
+    private async void CharacterRegenerate_Click(object sender, RoutedEventArgs e)
+    {
+        var state = _projectSession.ActiveCharacter?.ParametricHumanState;
+        if (state is null || _annyInspector is null)
+        {
+            CreatorStatus.Text = "No Anny-backed character is active.";
+            return;
+        }
+        if (!_features.IsInvocable(FeatureIds.AnnyHuman))
+        {
+            CreatorStatus.Text = "Anny runtime is not ready. Open Setup Assistant.";
+            return;
+        }
+
+        try
+        {
+            CreatorStatus.Text = "Generating…";
+            var cc0Morphs = state.LocalShapeParameters
+                .Where(x => x.Key.StartsWith("cc0:", StringComparison.OrdinalIgnoreCase) && MathF.Abs(x.Value) > 0.0001f)
+                .Select(x => new { Name = x.Key[4..], Weight = x.Value, Path = _cc0Assets.FindAnimalTarget(x.Key[4..]) })
+                .ToArray();
+
+            if (string.Equals(state.TopologyProfile, "makehuman", StringComparison.OrdinalIgnoreCase) && cc0Morphs.Length > 0)
+            {
+                if (cc0Morphs.Any(x => string.IsNullOrWhiteSpace(x.Path)))
+                    throw new InvalidOperationException("A saved CC0 morph target is not installed on this machine.");
+                var baseRequest = AnnyHumanService.FromState(state);
+                var dest = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "3DGod", "Generated", "CreatureMorphs", $"regenerated-{DateTime.UtcNow:yyyyMMddHHmmss}.glb");
+                var glb = await _anny.GenerateGlbAsync(dest, new AnnyGenerateRequest
+                {
+                    Topology = "makehuman",
+                    MakeHumanTargets = cc0Morphs.Select(x => new MakeHumanTargetRequest(x.Path!, x.Weight)).ToArray(),
+                    Phenotypes = baseRequest.Phenotypes,
+                    LocalChanges = baseRequest.LocalChanges,
+                    FacialActions = baseRequest.FacialActions
+                });
+                _projectSession.SetActiveMeshFromGlbFile(glb, "creature-body");
+                _autosave.MarkDirty(_projectSession.Snapshot());
+                RefreshViewportFromProject();
+            }
+            else
+            {
+                await _annyInspector.ApplyStateAsync(state, generate: true);
+            }
+            CreatorStatus.Text = "Character regenerated from authoritative morph state.";
+        }
+        catch (Exception ex)
+        {
+            CreatorStatus.Text = "Generation failed: " + ex.Message;
+            DebugLog.Write("[CharacterCreator] Regenerate: " + ex.Message);
+        }
+    }
+
+    private void SyncCreatorControlsFromProject()
+    {
+        if (CreatorMuscle is null) return;
+        _syncingCreatorUi = true;
+        try
+        {
+            var state = _projectSession.ActiveCharacter?.ParametricHumanState;
+            CreatorMuscle.Value = state?.PhenotypeParameters.GetValueOrDefault("muscle", 0.5f) ?? 0.5f;
+            CreatorWeight.Value = state?.PhenotypeParameters.GetValueOrDefault("weight", 0.5f) ?? 0.5f;
+            CreatorJaw.Value = state?.LocalShapeParameters.GetValueOrDefault("jaw_width", 0f) ?? 0f;
+            CreatorBrow.Value = state?.LocalShapeParameters.GetValueOrDefault("brow_ridge", 0f) ?? 0f;
+            CreatorNose.Value = state?.LocalShapeParameters.GetValueOrDefault("nose_width", 0f) ?? 0f;
+        }
+        finally { _syncingCreatorUi = false; }
     }
 
     private async void MenuNewProject_Click(object sender, RoutedEventArgs e)

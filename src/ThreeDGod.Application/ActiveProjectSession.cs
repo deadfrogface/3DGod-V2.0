@@ -78,6 +78,41 @@ public sealed class ActiveProjectSession
         RaiseChanged();
     }
 
+    /// <summary>
+    /// Replaces the current project with a creature assembled by an existing domain/infrastructure builder.
+    /// Mesh files produced by the builder are embedded immediately so save/reopen/export never depends on temp paths.
+    /// </summary>
+    public void LoadCreatedCreature(ProjectBundle bundle, Guid characterId, string? projectPath = null)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        var character = bundle.Characters.FirstOrDefault(x => x.CharacterId == characterId)
+            ?? throw new InvalidOperationException("Created creature is not present in the supplied project bundle.");
+
+        foreach (var meshId in character.MeshSet.MeshAssetIds)
+        {
+            var mesh = bundle.Meshes.FirstOrDefault(x => x.MeshAssetId == meshId);
+            if (mesh is null || string.IsNullOrWhiteSpace(mesh.CanonicalGlbPath) || !File.Exists(mesh.CanonicalGlbPath))
+                continue;
+            var bytes = File.ReadAllBytes(mesh.CanonicalGlbPath);
+            if (bytes.Length < 12)
+                throw new InvalidOperationException($"Creature mesh '{mesh.Name}' is not a valid embedded GLB payload.");
+            bundle.MeshBytes[meshId] = bytes;
+            mesh.SourceHash = ArchivePathRulesSha256(bytes);
+            mesh.SourceFormat = "glb";
+            mesh.CanonicalGlbPath = $"assets/{meshId:D}/mesh.glb";
+        }
+
+        lock (_gate)
+        {
+            _bundle = Clone(bundle);
+            _activeCharacterId = characterId;
+            _projectPath = string.IsNullOrWhiteSpace(projectPath) ? null : Path.GetFullPath(projectPath);
+            _dirty = true;
+            _materializedMeshPath = null;
+        }
+        RaiseChanged();
+    }
+
     public void LoadFrom(ProjectBundle bundle, string? projectPath)
     {
         ArgumentNullException.ThrowIfNull(bundle);
@@ -227,6 +262,20 @@ public sealed class ActiveProjectSession
                 parts.Add(("body", bodyId, string.IsNullOrWhiteSpace(body?.Name) ? "body" : body!.Name));
             }
 
+            // Modular creature parts are real scene meshes and must survive viewport/export,
+            // not remain backend-only metadata.
+            if (character.CreatureState is not null)
+            {
+                foreach (var slot in character.CreatureState.BodyPartSlots.Concat(character.CreatureState.ExtraBodyParts))
+                {
+                    if (slot.MeshAssetId is not Guid mid || mid == Guid.Empty || parts.Any(p => p.MeshAssetId == mid))
+                        continue;
+                    var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == mid);
+                    var name = string.IsNullOrWhiteSpace(mesh?.Name) ? slot.SemanticType.ToString() : mesh!.Name;
+                    parts.Add(("creature-part", mid, name));
+                }
+            }
+
             foreach (var instance in _bundle.GarmentInstances.Where(g => g.CharacterId == character.CharacterId))
             {
                 if (instance.MeshAssetId is not Guid mid || mid == Guid.Empty)
@@ -234,6 +283,16 @@ public sealed class ActiveProjectSession
                 var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == mid);
                 var name = string.IsNullOrWhiteSpace(mesh?.Name) ? "garment" : mesh!.Name;
                 parts.Add(("garment", mid, name));
+            }
+
+            foreach (var attachment in _bundle.Attachments.Where(a => a.CharacterId == character.CharacterId))
+            {
+                var mid = attachment.AssetId;
+                if (mid == Guid.Empty || parts.Any(p => p.MeshAssetId == mid))
+                    continue;
+                var mesh = _bundle.Meshes.FirstOrDefault(m => m.MeshAssetId == mid);
+                var name = string.IsNullOrWhiteSpace(mesh?.Name) ? attachment.AttachmentType.ToString() : mesh!.Name;
+                parts.Add(("attachment", mid, name));
             }
 
             return parts;
@@ -386,6 +445,45 @@ public sealed class ActiveProjectSession
             _dirty = true;
         }
         RaiseChanged();
+    }
+
+    public AttachmentInstance AddAttachmentFromGlb(
+        string glbPath,
+        string name,
+        AttachmentType type,
+        GeneratedAssetMetadata? provenance = null)
+    {
+        if (string.IsNullOrWhiteSpace(glbPath) || !File.Exists(glbPath))
+            throw new FileNotFoundException("Attachment GLB not found.", glbPath);
+
+        var bytes = File.ReadAllBytes(glbPath);
+        AttachmentInstance attachment;
+        lock (_gate)
+        {
+            var character = RequireActiveCharacter();
+            var mesh = new MeshAsset
+            {
+                Name = string.IsNullOrWhiteSpace(name) ? type.ToString() : name,
+                SourceFormat = "glb",
+                SourceHash = ArchivePathRulesSha256(bytes),
+                ValidationState = "attachment"
+            };
+            mesh.CanonicalGlbPath = $"assets/{mesh.MeshAssetId:D}/mesh.glb";
+            if (provenance is not null)
+                mesh.GeneratedMetadata = provenance;
+            _bundle.MeshBytes[mesh.MeshAssetId] = bytes;
+            _bundle.Meshes.Add(mesh);
+            _bundle.Project.AssetIds.Add(mesh.MeshAssetId);
+
+            attachment = AttachmentSockets.Attach(character.CharacterId, mesh.MeshAssetId, type);
+            _bundle.Attachments.Add(attachment);
+            character.AttachmentInstanceIds.Add(attachment.AttachmentId);
+            character.EditRevision++;
+            Touch(character);
+            _dirty = true;
+        }
+        RaiseChanged();
+        return attachment;
     }
 
     public void SetActiveRigFromGlb(string riggedGlbPath, string backendId)

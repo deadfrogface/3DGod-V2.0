@@ -24,6 +24,7 @@ public static class DeterministicAiParser
             "longer tail" or "tail longer" or "längerer schwanz" or "laengerer schwanz" => Plan("valid", "parameter.delta", "deterministic", "key", "tailLength", "delta", "0.2"),
             "gold less shiny" or "less shiny gold" or "gold weniger glänzend" or "gold weniger glaenzend" => Plan("valid", "material.pbr", "deterministic", "color", "gold", "metallic", "0.55", "roughness", "0.45"),
             "add horns" or "hörner dazu" or "horner dazu" => Plan("valid", "creature.addPart", "deterministic", "slot", "horn", "family", "catalog", "op", "AddCreaturePart"),
+            "remove horns" or "hörner entfernen" or "horner entfernen" => Plan("valid", "creature.removePart", "deterministic", "slot", "horn", "op", "RemoveCreaturePart"),
             "make it nicer" or "improve" => new AiEditPlan { Status = "Ambiguous", Provider = "deterministic", Reason = "Prompt is too vague." },
             "größer und haut dunkler" or "groesser und haut dunkler" => Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.15"),
             _ => new AiEditPlan { Status = "Unsupported", Provider = "deterministic" }
@@ -42,6 +43,34 @@ public static class DeterministicAiParser
                 AiEditPlanValidator.Validate(Plan("valid", "material.recolor", "deterministic", "color", "darker"))
             ];
         }
+        var plans = new List<AiEditPlan>();
+        static bool Has(string text, params string[] terms) => terms.Any(text.Contains);
+
+        if (Has(p, "weniger muskul", "less muscular"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "muscle", "delta", "-0.25"));
+        else if (Has(p, "muskul", "muscular", "kräftig", "kraeftig"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "muscle", "delta", "0.35"));
+        if (Has(p, "breiter kiefer", "breitem kiefer", "breiten kiefer", "wide jaw", "broad jaw"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "jaw_width", "delta", "0.35"));
+        if (Has(p, "breite schultern", "wide shoulders", "broad shoulders"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "shoulder_width", "delta", "0.3"));
+        if (Has(p, "längere arme", "laengere arme", "longer arms"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "arm_length", "delta", "0.25"));
+        if (Has(p, "groß", "gross", "größer", "grösser", "groesser", "tall", "taller", "large"))
+            plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.2"));
+        if (Has(p, "grüne haut", "grüner haut", "gruenen haut", "gruene haut", "green skin", "dunkelgrün", "dunkelgruen"))
+            plans.Add(Plan("valid", "material.recolor", "deterministic", "color", "orc-green"));
+        if (Has(p, "entferne die hörner", "entferne hörner", "horner entfernen", "hörner entfernen", "remove horns"))
+            plans.Add(Plan("valid", "creature.removePart", "deterministic", "slot", "horn", "op", "RemoveCreaturePart"));
+        else if (Has(p, "horn", "hörner", "horner"))
+            plans.Add(Plan("valid", "creature.addPart", "deterministic", "slot", "horn", "family", "catalog", "op", "AddCreaturePart"));
+        if (Has(p, "schwarze lange haare", "lange schwarze haare", "long black hair"))
+            plans.Add(Plan("valid", "attachment.add", "deterministic", "type", "hair", "color", "black", "length", "long"));
+        if (Has(p, "lederrüstung", "lederruestung", "leather armor"))
+            plans.Add(Plan("valid", "garment.add", "deterministic", "type", "armor", "material", "leather"));
+
+        if (plans.Count > 0)
+            return plans.Select(AiEditPlanValidator.Validate).ToArray();
         return [Parse(prompt)];
     }
 

@@ -33,6 +33,76 @@
             <ColumnDefinition Width="2*" MinWidth="400"/>
         </Grid.ColumnDefinitions>
         <TabControl x:Name="Tabs" Grid.Row="0" Grid.Column="0" Background="#2d2d2d" BorderThickness="0">
+            <TabItem x:Name="TabCharacter" Header="Character">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="CHARACTER CREATOR" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="Human, humanoid creature or freeform character. Manual controls and AI edit the same project state."
+                                   Foreground="#aaa" TextWrapping="Wrap" Margin="0,6,0,16"/>
+                        <TextBlock Text="Base" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <UniformGrid Columns="3" Margin="0,6,0,14">
+                            <Button x:Name="BtnCharacterHuman" Content="Human" Margin="2" Padding="8" Click="CharacterHuman_Click"/>
+                            <Button x:Name="BtnCharacterOrc" Content="Orc" Margin="2" Padding="8" Click="CharacterOrc_Click"/>
+                            <Button x:Name="BtnCharacterRat" Content="Rat" Margin="2" Padding="8" Click="CharacterRat_Click"/>
+                        </UniformGrid>
+                        <TextBlock Text="Body / face" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="These controls write to the authoritative Anny state; regeneration uses the same values."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
+                        <TextBlock Text="Muscle" Foreground="White"/>
+                        <Slider x:Name="CreatorMuscle" Minimum="0" Maximum="1" Value="0.5" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="muscle"/>
+                        <TextBlock Text="Weight" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorWeight" Minimum="0" Maximum="1" Value="0.5" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="weight"/>
+                        <TextBlock Text="Jaw width" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorJaw" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="jaw_width"/>
+                        <TextBlock Text="Brow ridge" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorBrow" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="brow_ridge"/>
+                        <TextBlock Text="Nose width" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorNose" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="CreatorMorph_ValueChanged" Tag="nose_width"/>
+                        <Button x:Name="BtnCreatorRegenerate" Content="Apply / Regenerate Character" Margin="0,16,0,4" Padding="10" Click="CharacterRegenerate_Click"/>
+                        <Separator Margin="0,12,0,10"/>
+                        <TextBlock Text="Creature asset library" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="Verified CC0 packs only. Downloads once, then works locally. hm08 targets use Anny's exact MakeHuman topology; mesh assets keep CC0 provenance."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,8"/>
+                        <Button x:Name="BtnInstallCc0Assets" Content="Install CC0 Creature Assets" Padding="9" Click="InstallCc0CreatureAssets_Click"/>
+                        <TextBlock Text="CC0 mesh assets (horns / hair / weapons)" Foreground="White" Margin="0,12,0,0"/>
+                        <ComboBox x:Name="CreatorCc0Mesh" Margin="0,4,0,0"/>
+                        <Button x:Name="BtnAttachCc0Mesh" Content="Attach selected CC0 mesh" Margin="0,7,0,0" Padding="8" Click="AttachCc0Mesh_Click"/>
+                        <TextBlock Text="CC0 Creature morph" Foreground="White" Margin="0,12,0,0"/>
+                        <ComboBox x:Name="CreatorCreatureMorph" Margin="0,4,0,0" SelectionChanged="CreatorCreatureMorph_SelectionChanged"/>
+                        <TextBlock Text="Morph strength" Foreground="White" Margin="0,8,0,0"/>
+                        <Slider x:Name="CreatorCreatureMorphWeight" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.1"/>
+                        <Button x:Name="BtnApplyCreatureMorph" Content="Apply CC0 Creature Morph" Margin="0,8,0,0" Padding="9" Click="ApplyCc0CreatureMorph_Click"/>
+                        <Separator Margin="0,14,0,10"/>
+                        <TextBlock Text="AI-first edit" Foreground="#ddd" FontWeight="SemiBold"/>
+                        <TextBlock Text="Uses the same authoritative morph/material/creature state as the manual controls."
+                                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,6"/>
+                        <TextBox x:Name="CreatorPrompt" MinHeight="54" TextWrapping="Wrap" AcceptsReturn="True"
+                                 ToolTip="Example: bigger and darker skin; horns; rat head"/>
+                        <UniformGrid Columns="2" Margin="0,7,0,0">
+                            <Button x:Name="BtnCreatorApplyPrompt" Content="Apply edit" Margin="2" Padding="8" Click="CharacterPrompt_Click"/>
+                            <Button x:Name="BtnCreatorFreeform" Content="Create freeform" Margin="2" Padding="8" Click="CharacterFreeform_Click"/>
+                        </UniformGrid>
+                        <TextBlock Text="Attachment / gear" Foreground="#ddd" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <ComboBox x:Name="CreatorAttachmentType" SelectedIndex="0">
+                            <ComboBoxItem Content="Necklace" Tag="Necklace"/>
+                            <ComboBoxItem Content="Earring" Tag="Earring"/>
+                            <ComboBoxItem Content="Hair" Tag="Hair"/>
+                            <ComboBoxItem Content="Beard" Tag="Beard"/>
+                            <ComboBoxItem Content="Weapon" Tag="Weapon"/>
+                            <ComboBoxItem Content="Horn" Tag="Horn"/>
+                            <ComboBoxItem Content="Tail" Tag="Tail"/>
+                        </ComboBox>
+                        <Button x:Name="BtnCreatorAttachment" Content="Generate / attach from prompt" Margin="0,7,0,0" Padding="8" Click="CharacterAttachment_Click"/>
+                        <TextBlock Text="Workflow" Foreground="#ddd" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                        <UniformGrid Columns="3">
+                            <Button Content="Rig" Margin="2" Padding="7" Click="CharacterOpenRig_Click"/>
+                            <Button Content="Clothing" Margin="2" Padding="7" Click="CharacterOpenClothing_Click"/>
+                            <Button Content="Export" Margin="2" Padding="7" Click="CharacterOpenExport_Click"/>
+                        </UniformGrid>
+                        <TextBlock x:Name="CreatorStatus" Text="Ready" Foreground="#f0c14b" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <TabItem x:Name="TabAnny" Header="Anny">
                 <ContentControl x:Name="AnnyPanel"/>
             </TabItem>

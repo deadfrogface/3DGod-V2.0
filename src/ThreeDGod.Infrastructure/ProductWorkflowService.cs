@@ -1,5 +1,6 @@
 using ThreeDGod.Application;
 using ThreeDGod.Core.Domain;
+using ThreeDGod.Core.Editing;
 using ThreeDGod.Export;
 using ThreeDGod.Persistence;
 
@@ -16,19 +17,28 @@ public sealed class ProductWorkflowService
     private readonly AutosaveService? _autosave;
     private readonly AllowlistedAiEditExecutor _edits;
     private readonly string _workRoot;
+    private readonly ICreatureAssembly? _creatures;
+    private readonly ICreatureTextEditService? _creatureEdits;
+    private readonly IFreeformCharacterPipeline? _freeform;
 
     public ProductWorkflowService(
         ActiveProjectSession session,
         IProjectService projects,
         AllowlistedAiEditExecutor edits,
         AutosaveService? autosave = null,
-        string? workRoot = null)
+        string? workRoot = null,
+        ICreatureAssembly? creatures = null,
+        ICreatureTextEditService? creatureEdits = null,
+        IFreeformCharacterPipeline? freeform = null)
     {
         _session = session;
         _projects = projects;
         _edits = edits;
         _autosave = autosave;
         _workRoot = workRoot ?? Path.Combine(Path.GetTempPath(), "3dgod-product-workflow");
+        _creatures = creatures;
+        _creatureEdits = creatureEdits;
+        _freeform = freeform;
         Directory.CreateDirectory(_workRoot);
     }
 
@@ -38,6 +48,78 @@ public sealed class ProductWorkflowService
     {
         _session.NewProject(name);
         _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public void NewOrcProject(string name = "Orc")
+    {
+        CreateCreatureProject(name, static (builder, bundle, root) => builder.CreateOrc(bundle, root));
+    }
+
+    public void NewRatProject(string name = "Humanoid Rat")
+    {
+        CreateCreatureProject(name, static (builder, bundle, root) => builder.CreateRat(bundle, root));
+    }
+
+    private void CreateCreatureProject(
+        string name,
+        Func<ICreatureAssembly, ProjectBundle, string, CharacterDocument> factory)
+    {
+        if (_creatures is null)
+            throw new InvalidOperationException("Creature assembly service is not configured.");
+
+        var bundle = new ProjectBundle
+        {
+            Project = new ProjectDocument
+            {
+                Name = name,
+                AppVersionCreated = "2.0.0",
+                AppVersionLastSaved = "2.0.0"
+            }
+        };
+        var root = Path.Combine(_workRoot, "creature-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var character = factory(_creatures, bundle, root);
+        character.Name = name;
+        _session.LoadCreatedCreature(bundle, character.CharacterId);
+        _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public async Task NewFreeformProjectAsync(string prompt, CancellationToken cancellationToken = default)
+    {
+        if (_freeform is null)
+            throw new InvalidOperationException("Freeform character pipeline is not configured.");
+        var bundle = new ProjectBundle
+        {
+            Project = new ProjectDocument
+            {
+                Name = string.IsNullOrWhiteSpace(prompt) ? "Freeform Creature" : prompt.Trim(),
+                AppVersionCreated = "2.0.0",
+                AppVersionLastSaved = "2.0.0"
+            }
+        };
+        var root = Path.Combine(_workRoot, "freeform-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var character = await _freeform.RunAsync(prompt, bundle, root, cancellationToken).ConfigureAwait(false);
+        _session.LoadCreatedCreature(bundle, character.CharacterId);
+        _autosave?.AssociateMainFile(null);
+        NotifyAutosave();
+    }
+
+    public async Task ApplyCreatureEditAsync(string prompt, CommandStack stack, CancellationToken cancellationToken = default)
+    {
+        if (_creatureEdits is null)
+            throw new InvalidOperationException("Creature edit service is not configured.");
+        var snapshot = _session.Snapshot();
+        var character = snapshot.Characters.FirstOrDefault(x => x.CharacterId == _session.ActiveCharacter?.CharacterId)
+            ?? throw new InvalidOperationException("No active creature.");
+        if (character.CreatureState is null)
+            throw new InvalidOperationException("Active character is not a creature.");
+        var root = Path.Combine(_workRoot, "creature-edit-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await _creatureEdits.ApplyAsync(prompt, snapshot, character, root, stack, cancellationToken).ConfigureAwait(false);
+        _session.LoadCreatedCreature(snapshot, character.CharacterId, _session.ProjectPath);
         NotifyAutosave();
     }
 
@@ -63,6 +145,14 @@ public sealed class ProductWorkflowService
     {
         _session.UpsertMaterial(slot, r, g, b, 1f, metallic, roughness);
         NotifyAutosave();
+    }
+
+    public AttachmentInstance AddAttachment(LibraryAsset asset, AttachmentType type)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        var attachment = _session.AddAttachmentFromGlb(asset.GlbPath, asset.Name, type, asset.Provenance);
+        NotifyAutosave();
+        return attachment;
     }
 
     public void AddFittedGarment(string fittedGlb, string presetName, ClippingReport? report = null)
