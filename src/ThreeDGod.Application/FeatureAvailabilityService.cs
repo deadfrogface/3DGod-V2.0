@@ -17,7 +17,7 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
         FeatureIds.ExportMetahuman => FeatureAvailability.NotImplemented,
         FeatureIds.AiGeneratePerson => FeatureAvailability.NotImplemented,
         FeatureIds.AiGenerateAsset => FeatureAvailability.NotImplemented,
-        FeatureIds.ControllerInput => FeatureAvailability.Experimental,
+        FeatureIds.ControllerInput => FeatureAvailability.NotImplemented,
         FeatureIds.ExportUnreal => FeatureAvailability.NotImplemented,
         FeatureIds.HeightMorph => FeatureAvailability.Experimental,
         FeatureIds.ConfigSave => FeatureAvailability.Available,
@@ -53,7 +53,7 @@ public sealed class FeatureAvailabilityService : IFeatureAvailabilityService
             FeatureIds.AiGenerateAsset =>
                 "NotImplemented – keine Asset-Generierung.",
             FeatureIds.ControllerInput =>
-                "Experimental – wired USB DualShock 4 viewport camera via Windows HID; hardware verification pending.",
+                "NotImplemented – Checkbox steuert kein Gamepad.",
             FeatureIds.HeightMorph =>
                 "Experimental – Height maps to Anny phenotype/local keys (AnnyHeightMorph); mesh must be regenerated, not uniformly scaled.",
             FeatureIds.ConfigSave => "Available – Config-JSON wird gespeichert.",
