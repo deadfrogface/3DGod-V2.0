@@ -56,7 +56,7 @@ public static class DeterministicAiParser
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "shoulder_width", "delta", "0.3"));
         if (Has(p, "längere arme", "laengere arme", "longer arms"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "arm_length", "delta", "0.25"));
-        if (Has(p, "groß", "gross", "tall", "large"))
+        if (Has(p, "groß", "gross", "größer", "grösser", "groesser", "tall", "taller", "large"))
             plans.Add(Plan("valid", "parameter.delta", "deterministic", "key", "height", "delta", "0.2"));
         if (Has(p, "grüne haut", "grüner haut", "gruenen haut", "gruene haut", "green skin", "dunkelgrün", "dunkelgruen"))
             plans.Add(Plan("valid", "material.recolor", "deterministic", "color", "orc-green"));
