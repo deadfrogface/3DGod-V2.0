@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows.Threading;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Media;
@@ -56,6 +57,11 @@ public partial class MainWindow : Window, ILocalizableView
     private readonly IAutoRigService _autoRig;
     private readonly AllowlistedAiEditExecutor _aiEdits;
     private readonly ViewportSelectionService _viewportSelection;
+    private readonly WiredDualShock4 _wiredDs4 = new();
+    private readonly DispatcherTimer _controllerTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private HelixViewport3D? _controllerViewport;
+    private bool _controllerLastConnected;
+
     private readonly IFbxExportService _fbxExport;
     private readonly HelixViewportSession _viewportSession;
     private readonly IComponentManager _components;
@@ -98,6 +104,9 @@ public partial class MainWindow : Window, ILocalizableView
         IWorkerUvComponentInstaller? uvInstaller = null)
     {
         InitializeComponent();
+        _controllerTimer.Tick += WiredControllerTick;
+        _controllerTimer.Start();
+        Closed += (_, _) => { _controllerTimer.Stop(); _wiredDs4.Dispose(); };
         _basePath = AppDomain.CurrentDomain.BaseDirectory;
 
         _configService = configService;
@@ -600,6 +609,7 @@ public partial class MainWindow : Window, ILocalizableView
             hasRealBones,
             _sculptScaleTransform,
             centerTransform);
+        _controllerViewport = vp;
         UpdateSelectionInspector(null);
         SelectionInfo.Text = Loc.Get("preview.selection.mesh", meshId);
         return vp;
@@ -719,6 +729,36 @@ public partial class MainWindow : Window, ILocalizableView
     private void ShowAnatomyPreview()
     {
         UpdatePreviewFromAnatomy(_characterSystem.AnatomyState);
+    }
+
+    private void WiredControllerTick(object? sender, EventArgs e)
+    {
+        var state = _wiredDs4.Read();
+        if (state.Connected != _controllerLastConnected)
+        {
+            _controllerLastConnected = state.Connected;
+            DebugLog.Write(state.Connected ? "[Controller] Wired DualShock 4 connected." : "[Controller] Wired DualShock 4 disconnected.");
+        }
+        var vp = _controllerViewport;
+        if (!state.Connected || vp is null || ViewportHost.Child != vp) return;
+        var camera = vp.Camera as ProjectionCamera;
+        if (camera is null) return;
+        var target = camera.Position + camera.LookDirection;
+        var offset = camera.Position - target;
+        var radius = offset.Length;
+        if (radius < 0.01) return;
+        var yaw = Math.Atan2(offset.X, offset.Z) + state.RightX * 0.045;
+        var pitch = Math.Clamp(Math.Asin(Math.Clamp(offset.Y / radius, -1, 1)) - state.RightY * 0.035, -1.4, 1.4);
+        var zoom = (state.L1 ? 0.96 : 1.0) * (state.R1 ? 1.04 : 1.0);
+        radius = Math.Clamp(radius * zoom, 0.2, 1000);
+        var forward = new Vector3D(Math.Sin(yaw), 0, Math.Cos(yaw));
+        var right = new Vector3D(forward.Z, 0, -forward.X);
+        var pan = right * (state.LeftX * radius * 0.015) + new Vector3D(0, -state.LeftY * radius * 0.015, 0);
+        target += pan;
+        var direction = new Vector3D(Math.Sin(yaw) * Math.Cos(pitch), Math.Sin(pitch), Math.Cos(yaw) * Math.Cos(pitch)) * radius;
+        camera.Position = target + direction;
+        camera.LookDirection = -direction;
+        camera.UpDirection = new Vector3D(0, 1, 0);
     }
 
     private void ShowPlaceholder()
