@@ -25,10 +25,10 @@ public class FeatureAvailabilityTests
     }
 
     [Fact]
-    public void WiredController_IsExperimental_NotClaimedAsFullyVerified()
+    public void ControllerPrototypeRemoved_IsNotImplemented()
     {
-        Assert.Equal(FeatureAvailability.Experimental, _svc.GetStatus(FeatureIds.ControllerInput));
-        Assert.Contains("wired", _svc.GetStatusMessage(FeatureIds.ControllerInput), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(FeatureAvailability.NotImplemented, _svc.GetStatus(FeatureIds.ControllerInput));
+        Assert.False(_svc.IsInvocable(FeatureIds.ControllerInput));
     }
 
     [Fact]
