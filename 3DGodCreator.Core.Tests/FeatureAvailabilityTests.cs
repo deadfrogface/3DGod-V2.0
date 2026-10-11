@@ -15,7 +15,6 @@ public class FeatureAvailabilityTests
     [InlineData(FeatureIds.ExportMetahuman)]
     [InlineData(FeatureIds.PhysicsSimulate)]
     [InlineData(FeatureIds.ClothingFit)]
-    [InlineData(FeatureIds.ControllerInput)]
     [InlineData(FeatureIds.ExportUnreal)]
     public void PlaceholderFeatures_AreNotImplementedAndNotInvocable(string id)
     {
@@ -23,6 +22,13 @@ public class FeatureAvailabilityTests
         Assert.False(_svc.IsInvocable(id));
         Assert.False(string.IsNullOrWhiteSpace(_svc.GetStatusMessage(id)));
         Assert.DoesNotContain("success", _svc.GetStatusMessage(id), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ControllerPrototypeRemoved_IsNotImplemented()
+    {
+        Assert.Equal(FeatureAvailability.NotImplemented, _svc.GetStatus(FeatureIds.ControllerInput));
+        Assert.False(_svc.IsInvocable(FeatureIds.ControllerInput));
     }
 
     [Fact]
