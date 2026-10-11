@@ -1,0 +1,53 @@
+name: Windows Test Release
+
+on:
+  push:
+    branches:
+      - character-creator-core
+    paths:
+      - '.github/workflows/windows-test-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-test-release:
+    name: Build, install-test and publish Windows test setup
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Compile and run unit tests
+        shell: pwsh
+        run: |
+          & ./build.ps1 -Targets restore,build,test -Configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build and test real Windows installer
+        shell: pwsh
+        run: |
+          $version = "2.0.0-test.${{ github.run_number }}"
+          & ./scripts/ci/Invoke-CleanInstallSmoke.ps1 -Version $version -Channel dev
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Publish prerelease with Setup.exe
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "2.0.0-test.${{ github.run_number }}"
+          $tag = "v$version"
+          $setup = Get-ChildItem "artifacts/releases/dev" -Recurse -Filter "*Setup.exe" | Select-Object -First 1
+          if (-not $setup) { throw "No Setup.exe built" }
+          gh release create $tag $setup.FullName --target "${{ github.sha }}" --title "3D God Windows Test $version" --prerelease --notes "Windows x64 TEST version from character-creator-core. Not a production release. Installer passed automated clean install, launch and uninstall smoke tests. Optional AI model files are not bundled. Controller support is not included."
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve installer on failed release publishing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3DGod-Windows-Test-Installer
+          path: artifacts/releases/dev/*Setup.exe
+          if-no-files-found: warn
+          retention-days: 14
